@@ -54,7 +54,7 @@ public class FUnicodeField extends JPanel implements ActionListener, FocusListen
          GUIUtilities.createImageIcon(FUnicodeField.class, "/com/srscicomp/common/resources/charmap.gif", "");
 
    /** Text field in which label is displayed/edited. */
-   private JTextField labelTextField = null;
+   private final JTextField labelTextField;
 
    /** Pressing this button raises the character mapper popup. */
    private JButton showMapperBtn = null;
@@ -103,7 +103,7 @@ public class FUnicodeField extends JPanel implements ActionListener, FocusListen
     * Array of Unicode character subsets installed in the character map popup raised by this <code>FUnicodeField</code>. 
     * If <code>null</code> or empty, the character map will include standard Latin, Greek and punctuation characters.
     */
-   private UnicodeSubset[] allowedCharSets = null;
+   private UnicodeSubset[] allowedCharSets;
    
    /**
     * Set the array of character subsets from which the user can choose when selecting a character from the character 

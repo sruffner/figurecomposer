@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.ArrayList;
 
 import com.srscicomp.common.util.Utilities;
 
@@ -15,27 +16,27 @@ import com.srscicomp.common.util.Utilities;
  * desktop application with the native operating system. It handles file-opening events from macOS (so that user can
  * start the relevant app by double-clicking a file that the app is registered to open), plus three standard items in 
  * the macOS "Application" menu: the "About", "Preferences", and "Quit" menu commands.
- * 
+ *
  * <p>Originally, the implementation relied on an internal package, <b>com.apple.eawt</b>, that provides the hooks into
  * the native macOS functionality. While that package was accessible through Java 8, it became an internal JDK with the
  * "modularization" of the Java runtime in JDK 9. At the same time, the desktop integration functionality was moved to
  * {@link java.awt.Desktop}, but that functionality has not been backported to Java 8. Thus, it is rather tricky to
  * support the macOS desktop integration features we need while at the same time allowing the application to run on
  * Java 8 as well as Java 9+.</p>
- * 
- * <p>We adapted a solution (https://github.com/kaikramer/keystore-explorer/pull/103/files) which uses reflection
- * techniques to use classes from either <b>com.apple.eawt</b> or <b>java.awt.desktop</b>, depending on the major 
- * version number of the JRE in which the application is running.</p>
- * 
+ *
+ * <p>We adapted a <a href="https://github.com/kaikramer/keystore-explorer/pull/103/files">solution</a> which uses
+ * reflection techniques to use classes from either <b>com.apple.eawt</b> or <b>java.awt.desktop</b>, depending on the
+ * major version number of the JRE in which the application is running.</p>
+ *
  * <p>USAGE: Early during application startup, construct the adapter object, specifying the {@link OSXCompatibleApp}
  * object that actually implements the various desktop actions. Then call {@link #addEventHandlers()} to hook the 
  * event handlers into macOS. Be sure to check for any exceptions thrown by this method!</p>
- * 
+ *
  * TODO: This is an interim solution compiled against JDK 8 that works in both Java 8 and Java 9+. Eventually, when we 
  * compile against and require the next Java long-term support release, version 11, we should reimplement this by 
  * explicitly using {@link java.awt.Desktop} and eliminating reliance on both <b>com.apple.eawt</b> and reflection 
  * techniques.
- * 
+ *
  * @author sruffner
  */
 public class OSXAdapter implements InvocationHandler
@@ -53,9 +54,9 @@ public class OSXAdapter implements InvocationHandler
 	 */
 	public OSXAdapter(OSXCompatibleApp inApp) 
 	{
-      if(inApp == null) throw new NullPointerException("Required argument is null");
-      
-		theApp = inApp;
+        if(inApp == null)
+            throw new NullPointerException("Required argument is null");
+        theApp = inApp;
 	}
 	
 	/**
@@ -66,7 +67,8 @@ public class OSXAdapter implements InvocationHandler
 	 * <p>This method uses reflection techniques both to register the handlers. Be sure to catch any exceptions in case
 	 * reflection fails!</p>
 	 */
-	public void addEventHandlers() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+	@SuppressWarnings("rawtypes")
+    public void addEventHandlers() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
 	   InvocationTargetException, InstantiationException 
 	{
 	   // using reflection to avoid Mac specific classes being required for compiling on other platforms, AND to handle
@@ -82,7 +84,7 @@ public class OSXAdapter implements InvocationHandler
       if(Utilities.getJavaMajorVersion() > 8)
       {
          applicationClass = Class.forName("java.awt.Desktop");
-         application = applicationClass.getDeclaredMethod("getDesktop").invoke(null, new Object[0]);
+         application = applicationClass.getDeclaredMethod("getDesktop").invoke(null);
          
          quitHandlerClass = Class.forName("java.awt.desktop.QuitHandler");
          aboutHandlerClass = Class.forName("java.awt.desktop.AboutHandler");
@@ -111,35 +113,52 @@ public class OSXAdapter implements InvocationHandler
 
 	}
 
-	@SuppressWarnings("unchecked")
-   @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable 
+    @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
 	{
-	   if("openFiles".equals(method.getName())) 
-	   {
-	      if(args[0] != null) 
-	      {
-	         Object files = args[0].getClass().getMethod("getFiles").invoke(args[0]);
-	         if(files instanceof List<?>) 
-	            theApp.doFileOpen((List<File>) files);
-	      } 
-	   }
-	   else if("handleQuitRequestWith".equals(method.getName())) 
-	   {
-	      theApp.doExit();
-	      // the above method will return only if user cancels exit
-	      if(args[1] != null)
-	      {
-	         args[1].getClass().getDeclaredMethod("cancelQuit").invoke(args[1]);
-	      }
-	   } 
-	   else if("handleAbout".equals(method.getName())) 
-	   {
-	      theApp.doAbout();
-	   } 
-	   else if("handlePreferences".equals(method.getName())) 
-	   {
-	      theApp.doPreferences();
-      }
+        switch (method.getName()) {
+            case "openFiles":
+                if (args[0] != null) {
+                    List<File> files =
+                            getListOfFileFromObject(args[0].getClass().getMethod("getFiles").invoke(args[0]));
+                    if(files != null)
+                        theApp.doFileOpen(files);
+                }
+                break;
+            case "handleQuitRequestWith":
+                theApp.doExit();
+                // the above method will return only if user cancels exit
+                if (args[1] != null) {
+                    args[1].getClass().getDeclaredMethod("cancelQuit").invoke(args[1]);
+                }
+                break;
+            case "handleAbout":
+                theApp.doAbout();
+                break;
+            case "handlePreferences":
+                theApp.doPreferences();
+                break;
+        }
 	   return null;
 	}
+
+    /**
+     * Hacky fix to fact that you cannot do <code>obj instanceof List&lt;File&gt;</code>. Obviously not ideal.
+     *
+     * @param fileList An object which should be a List of File objects
+     * @return An explicit list of Files, or null if argument is not a List&lt;File&gt;
+     */
+    private List<File> getListOfFileFromObject(Object fileList)
+    {
+        if(fileList instanceof List<?>)
+        {
+            List<File> files = new ArrayList<>();
+            for(Object o : (List<?>) fileList)
+            {
+                if(o instanceof File) files.add((File) o);
+                else return(null);
+            }
+            return(files);
+        }
+        return(null);
+    }
 }

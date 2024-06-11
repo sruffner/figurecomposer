@@ -226,10 +226,10 @@ public class RGBColorPicker extends SwatchButton implements ActionListener
     * A list of commonly used RGB colors to which are assigned descriptive names. They are listed here in the order 
     * they appear in the color chooser's swatch panel.
     */
-   private static final List<Color> BASIC_COLORS = new ArrayList<Color>(25);
+   private static final List<Color> BASIC_COLORS = new ArrayList<>(25);
 
    /** Maps the commonly used RGB colors to their descriptive names ("black", "white", etc.). All are opaque. */
-   private static final Map<Color, String> COLOR2NAME = new HashMap<Color, String>();
+   private static final Map<Color, String> COLOR2NAME = new HashMap<>();
    static
    {
       Color c;
@@ -348,7 +348,7 @@ public class RGBColorPicker extends SwatchButton implements ActionListener
          popupContent.alphaSpinner.setEnabled(invoker.enaAlpha);
          
          // create the modeless dialog container and insert pop-up panel into it
-         JDialog dlg = null;
+         JDialog dlg;
          Container owner = invoker.getTopLevelAncestor();
          if(owner instanceof Window) dlg = new JDialog((Window) owner, "", Dialog.ModalityType.MODELESS);
          else
@@ -424,7 +424,7 @@ public class RGBColorPicker extends SwatchButton implements ActionListener
          {
             if(swatchSelected != null)
             {
-               Color c = ((RGBSwatch)swatchSelected).getCurrentColor();
+               Color c = swatchSelected.getCurrentColor();
                popupContent.postMRUColor(c);
                invoker.setCurrentColor(c, true);
             }

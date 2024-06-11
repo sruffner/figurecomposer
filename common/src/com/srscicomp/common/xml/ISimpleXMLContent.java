@@ -35,7 +35,7 @@ public interface ISimpleXMLContent
 	 * Retrieve the unique remote identifier for the namespace from which all elements and attributes in this content 
 	 * model are drawn. An implementation intended to process XML content with a default namespace should return an 
 	 * empty string rather than <code>null</code>.
-	 * @return The namespace URI, eg, "http://www.hhmi.org/phyplot". It need not correspond to a retrievable resource.
+	 * @return The namespace URI. It need not correspond to a retrievable resource.
 	 */
 	String getNamespaceUri();
 
@@ -52,7 +52,7 @@ public interface ISimpleXMLContent
 	 * tag name. The object should be created in a valid default state, if possible.
 	 * @param tag The name of the element to be created (without namespace prefix).
 	 * @return A reference to the element created.
-	 * @throws <code>XMLException</code> if element tag is not recognized by the content model schema.
+	 * @throws XMLException if element tag is not recognized by the content model schema.
 	 * 
 	 */
 	ISimpleXMLElement createElement(String tag) throws XMLException;
@@ -74,14 +74,14 @@ public interface ISimpleXMLContent
 	 * @param root The new root element. Setting it to <code>null</code> will empty the content model.
 	 * @param validate If <code>true</code>, the new root element and all descendants are validated prior to installing 
 	 * it in the content model. Ignored if root is <code>null</code>.
-	 * @throws <code>XMLException</code> if the element cannot serve as a root element of the content model, or 
+	 * @throws XMLException if the element cannot serve as a root element of the content model, or
 	 * <code>validate</code> is set and the root element or any of its descendants is invalid.
 	 */
 	void setRootElement(ISimpleXMLElement root, boolean validate) throws XMLException;
 
 	/**
 	 * Validate the current content in its entirety. Note that an empty content model should be considered invalid. 
-	 * @throws <code>XMLException</code> if the content model is not valid.
+	 * @throws XMLException if the content model is not valid.
 	 */
 	void validate() throws XMLException;
 }

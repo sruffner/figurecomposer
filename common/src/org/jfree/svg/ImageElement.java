@@ -89,11 +89,7 @@ public final class ImageElement {
      */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ImageElement[");
-        sb.append(this.href).append(", ").append(this.image);
-        sb.append("]");
-        return sb.toString();
+        return "ImageElement[" + this.href + ", " + this.image + "]";
     }
  
 }

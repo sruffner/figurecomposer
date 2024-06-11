@@ -52,12 +52,12 @@ class TestPainter implements RenderableModel, RootRenderable, Focusable
    private final float HEIGHT = 7000;
    private final int NPTS = 4000;
 
-   private final List<Point2D> fourQuadPts = new ArrayList<Point2D>(4);
-   private final List<Point2D> polyPath = new ArrayList<Point2D>(NPTS);
-   private final List<Point2D> sinePath = new ArrayList<Point2D>(NPTS);
-   private final List<Point2D> lineSegments = new ArrayList<Point2D>(8);
-   private final List<Point2D> arcSegments = new ArrayList<Point2D>(8);
-   private final List<Point2D> rectangles = new ArrayList<Point2D>(5*4);
+   private final List<Point2D> fourQuadPts = new ArrayList<>(4);
+   private final List<Point2D> polyPath = new ArrayList<>(NPTS);
+   private final List<Point2D> sinePath = new ArrayList<>(NPTS);
+   private final List<Point2D> lineSegments = new ArrayList<>(8);
+   private final List<Point2D> arcSegments = new ArrayList<>(8);
+   private final List<Point2D> rectangles = new ArrayList<>(5 * 4);
 
    /**
     * Construct the test model.
@@ -114,7 +114,7 @@ class TestPainter implements RenderableModel, RootRenderable, Focusable
 
       // some rectangles with intervening ill-defined points -- for input to PolylinePainter
       double w = 0.1*WIDTH;
-      double h = 0; 
+      double h;
       double x0 = 0.1*WIDTH;
       double y0 = HEIGHT/2;
       for(int i=0; i<5; i++)
@@ -235,7 +235,7 @@ class TestPainter implements RenderableModel, RootRenderable, Focusable
       // stage 1: test MultiShapePainter
       if(stage == 1)
       {
-         List<MultiShapePainter.PaintedShape> shapes = new ArrayList<MultiShapePainter.PaintedShape>();
+         List<MultiShapePainter.PaintedShape> shapes = new ArrayList<>();
          for(int i=0; i<100; i++) shapes.add(new PaintedShapeImpl());
          
          painter = new MultiShapePainter(shapes);
@@ -290,8 +290,8 @@ class TestPainter implements RenderableModel, RootRenderable, Focusable
       // out the rounded linecap and linejoin properties, introduced as of v3.2.0.
       if(stage == 3)
       {
-         List<Point2D> tenPts = new ArrayList<Point2D>(10);
-         List<Float> angles = new ArrayList<Float>(10);
+         List<Point2D> tenPts = new ArrayList<>(10);
+         List<Float> angles = new ArrayList<>(10);
          double radius = Math.min(WIDTH, HEIGHT) * 0.5;
          for(int i=0; i<10; i++)
          {
@@ -496,26 +496,25 @@ class TestPainter implements RenderableModel, RootRenderable, Focusable
 
             double y = 0.9*HEIGHT;
             double dy = 0.1*HEIGHT;
-            for(int j=0; j<rots.length; j++)
-            {
-               line.setLine(x, y, x+dx, y);
-               g2d.draw(line);
-               line.setLine(x, y-0.5*HEIGHT, x, y+0.5*HEIGHT);
-               g2d.draw(line);
+             for (double rot : rots) {
+                 line.setLine(x, y, x + dx, y);
+                 g2d.draw(line);
+                 line.setLine(x, y - 0.5 * HEIGHT, x, y + 0.5 * HEIGHT);
+                 g2d.draw(line);
 
-               p.setLocation(x, y);
-               textPainter.setTextAndLocation(strings[i], p);
-               textPainter.setRotation(rots[j]);
-               if( !textPainter.render(g2d, progressHook) )
-                  return(false);
+                 p.setLocation(x, y);
+                 textPainter.setTextAndLocation(strings[i], p);
+                 textPainter.setRotation(rot);
+                 if (!textPainter.render(g2d, progressHook))
+                     return (false);
 
-               g2d.setColor(highlight);
-               textPainter.invalidateBounds();
-               g2d.fill( textPainter.getBounds2D(null) );
-               g2d.setColor(Color.RED);
+                 g2d.setColor(highlight);
+                 textPainter.invalidateBounds();
+                 g2d.fill(textPainter.getBounds2D(null));
+                 g2d.setColor(Color.RED);
 
-               y -= dy;
-            }
+                 y -= dy;
+             }
             x += dx;
          }
          
@@ -529,7 +528,7 @@ class TestPainter implements RenderableModel, RootRenderable, Focusable
          // radial gradient. Yet, when I create a similar kind of figure in FC, it's very fast. Don't know why.
          ShapePainter sp = (ShapePainter) painter;
          Point2D p = new Point2D.Double();
-         List<Point2D> onePt = new ArrayList<Point2D>();
+         List<Point2D> onePt = new ArrayList<>();
          onePt.add(p);
          sp.setLocationProducer(onePt);
 
@@ -675,7 +674,7 @@ class TestPainter implements RenderableModel, RootRenderable, Focusable
          strokeColor = COLORCHOICES[idx];
          
          len = 3;
-         idx = Utilities.rangeRestrict(0, len-1, (int) (Math.random() * len + 0.5));
+         len = Utilities.rangeRestrict(0, len-1, (int) (Math.random() * len + 0.5));
          float sw = (len==0) ? 5 : (len==1 ? 10 : 20);
          
          len = STROKEPATCHOICES.length;

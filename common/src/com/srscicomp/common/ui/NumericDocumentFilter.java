@@ -44,10 +44,10 @@ class NumericDocumentFilter extends DocumentFilter
    public NumericDocumentFilter(int maxLength, boolean allowNegative, boolean allowReal, int maxFracDig)
    {
       super();
-      this.maxLength = (maxLength<1) ? 1 : maxLength;
+      this.maxLength = Math.max(maxLength, 1);
       this.allowNegative = allowNegative;
       this.allowReal = allowReal;
-      this.maxFracDig = (allowReal) ? ((maxFracDig < 1) ? 1 : maxFracDig) : 0;
+      this.maxFracDig = (allowReal) ? (Math.max(maxFracDig, 1)) : 0;
    }
 
    @Override

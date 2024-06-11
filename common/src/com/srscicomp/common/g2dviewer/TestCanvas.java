@@ -29,14 +29,14 @@ class TestCanvas extends JFrame implements ActionListener
 {
    private static final long serialVersionUID = 1L;
 
-   private TestPainter model = null;
+   private final TestPainter model;
 
-   private Graph2DViewer viewer = null;
+   private final Graph2DViewer viewer;
 
-   private JButton testBtn = null;
+   private final JButton testBtn;
 
    /**
-    * @throws HeadlessException
+    * @throws HeadlessException if monitor, keyboard or mouse are not available.
     */
    public TestCanvas() throws HeadlessException
    {
@@ -83,8 +83,9 @@ class TestCanvas extends JFrame implements ActionListener
    }
 
   /**
-    * @param args
-    */
+   * Main entry point.
+   * @param args Command-line arguments (not used).
+   */
    public static void main(String[] args)
    {
       GUIUtilities.initLookAndFeel();

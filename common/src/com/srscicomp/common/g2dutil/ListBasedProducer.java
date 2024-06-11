@@ -27,8 +27,6 @@ public final class ListBasedProducer<T> implements Iterable<T>, Iterator<T>
       if(src != null && !src.isEmpty())
       {
          arSrc = src.toArray();
-         if(!arSrc.getClass().equals(Object[].class))
-            arSrc = Arrays.copyOf(arSrc, arSrc.length, Object[].class);
       }
    }
    
@@ -42,7 +40,7 @@ public final class ListBasedProducer<T> implements Iterable<T>, Iterator<T>
    
    public void remove() { throw new UnsupportedOperationException("Removal not supported by this iterator."); }
 
-   @Override public Iterator<T> iterator() { return(new ListBasedProducer<T>(arSrc)); }
+   @Override public Iterator<T> iterator() { return(new ListBasedProducer<>(arSrc)); }
 
    private ListBasedProducer(Object[] src) {  arSrc = Arrays.copyOf(src, src.length); }
    private Object[] arSrc = new Object[0];

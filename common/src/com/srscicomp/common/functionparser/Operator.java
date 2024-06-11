@@ -318,7 +318,7 @@ final class Operator extends Token
 	 * The set of operand and operator tokens supported by FunctionParser (other than numeric operands).  The 
 	 * negate, or unary minus operator is not listed here because it has the same string token ("-") as the subtract 
 	 * operator.  The parser determines which operator to use based on context.
-	 * 
+	 * <p>
 	 * IMPORTANT:  The string tokens for ATAN and ATAN2 only differ in that the ATAN2 token is one character longer.
 	 * The token matching algorithm stops as soon as it finds a match.  So ATAN2 in the function string will be 
 	 * mistaken for ATAN unless the ATAN2 operator is listed first here.  The same issue holds for the EXP and LOG 

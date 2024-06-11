@@ -73,7 +73,7 @@ public class StaxWrapper
     */
    private static XMLStreamReader createXMLStreamReader(Reader r) throws XMLException
    {
-      XMLStreamReader parser = null;
+      XMLStreamReader parser;
       try
       {
          XMLInputFactory factory = XMLInputFactory.newFactory();
@@ -156,7 +156,7 @@ public class StaxWrapper
    	// construct a file reader for the file containing XML data; catch and rewrap the "file not found" exception;
    	// be sure to close the file reader no matter what, or we'll leave the file open!
    	FileReader rdr = null;
-   	ISimpleXMLContent content = null;
+   	ISimpleXMLContent content;
    	try
    	{
    		rdr = new FileReader(xmlFile);
@@ -169,7 +169,7 @@ public class StaxWrapper
    	finally
    	{
    		try { if(rdr != null) rdr.close(); }
-   		catch(IOException ioe) {}
+   		catch(IOException ignored) {}
    	}
    
    	return(content);
@@ -199,7 +199,7 @@ public class StaxWrapper
    	staxParser = createXMLStreamReader(rdr);
    
    	// allocate a stack for holding element "objects" as we create them
-   	elementStack = new Stack<ISimpleXMLElement>();
+   	elementStack = new Stack<>();
    
    	// parsing loop. Note that we catch all parser exceptions here rather than in the individual helper methods 
    	// that process the START_TAG, END_TAG, and TEXT event types. Whether or not an exception occurs, we empty 
@@ -235,12 +235,7 @@ public class StaxWrapper
    	catch(XMLStreamException xse)
    	{
    		throw new XMLException(XMLException.PARSER_EXCP + ": " + xse.getMessage());
-   	}
-   	catch(IOException ioe)
-   	{
-   		throw new XMLException("IO exception: " + ioe.getMessage());
-   	}
-   	finally
+   	} finally
    	{
    		elementStack.clear();
    		elementStack = null;
@@ -260,10 +255,8 @@ public class StaxWrapper
     * @param contentModel The simplified XML content model to which new element is to be bound.
     * @throws XMLException if element's namespace does not match the content model's namespace, or the element is
     * invalid WRT the content model, or a general parsing error occurs.
-    * @throws 	IOException if there is a file I/O problem.
-    */
-   private void processStartElement(ISimpleXMLContent contentModel) throws XMLException, IOException
-   {
+	*/
+   private void processStartElement(ISimpleXMLContent contentModel) throws XMLException {
    	if(!(staxParser.getNamespaceURI().equals( contentModel.getNamespaceUri())))
    		throw new XMLException( XMLException.UNKNOWN_NS + "[" + staxParser.getNamespaceURI() + "]", 
    										staxParser.getLocalName(), null );
@@ -274,7 +267,7 @@ public class StaxWrapper
    	// construct an array of Strings containing any explicit attributes associated with the start tag in 
    	// (name,value) pairs: name1, value1, name2, value2, etc.  if there were no explicit attributes, the array 
    	// must be empty.
-   	ArrayList<String> attrList = new ArrayList<String>();
+   	ArrayList<String> attrList = new ArrayList<>();
    	int nAttr = staxParser.getAttributeCount();
    	if( nAttr < 0 ) nAttr = 0;
    	for( int i=0; i<nAttr; i++ )
@@ -290,7 +283,7 @@ public class StaxWrapper
    		contentModel.setRootElement(element, false);
    	else
    	{
-   		ISimpleXMLElement parent = (ISimpleXMLElement) elementStack.peek();
+   		ISimpleXMLElement parent = elementStack.peek();
    		parent.addElement( element );
    	}
    
@@ -308,16 +301,14 @@ public class StaxWrapper
     * 
     * @throws XMLException if the element is invalid WRT its content model, or an end tag is missing (this should
     * be detected by the parser however).
-    * @throws IOException if there is a file I/O problem.
-    */
-   private void processEndElement() throws XMLException, IOException
-   {
+	*/
+   private void processEndElement() throws XMLException {
    	// (just in case parser fails to detect a missing end tag)
    	if(elementStack.empty())
    		throw new XMLException( XMLException.NO_END_TAG, staxParser.getLocalName(), null );
    
    	// pop current element off the element stack and exit the modal state entered upon encountering its start tag
-   	ISimpleXMLElement element = (ISimpleXMLElement) elementStack.pop();
+   	ISimpleXMLElement element = elementStack.pop();
    	element.endTag( staxParser.getLocalName() );
    }
    
@@ -339,7 +330,7 @@ public class StaxWrapper
    	if(elementStack.empty()) throw new XMLException( "Missing root element tag?" );
    
    	// append text fragment to the current text content of the current element (at top of stack)
-   	ISimpleXMLElement element = (ISimpleXMLElement) elementStack.peek();
+   	ISimpleXMLElement element = elementStack.peek();
    	element.appendTextContent(staxParser.getText());
    }
    
@@ -360,7 +351,7 @@ public class StaxWrapper
       if(resolved == null) throw new XMLException("Unresolved character or entity reference in text content");
       
       // append text fragment to the current text content of the current element (at top of stack)
-      ISimpleXMLElement element = (ISimpleXMLElement) elementStack.peek();
+      ISimpleXMLElement element = elementStack.peek();
       element.appendTextContent(resolved);
    }
    
@@ -396,45 +387,45 @@ public class StaxWrapper
     */
    public void writeContent(Writer wrt, ISimpleXMLContent contentModel, boolean validate) throws XMLException
    {
-      if(contentModel == null) throw new IllegalArgumentException( "No content model specified");
-      if(contentModel.getRootElement() == null) throw new XMLException( "Empty content model cannot be written" );
-   
-   	// if requested, validate the entire content tree now
-   	if(validate) contentModel.validate();
-   
-   	// allocate stack for holding elements as we write them; push the content model's root element onto it
-      elementStack = new Stack<ISimpleXMLElement>();
-   	elementStack.push( contentModel.getRootElement() );
-      indentDepth = 0;
+		if(contentModel == null) throw new IllegalArgumentException( "No content model specified");
+		if(contentModel.getRootElement() == null) throw new XMLException( "Empty content model cannot be written" );
+
+		// if requested, validate the entire content tree now
+		if(validate) contentModel.validate();
+
+		// allocate stack for holding elements as we write them; push the content model's root element onto it
+		elementStack = new Stack<>();
+		elementStack.push( contentModel.getRootElement() );
+		indentDepth = 0;
       
-   	try
-   	{
-   	   // write the XML declaration on the first line
-         wrt.append("<?xml version=\"1.0\" encoding=\"us-ascii\" standalone=\"yes\"?>").append(NEWLINE);
-   
-   		// if the content model has a processing instruction, write it by itself on the second line.  Its format is 
-   		// trusted.
-   		String pi = contentModel.getProcessingInstruction();
-   		if( pi!=null && !pi.isEmpty())
-   		   wrt.append("<?" + pi + "?>").append(NEWLINE);
-   
-   		// write elements in our element stack until it is empty
-   		while(!elementStack.empty())
-   		{
-   			writeElement(wrt, contentModel);
-   		}
-   
-   		wrt.append(NEWLINE);
-   	}
-   	catch(IOException ioe)
-   	{
-   	   throw new XMLException(ioe.getMessage());
-   	}
-   	finally
-   	{
-   		elementStack.clear();
-   		elementStack = null;
-   	}
+		try
+		{
+		   // write the XML declaration on the first line
+			 wrt.append("<?xml version=\"1.0\" encoding=\"us-ascii\" standalone=\"yes\"?>").append(NEWLINE);
+
+			// if the content model has a processing instruction, write it by itself on the second line.  Its format is
+			// trusted.
+			String pi = contentModel.getProcessingInstruction();
+			if( pi!=null && !pi.isEmpty())
+			    wrt.append("<?").append(pi).append("?>").append(NEWLINE);
+
+			// write elements in our element stack until it is empty
+			while(!elementStack.empty())
+			{
+				writeElement(wrt, contentModel);
+			}
+
+			wrt.append(NEWLINE);
+		}
+		catch(IOException ioe)
+		{
+		   throw new XMLException(ioe.getMessage());
+		}
+		finally
+		{
+			elementStack.clear();
+			elementStack = null;
+		}
    }
    
    /**
@@ -452,10 +443,9 @@ public class StaxWrapper
    	// Otherwise, push it back onto the stack, followed by a NULL marker indicating that the next element on the 
    	// stack just needs to be closed, followed by the element's children in reverse order (so they'll be taken off 
    	// the stack in the correct order!). 
-   	Object o = elementStack.pop();
-   	if(o instanceof ISimpleXMLElement)
+   	ISimpleXMLElement el = elementStack.pop();
+   	if(el != null)
    	{
-   		ISimpleXMLElement el = (ISimpleXMLElement) o;
    		boolean isRoot = elementStack.isEmpty();
    		
    		// indent IAW the current depth
@@ -525,8 +515,8 @@ public class StaxWrapper
    		// when the object popped off the stack is not an ISimpleXMLElement, then it must be the NULL marker that 
    		// indicates we're done processing the child elements of the next element on the stack. We pop that element, 
    		// write out its text content (if any), and close its definition with endTag(). Indent to ensure text content
-   	   // starts at same depth as children of the element, and that end tag is at same depth as element's start tag.
-   		ISimpleXMLElement el = (ISimpleXMLElement) elementStack.pop();
+   	    // starts at same depth as children of the element, and that end tag is at same depth as element's start tag.
+   		el = elementStack.pop();
    		
    		if(el.allowsTextContent())
    		{
@@ -572,7 +562,7 @@ public class StaxWrapper
             if(c == '<') wrt.write("&lt;");
             else if(c == '&') wrt.write("&amp;");
             else if(c == '"') wrt.write("&quot;");
-            else wrt.append("&#x").append(Integer.toHexString((int) c)).append(";"); 
+            else wrt.append("&#x").append(Integer.toHexString(c)).append(";");
          }
          ++posSpecial;
       }
@@ -603,7 +593,7 @@ public class StaxWrapper
             pos = posSpecial + 1;
             if(c == '<') wrt.write("&lt;");
             else if(c == '&') wrt.write("&amp;");
-            else wrt.append("&#x").append(Integer.toHexString((int) c)).append(";"); 
+            else wrt.append("&#x").append(Integer.toHexString(c)).append(";");
          }
          ++posSpecial;
       }

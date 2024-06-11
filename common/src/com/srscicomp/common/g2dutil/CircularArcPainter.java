@@ -245,7 +245,7 @@ public class CircularArcPainter extends Painter
       adornPainter = new ShapePainter();
       pAdorn = new Point2D.Double();
 
-      List<Point2D> adornLoc = new ArrayList<Point2D>();
+      List<Point2D> adornLoc = new ArrayList<>();
       adornLoc.add(pAdorn);
       adornPainter.setLocationProducer(adornLoc);
       setAdornment(null, null, 0f, null, false, false, true, true);
@@ -303,8 +303,8 @@ public class CircularArcPainter extends Painter
       g2d.setStroke(style.getStroke(0));
       Arc2D arc = new Arc2D.Double();
       Iterator<Point2D> locIterator = locationProducer.iterator();
-      Point2D p0 = null;
-      Point2D p1 = null;
+      Point2D p0;
+      Point2D p1;
       while(locIterator.hasNext())
       {
          // get next pair of points (theta0,r) and (theta1,r) from location provider
@@ -425,8 +425,8 @@ public class CircularArcPainter extends Painter
       double yMin = Double.POSITIVE_INFINITY;
       double yMax = Double.NEGATIVE_INFINITY;
       Iterator<Point2D> locIterator = locationProducer.iterator();
-      Point2D p0 = null;
-      Point2D p1 = null;
+      Point2D p0;
+      Point2D p1;
       while(locIterator.hasNext())
       {
          // get next pair of points from location provider

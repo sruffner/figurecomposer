@@ -114,7 +114,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
     * This flag is set if the <code>RenderingCanvas</code> is configured to display a focus highlight and support 
     * mouse interactions. It is set at construction time and cannot be changed.
     */
-   private boolean isInteractive = false;
+   private final boolean isInteractive;
 
    /**
     * Construct an instance of the <code>RenderingCanvas</code>, with no <code>RootRenderable</code> installed. To 
@@ -215,7 +215,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
    //
    // CanvasListener maintenance
    //
-   private final List<CanvasListener> listeners =  new ArrayList<CanvasListener>();
+   private final List<CanvasListener> listeners = new ArrayList<>();
    
    /**
     * Add a <code>CanvasListener</code> to the canvas's listener list. All such listeners are notified of a variety of 
@@ -326,36 +326,33 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
          event = CanvasEvent.createRenderProgressEvent(tStamp, pct);
       final CanvasEventType eventType = type;
 
-      SwingUtilities.invokeLater( new Runnable() {
-         public void run()
+      SwingUtilities.invokeLater(() -> {
+         switch(eventType)
          {
-            switch(eventType)
-            {
-               case STARTED :
-                  for(CanvasListener l : listeners) 
-                     l.renderingStarted(event);
-                  break;
-               case INPROGRESS :
-                  for(CanvasListener l : listeners) 
-                     l.renderingInProgress(event);
-                  break;
-               case COMPLETED :
-                  for(CanvasListener l : listeners) 
-                     l.renderingCompleted(event);
-                  break;
-               case STOPPED :
-                  for(CanvasListener l : listeners) 
-                     l.renderingStopped(event);
-                  break;
-               case CURSORMOVED :
-                  for(CanvasListener l : listeners) 
-                     l.cursorMoved(event);
-                  break;
-               case VIEWPORTCHANGED :
-                  for(CanvasListener l : listeners) 
-                     l.viewportChanged(event);
-                  break;
-            }
+            case STARTED :
+               for(CanvasListener l : listeners)
+                  l.renderingStarted(event);
+               break;
+            case INPROGRESS :
+               for(CanvasListener l : listeners)
+                  l.renderingInProgress(event);
+               break;
+            case COMPLETED :
+               for(CanvasListener l : listeners)
+                  l.renderingCompleted(event);
+               break;
+            case STOPPED :
+               for(CanvasListener l : listeners)
+                  l.renderingStopped(event);
+               break;
+            case CURSORMOVED :
+               for(CanvasListener l : listeners)
+                  l.cursorMoved(event);
+               break;
+            case VIEWPORTCHANGED :
+               for(CanvasListener l : listeners)
+                  l.viewportChanged(event);
+               break;
          }
       });
    }
@@ -381,7 +378,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
       // get the inverse of the rendering transform, which transforms device to logical coords
       AffineTransform invAt = null;
       try { invAt = getRenderingTransform().createInverse(); }
-      catch( NoninvertibleTransformException ne ) {}
+      catch( NoninvertibleTransformException ignored) {}
       if(invAt == null) invAt = new AffineTransform();
       
       rViewLogical.setRect(0, 0, getWidth(), getHeight());
@@ -409,7 +406,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
       // use inverse of the rendering transform, which transforms device to logical coords
       ptRet.setLocation(x, y);
       try { getRenderingTransform().inverseTransform(ptRet, ptRet); }
-      catch( NoninvertibleTransformException ne ) {}
+      catch( NoninvertibleTransformException ignored) {}
 
       return(ptRet);
    }
@@ -637,7 +634,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
 
             double scaleX = canvasW/graphicW;
             double scaleY = canvasH/graphicH;
-            scale = (scaleX < scaleY) ? scaleX : scaleY;
+            scale = Math.min(scaleX, scaleY);
          }
          return(scale);
       }
@@ -1085,7 +1082,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
             zoomAndPanTo(e.getX(), e.getY(), btn1Clicked);
             return;
          }
-         else if(!(btn1Clicked || shiftDown))
+         else if(!btn1Clicked)
          {
             panToRecenterAt(e.getX(), e.getY());
             return;
@@ -1186,7 +1183,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
       focusDragImage = getGraphicsConfiguration().createCompatibleImage(w,h);
       if(focusDragImage != null)
       {
-         boolean ok = false;
+         boolean ok;
          Graphics2D g2d = focusDragImage.createGraphics();
          try
          {
@@ -1229,7 +1226,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
       BufferedImage bi = getGraphicsConfiguration().createCompatibleImage(w,h);
       if(bi != null)
       {
-         boolean ok = false;
+         boolean ok;
          Graphics2D g2d = bi.createGraphics();
          try
          {
@@ -1796,7 +1793,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
 
       // copy current backbuffer into canvas
       Graphics gCopy = g.create();
-      boolean abort = false;
+      boolean abort;
       try
       {
          abort = !renderer.paintFromOffscreen(gCopy);
@@ -2353,7 +2350,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
          {
             // NOTE: if thread that's waiting is interrupted, then this code is executed by a different thread and 
             // the lock object will throw an unchecked exception
-            try{ pendingJobLock.unlock(); } catch(Throwable t) {}
+            try{ pendingJobLock.unlock(); } catch(Throwable ignored) {}
          }
       }
 
@@ -2432,7 +2429,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
             {
                waitForNextRenderJob();
             }
-            catch( InterruptedException ie ) {}
+            catch( InterruptedException ignored) {}
             if( dieAsap )
                break;
             else if( !isRenderJobInProgress )   // we were interrupted while waiting, but NOT told to die!
@@ -2485,7 +2482,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
                // coordinates for the displayed graphic. Rendering transform should always be invertible!
                AffineTransform invXfm = null;
                try { invXfm = xfm.createInverse(); }
-               catch( NoninvertibleTransformException ne ) {}
+               catch( NoninvertibleTransformException ignored) {}
                if(invXfm == null) invXfm = new AffineTransform();
 
                // compute intersection of the bounds of the entire graphic with the buffer rect, in logical coords
@@ -2690,7 +2687,7 @@ final class RenderingCanvas extends JComponent implements MouseInputListener
        * A list of rectangles covering the regions of a graphic that must be redrawn during the current rendering pass.
        * If it is empty, then the entire graphic must be redrawn.
        */
-      private final List<Rectangle2D> dirtyRegions = new ArrayList<Rectangle2D>();
+      private final List<Rectangle2D> dirtyRegions = new ArrayList<>();
 
       public List<Rectangle2D> getDirtyRegions()
       {

@@ -13,14 +13,14 @@ import java.util.List;
  * <b>ContourGenerator</b> is a utility class that generates contour paths and filled contour bands for a rectangular
  * matrix of numerical data, Z = M(X,Y). This matrix represents a regular sampling of measured data or a function in X-Y
  * space.
- * 
- * <p>Contour iso-lines are found using the "marching squares" algorithm, which is more fully explained here: 
- * https://en.wikipedia.org/wiki/Marching_squares. We adopted some of the implementation strategies of 
- * http://udel.edu/~mm/code/marchingSquares, but did not structure the code for parallelization. To speed up the search 
- * for a new contour path segment, we used a hash map of the contour cells, only included non-trivial cells in the map, 
- * and removed a cell once the contour path(s) within it had been traversed. It took less than 200ms to generate 11 
- * contours for a 500x500 data grid.</p>
- * 
+ *
+ * <p>Contour iso-lines are found using the "marching squares" algorithm, which is more fully explained
+ * <a href="https://en.wikipedia.org/wiki/Marching_squares">here</a>. We adopted some of the implementation strategies
+ * from <a href="https://udel.edu/~mm/code/marchingSquares">here</a>, but did not structure the code for
+ * parallelization. To speed up the search for a new contour path segment, we used a hash map of the contour cells,
+ * only included non-trivial cells in the map, and removed a cell once the contour path(s) within it had been traversed.
+ * It took less than 200ms to generate 11 contours for a 500x500 data grid.</p>
+ *
  * <p>Finding the filled contour regions was a significantly more difficult task in general, especially when the data
  * grid contains any undefined or "NaN" data. We employ a common "trick" to handle both NaNs and the task of closing
  * contour bands at the edges of the grid. All NaNs are replaced by a value L = Z0 - 1000*(Z1-Z0), where [Z0..Z1] is the
@@ -28,7 +28,7 @@ import java.util.List;
  * original data grid. When contour iso-lines are computed under these conditions, all of them will be closed, and it is
  * a relatively simple task to construct the corresponding contour fill region and assign it to the appropriate fill
  * level.</p>
- * 
+ *
  * <p>To generate contours for a particular data matrix, create an instance of the contour generator and specify the
  * data and the desired contour levels by calling {@link #setData(IDataGrid, double[])}. Then call {@link
  * #generateContours(boolean, boolean)} to produce the contour paths. You can elect to generate the unfilled contour
@@ -36,7 +36,7 @@ import java.util.List;
  * regions are generated, you can also choose to include the NaN regions so that they may be filled with a unique color
  * to distinguish them from the normal contour fill regions, or you can specify that all such NaN regions remain
  * transparent -- leaving see-through "holes" in the contour plot when it is rendered.</p>
- * 
+ *
  * @author sruffner
  */
 public class ContourGenerator
@@ -72,7 +72,7 @@ public class ContourGenerator
    public double[] getContourLevels() 
    { 
       double[] out = new double[levels.size()];
-      for(int i=0; i<out.length; i++) out[i] = levels.get(i).doubleValue();
+      for(int i=0; i<out.length; i++) out[i] = levels.get(i);
       return(out);
    }
    
@@ -80,7 +80,7 @@ public class ContourGenerator
    private DGrid grid = new DGrid(null);
    
    /** The list of data levels for which contours are generated. */
-   private List<Double> levels = new ArrayList<Double>();
+   private List<Double> levels = new ArrayList<>();
    
    /**
     * Helper method prepares the list of data levels for which contours will be generated. Unless a list of contour
@@ -97,7 +97,7 @@ public class ContourGenerator
     */
    private void chooseLevels(double[] vals)
    {
-      levels = new ArrayList<Double>();
+      levels = new ArrayList<>();
       
       // first, a sanity check on the data grid. If grid is not at least 2x2 or does not contain varying Z data, there 
       // are no contours to generate.
@@ -184,7 +184,7 @@ public class ContourGenerator
       // construct list of stroked, but not filled, contours. Order is irrelevant. Don't include NaN contours, but check
       // to see if there are any unclosed NaN iso-lines, which must terminate on the grid border. 
       boolean hasNaNEdgeRegions = false;
-      List<Contour> stroked = new ArrayList<Contour>();
+      List<Contour> stroked = new ArrayList<>();
       for(IsoLine iso : isoLines)
       {
          if(!iso.isNaNBoundaryPath())
@@ -211,14 +211,14 @@ public class ContourGenerator
       isoLines.clear();
       isoLines = prepareContourCellIsoLines();
       
-      List<Contour> fills = new ArrayList<Contour>();
+      List<Contour> fills = new ArrayList<>();
       for(IsoLine iso : isoLines) fills.add(iso.asFilledContour());
       
       // for each filled contour region, find the other regions that contain it. 
-      List<List<Integer>> containers = new ArrayList<List<Integer>>();
+      List<List<Integer>> containers = new ArrayList<>();
       for(int i=0; i<fills.size(); i++)
       {
-         List<Integer> containedBy = new ArrayList<Integer>();
+         List<Integer> containedBy = new ArrayList<>();
          for(int j=0; j<fills.size(); j++) if(i != j && fills.get(j).contains(fills.get(i)))
             containedBy.add(j);
          containers.add(containedBy);
@@ -227,16 +227,16 @@ public class ContourGenerator
       // using the "container" lists, re-order the filled contour regions so that no region contains a region appearing 
       // BEFORE it in that list. First, we find the regions that have no regions containing them and list them first. 
       // Then remove those regions from the container lists and repeat until we're done.
-      List<Contour> out = new ArrayList<Contour>();
+      List<Contour> out = new ArrayList<>();
       while(out.size() < fills.size())
       {
          for(int i=0; i<fills.size(); i++) if(containers.get(i) != null && containers.get(i).isEmpty())
          {
             out.add(fills.get(i));
-            for(int j=0; j<containers.size(); j++) if(containers.get(j) != null)
-            {
-               containers.get(j).remove(Integer.valueOf(i));
-            }
+             for (List<Integer> container : containers)
+                 if (container != null) {
+                     container.remove(Integer.valueOf(i));
+                 }
             containers.set(i, null);
          }
       }
@@ -251,7 +251,7 @@ public class ContourGenerator
       // don't bother if NaN regions should be transparent.
       if(hasNaNEdgeRegions && !transparentNanRegions)
       {
-         List<Point2D> pts = new ArrayList<Point2D>();
+         List<Point2D> pts = new ArrayList<>();
          pts.add(new Point2D.Double(grid.getX0(), grid.getY0()));
          pts.add(new Point2D.Double(grid.getX1(), grid.getY0()));
          pts.add(new Point2D.Double(grid.getX1(), grid.getY1()));
@@ -264,7 +264,7 @@ public class ContourGenerator
       if(transparentNanRegions)
       {
          int i=0;
-         List<Contour> nanRegions = new ArrayList<Contour>();
+         List<Contour> nanRegions = new ArrayList<>();
          while(i < out.size())
          {
             if(!Utilities.isWellDefined(out.get(i).getLevel()))
@@ -313,12 +313,12 @@ public class ContourGenerator
     */
    private List<IsoLine> prepareContourCellIsoLines()
    {
-      List<IsoLine> isoLines = new ArrayList<IsoLine>();
+      List<IsoLine> isoLines = new ArrayList<>();
       if(levels.isEmpty()) return(isoLines);
       
       // map of contour grid cells, using cell row and column indices (R,C) to compute key: K = R*numCols + C. Only
       // non-trivial cells -- those that are traversed by at least one contour iso-line -- are included.
-      HashMap<Integer, Cell> contourCellMap = new HashMap<Integer, Cell>();
+      HashMap<Integer, Cell> contourCellMap = new HashMap<>();
       for(int r = 0; r < grid.getNumRows()-1; r++)
       {
          for(int c=0; c < grid.getNumCols()-1; c++)
@@ -355,7 +355,7 @@ public class ContourGenerator
             // construct the contour cell iso-line path
             Cell nanStart = null;
             Cell nanEnd = null;
-            List<Cell> cellPath = new ArrayList<Cell>();
+            List<Cell> cellPath = new ArrayList<>();
             
             int nRows = grid.getNumRows()-1;  // num rows in contour cell grid (one less than data grid)
             int nCols = grid.getNumCols()-1;  // num columns in contour cell grid (one less than data grid)
@@ -366,12 +366,11 @@ public class ContourGenerator
             Cell start = seed;
             int startRow = start.getRowIndex();
             int startCol = start.getColIndex();
-            Edge exit = null;
-            Edge enter = start.getEntranceEdgeForContour(level, exit); 
+            Edge exit;
+            Edge enter = start.getEntranceEdgeForContour(level, null);
             int row = startRow;
             int col = startCol;
-            boolean done = false;
-            while(!done)
+            while(true)
             {
                // based on entrance edge from current contour cell, find row-col location and exit edge for the next.
                switch(enter)
@@ -400,7 +399,7 @@ public class ContourGenerator
                // to starting cell, or fell into a NaN "hole" in contour grid.
                Integer key = row * nCols + col;
                Cell next = contourCellMap.get(key);
-               done = (row < 0) || (row>=nRows) || (col<0) || (col>=nCols) || (row==startRow && col==startCol);
+               boolean done = (row < 0) || (row>=nRows) || (col<0) || (col>=nCols) || (row==startRow && col==startCol);
                
                // path must "emerge from" an NaN boundary cell if the next cell does not exist in the contour cell map 
                // (an NaN boundary cell that has already been visited and removed from the map), or the next cell exists
@@ -444,8 +443,7 @@ public class ContourGenerator
             
             row = startRow;
             col = startCol;
-            done = false;
-            while(!done)
+            while(true)
             {
                // traverse to next cell in path
                switch(exit)
@@ -474,7 +472,7 @@ public class ContourGenerator
                // returned to starting cell, or fell into a NaN "hole" in contour grid.
                Integer key = row * nCols + col;
                Cell next = contourCellMap.get(key);
-               done = (row < 0) || (row>=nRows) || (col<0) || (col>=nCols);
+               boolean done = (row < 0) || (row>=nRows) || (col<0) || (col>=nCols);
                
                // IMPORTANT: if CCW traversal starts on a saddle cell at the grid edge, the path could return to that 
                // cell, but it cannot end there -- it must continue into the edge cell on either side of it.
@@ -540,8 +538,8 @@ public class ContourGenerator
       public List<Point2D> asPoints()
       {
          // to keep class immutable, we must perform a deep copy
-         List<Point2D> out = new ArrayList<Point2D>(pathPts.size());
-         for(int i=0; i<pathPts.size(); i++) out.add((Point2D) pathPts.get(i).clone());
+         List<Point2D> out = new ArrayList<>(pathPts.size());
+          for (Point2D pathPt : pathPts) out.add((Point2D) pathPt.clone());
          
          return(out);
       }
@@ -582,7 +580,7 @@ public class ContourGenerator
       
       private Contour(List<Point2D> pathPts, double level, boolean filled, boolean closed)
       {
-         this.pathPts = new ArrayList<Point2D>();
+         this.pathPts = new ArrayList<>();
          this.pathPts.addAll(pathPts);
          this.path = null;
          
@@ -606,7 +604,7 @@ public class ContourGenerator
       {
          if(!closed) return(false);
          
-         if(path == null) path = buildPathFromPoints(pathPts, closed);
+         if(path == null) path = buildPathFromPoints(pathPts, true);
          for(int i=0; i<c.pathPts.size(); i++)
          {
             if(!path.contains(c.pathPts.get(i))) return(false);
@@ -801,7 +799,7 @@ public class ContourGenerator
       {
          if(line == null) return(null);
          
-         double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+         double x1, x2, y1, y2;
          int i = (caseID != null) ? caseID[caseID.length-1] : -1;
          switch(i)
          {
@@ -873,7 +871,7 @@ public class ContourGenerator
          double bot = grid.getY0() + r * scaleY;
          double top = grid.getY0() + (r+1) * scaleY;
          
-         LineXY edgeLine = null;
+         LineXY edgeLine;
          Point2D pInt = null;
          double x, y;
          switch(e)
@@ -970,8 +968,7 @@ public class ContourGenerator
                
             // empty (0, 15), or invalid case index
             default :
-              edge = Edge.NONE;
-              break;
+                break;
          }
          
          return(edge);
@@ -997,8 +994,7 @@ public class ContourGenerator
             case 0 :
             case 15 :
             default :
-               edge = Edge.NONE;
-               break;
+                break;
             
            // saddle cell: entering from left or right and exiting top or bottom
             case 5 :
@@ -1361,7 +1357,7 @@ public class ContourGenerator
          // compute points list if we've have not done so yet
          if(ptsInPath == null)
          {
-            ptsInPath = new ArrayList<Point2D>();
+            ptsInPath = new ArrayList<>();
             
             Cell next = cellsInPath.get(0);
             Edge enter = startEdge;
@@ -1392,7 +1388,7 @@ public class ContourGenerator
             // ends on a NaN boundary.
             if(nanCellAtStart != null)
             {
-               Edge ref = null;
+               Edge ref;
                switch(startEdge)
                {
                case LEFT: ref = Edge.RIGHT; break;
@@ -1406,7 +1402,7 @@ public class ContourGenerator
             }
             if(nanCellAtEnd != null)
             {
-               Edge ref = null;
+               Edge ref;
                switch(exit)
                {
                case LEFT: ref = Edge.RIGHT; break;
@@ -1422,7 +1418,7 @@ public class ContourGenerator
 
          }
          
-         List<Point2D> out = new ArrayList<Point2D>();
+         List<Point2D> out = new ArrayList<>();
          if(!reverse) out.addAll(ptsInPath);
          else for(int i=ptsInPath.size()-1; i>=0; i--) out.add(ptsInPath.get(i));
          
@@ -1534,10 +1530,10 @@ public class ContourGenerator
       final double level;
       
       /** List of contour cells traversed by the iso-line, from first to last in a CCW traversal. */
-      List<Cell> cellsInPath = null;
+      final List<Cell> cellsInPath;
       
       /** The edge (of the first contour cell) on which the path starts). */
-      Edge startEdge = null;
+      final Edge startEdge;
       
       /** List of points tracing the iso-line in data grid coordinates, from first to last in a CCW traversal. */
       List<Point2D> ptsInPath = null;
@@ -1549,9 +1545,9 @@ public class ContourGenerator
       final boolean closed;
       
       /** The NaN boundary cell from which iso-line emerges, if applicable. Not included in the cell list. */
-      Cell nanCellAtStart = null;
+      final Cell nanCellAtStart;
       /** The NaN boundary cell on which iso-line terminates, if applicable. Not included in the cell list. */
-      Cell nanCellAtEnd = null;
+      final Cell nanCellAtEnd;
    }
    
    /**

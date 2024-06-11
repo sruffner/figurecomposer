@@ -217,7 +217,7 @@ public class MultiShapePainter extends Painter
     * Producer iterates over the list of shapes rendered by this painter. Each painted shape includes its own 
     * location, path primitive, associated stem line end point, and graphics styling. 
     */
-   private Iterable<PaintedShape> shapeProducer = null;
+   private Iterable<PaintedShape> shapeProducer;
    
    /**
     * Should the painted shape be filled or not? The shape must be a closed path, and it must have a non-null fill

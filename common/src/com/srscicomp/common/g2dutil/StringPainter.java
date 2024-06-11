@@ -108,7 +108,7 @@ public class StringPainter extends Painter
    /**
     * Producer of the strings rendered by this <code>StringPainter</code>. 
     */
-   private Iterable<String> stringProducer = null;
+   private Iterable<String> stringProducer;
 
    /**
     * Set the string producer used by this <code>StringPainter</code>. 
@@ -192,7 +192,7 @@ public class StringPainter extends Painter
       if(s == null || s.isEmpty()) stringProducer = null;
       else 
       {
-         List<String> stringList = new ArrayList<String>();
+         List<String> stringList = new ArrayList<>();
          stringList.add(s);
          stringProducer = stringList;
       }
@@ -200,7 +200,7 @@ public class StringPainter extends Painter
       if(p == null) setLocationProducer(null);
       else
       {
-         List<Point2D> ptList = new ArrayList<Point2D>();
+         List<Point2D> ptList = new ArrayList<>();
          ptList.add( new Point2D.Double(p.getX(), p.getY()) );
          setLocationProducer(ptList);
       }
@@ -221,7 +221,7 @@ public class StringPainter extends Painter
       if(s == null || s.isEmpty()) stringProducer = null;
       else 
       {
-         List<String> stringList = new ArrayList<String>();
+         List<String> stringList = new ArrayList<>();
          stringList.add(s);
          stringProducer = stringList;
       }
@@ -229,7 +229,7 @@ public class StringPainter extends Painter
       if(!(Utilities.isWellDefined(x) && Utilities.isWellDefined(y))) setLocationProducer(null);
       else
       {
-         List<Point2D> ptList = new ArrayList<Point2D>();
+         List<Point2D> ptList = new ArrayList<>();
          ptList.add( new Point2D.Double(x, y) );
          setLocationProducer(ptList);
       }
@@ -313,7 +313,7 @@ public class StringPainter extends Painter
             switch(hAlign)
             {
                case LEADING :    break;
-               case TRAILING :   hAdj += -textBounds.getWidth(); break;
+               case TRAILING :   hAdj -= textBounds.getWidth(); break;
                case CENTERED :   hAdj += -textBounds.getWidth()/2.0; break;
             }
             
@@ -322,13 +322,15 @@ public class StringPainter extends Painter
                // Under very specific conditions (no rotation, all string locations have the same Y coord, vertical 
                // alignment is top or middle), the same vertical adjustment is applied to  all strings to ensure they 
                // align on a common alphabetic baseline. Note: negative sign b/c we've flipped y-axis temporarily.
-               vAdj = -commonVAdj.doubleValue();
+               vAdj = -commonVAdj;
             }
             else switch(vAlign)
             {
-               case LEADING :    vAdj += -textBounds.getY() ; break;
+               case LEADING :
+                   vAdj -= textBounds.getY(); break;
                case TRAILING :   break;
-               case CENTERED :   vAdj += -(textBounds.getY() + textBounds.getHeight()/2.0); break;
+               case CENTERED :
+                   vAdj -= (textBounds.getY() + textBounds.getHeight() / 2.0); break;
             }
          }
 
@@ -418,16 +420,16 @@ public class StringPainter extends Painter
          switch(hAlign)
          {
             case LEADING :    break;
-            case TRAILING :   hAdj += -w; break;
+            case TRAILING :   hAdj -= w; break;
             case CENTERED :   hAdj += -w/2.0; break;
          }
          if(commonVAdj != null)
-            vAdj = commonVAdj.doubleValue();
+            vAdj = commonVAdj;
          else switch(vAlign)
          {
-            case LEADING :    vAdj += -(rText.getY() + h); break;
+            case LEADING :    vAdj -= (rText.getY() + h); break;
             case TRAILING :   break;
-            case CENTERED :   vAdj += -(rText.getY() +h/2.0); break;
+            case CENTERED :   vAdj -= (rText.getY() + h / 2.0); break;
          }
          txf.translate(hAdj, vAdj);
 
@@ -463,7 +465,7 @@ public class StringPainter extends Painter
       // 2 strings drawn, stop.
       Iterator<Point2D> locationIterator = locationProducer.iterator();
       Iterator<String> stringIterator = stringProducer.iterator();
-      StringBuffer sb = new StringBuffer();
+      StringBuilder sb = new StringBuilder();
       String lastString = null;
       double yCoord = Double.NaN;
       boolean ok = true;
@@ -510,9 +512,9 @@ public class StringPainter extends Painter
       double vAdj = 0;
       switch(vAlign)
       {
-         case LEADING :    vAdj += -(rText.getY() + h); break;
+         case LEADING :    vAdj -= (rText.getY() + h); break;
          case TRAILING :   break;
-         case CENTERED :   vAdj += -(rText.getY() +h/2.0); break;
+         case CENTERED :   vAdj -= (rText.getY() + h / 2.0); break;
       }      
 
       return(vAdj != 0 ? vAdj : null);

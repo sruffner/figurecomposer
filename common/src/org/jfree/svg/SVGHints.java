@@ -456,11 +456,10 @@ public final class SVGHints {
      * behaviour of {@link SVGHints#KEY_BEGIN_GROUP} and 
      * {@link SVGHints#KEY_END_GROUP}.
      * <br><br>
-     * The Orson Charts library can be found at
-     * http://www.object-refinery.com/orsoncharts/
-     * 
+     * The Orson Charts library can be found <a href="http://www.object-refinery.com/orsoncharts/">here</a>.
+     *
      * @return A boolean.
-     * 
+     *
      * @since 1.8
      */
     private static boolean isOrsonChartsOnClasspath() {

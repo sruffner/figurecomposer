@@ -132,8 +132,8 @@ public class RadialSectionPainter extends Painter
          colorIterator = colorProducer.iterator();
          if(!colorIterator.hasNext()) colorIterator = null;  // protect against an empty color producer!
       }
-      Point2D p0 = null;
-      Point2D p1 = null;
+      Point2D p0;
+      Point2D p1;
       while(locIterator.hasNext())
       {
          // get next pair of points (theta0,r0) and (theta1,r1) from location provider
@@ -184,7 +184,7 @@ public class RadialSectionPainter extends Painter
             section.append(arc, true);
             section.closePath();
          }
-         g2d.setColor(style.getFillColor());
+         g2d.setColor(fillC);
          g2d.fill(section);
          g2d.setColor(style.getStrokeColor());
          g2d.draw(section);
@@ -220,8 +220,8 @@ public class RadialSectionPainter extends Painter
       double yMin = Double.POSITIVE_INFINITY;
       double yMax = Double.NEGATIVE_INFINITY;
       Iterator<Point2D> locIterator = locationProducer.iterator();
-      Point2D p0 = null;
-      Point2D p1 = null;
+      Point2D p0;
+      Point2D p1;
       while(locIterator.hasNext())
       {
          // get next pair of points from location provider

@@ -89,7 +89,7 @@ public class SingleStringPainter extends Painter
       if(Utilities.isWellDefined(p))
       {
          location = (Point2D) p.clone();
-         ptList = new ArrayList<Point2D>();
+         ptList = new ArrayList<>();
          ptList.add(location);
       }
       super.setLocationProducer(ptList);
@@ -106,7 +106,7 @@ public class SingleStringPainter extends Painter
       location = new Point2D.Double(x,y);
       if(Utilities.isWellDefined(location))
       {
-         ptList = new ArrayList<Point2D>();
+         ptList = new ArrayList<>();
          ptList.add(location);
       }
       else location = null;
@@ -128,7 +128,7 @@ public class SingleStringPainter extends Painter
       List<Point2D> ptList = null;
       if(location != null)
       {
-         ptList = new ArrayList<Point2D>();
+         ptList = new ArrayList<>();
          ptList.add(location);
       }
       super.setLocationProducer(ptList);
@@ -148,7 +148,7 @@ public class SingleStringPainter extends Painter
       List<Point2D> ptList = null;
       if(location != null)
       {
-         ptList = new ArrayList<Point2D>();
+         ptList = new ArrayList<>();
          ptList.add(location);
       }
       super.setLocationProducer(ptList);
@@ -260,7 +260,7 @@ public class SingleStringPainter extends Painter
          if(Utilities.isWellDefined(first))
          {
             location = new Point2D.Double(first.getX(), first.getY());
-            ptList = new ArrayList<Point2D>();
+            ptList = new ArrayList<>();
             ptList.add(location);
          }
       }
@@ -314,14 +314,14 @@ public class SingleStringPainter extends Painter
             switch(hAlign)
             {
                case LEADING :    break;
-               case TRAILING :   hAdj += -textBounds.getWidth(); break;
+               case TRAILING :   hAdj -= textBounds.getWidth(); break;
                case CENTERED :   hAdj += -textBounds.getWidth()/2.0; break;
             }
             switch(vAlign)
             {
-               case LEADING :    vAdj += -textBounds.getY() ; break;
+               case LEADING :    vAdj -= textBounds.getY(); break;
                case TRAILING :   break;
-               case CENTERED :   vAdj += -(textBounds.getY() + textBounds.getHeight()/2.0); break;
+               case CENTERED :   vAdj -= (textBounds.getY() + textBounds.getHeight() / 2.0); break;
             }
          }
 
@@ -390,14 +390,14 @@ public class SingleStringPainter extends Painter
       switch(hAlign)
       {
          case LEADING :    break;
-         case TRAILING :   hAdj += -w; break;
+         case TRAILING :   hAdj -= w; break;
          case CENTERED :   hAdj += -w /2.0; break;
       }
       switch(vAlign)
       {
-         case LEADING :    vAdj += -(rText.getY() + h); break;
+         case LEADING :    vAdj -= (rText.getY() + h); break;
          case TRAILING :   break;
-         case CENTERED :   vAdj += -(rText.getY() + h /2.0); break;
+         case CENTERED :   vAdj -= (rText.getY() + h / 2.0); break;
       }
       txf.translate(hAdj, vAdj);
       return txf;

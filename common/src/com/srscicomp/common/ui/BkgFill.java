@@ -133,7 +133,7 @@ public class BkgFill
             argb = (int) (argb64);
             hasAlpha = (hex.length() == 8);
          }
-         catch(NumberFormatException nfe) {}
+         catch(NumberFormatException ignored) {}
       }
       return(new Color(argb, hasAlpha));
    }
@@ -163,7 +163,7 @@ public class BkgFill
             c = new Color(argb, (hex.length()==8));
             if(c.getAlpha() < 255 && !allowAlpha) c = null;
          }
-         catch(NumberFormatException nfe) {}
+         catch(NumberFormatException ignored) {}
       }
       return(c);
    }
@@ -177,7 +177,7 @@ public class BkgFill
    {
       if(rep == null) return(false);
       String[] tokens = rep.split(" ");
-      boolean ok = true;
+      boolean ok;
       if(tokens.length == 1)
       {
          ok = (BkgFill.colorFromHexStringStrict(tokens[0], true) != null);
@@ -191,7 +191,7 @@ public class BkgFill
             ok = (BkgFill.colorFromHexStringStrict(tokens[1], false) != null) &&
                   (BkgFill.colorFromHexStringStrict(tokens[2], false) != null);
          } 
-         catch(NumberFormatException nfe) {}
+         catch(NumberFormatException ignored) {}
       }
       else if(tokens.length == 4)
       {
@@ -203,7 +203,7 @@ public class BkgFill
             ok = (BkgFill.colorFromHexStringStrict(tokens[2], false) != null) &&
                   (BkgFill.colorFromHexStringStrict(tokens[3], false) != null);
          } 
-         catch(NumberFormatException nfe) {}
+         catch(NumberFormatException ignored) {}
       }
       else
          ok = false;
@@ -406,7 +406,7 @@ public class BkgFill
     */
    public Paint getPaintForFill(float w, float h)
    {
-      Paint p = null;
+      Paint p;
       if(fillType == Type.SOLID || w <= 0 || h <= 0)
          p = c1;
       else if(fillType == Type.AXIAL)
@@ -447,14 +447,13 @@ public class BkgFill
    public Paint getPaintForFill(float w, float h, float x0, float y0)
    {
       if(x0==0f && y0==0f) return(getPaintForFill(w,h));
-      Paint p = null;
+      Paint p;
       if(fillType == Type.SOLID || w <= 0 || h <= 0)
          p = c1;
       else if(fillType == Type.AXIAL)
       {
          Point2D[] pts = getAxialEndpoints(w, h);
-         for(int i=0; i<pts.length; i++) 
-            pts[i].setLocation(pts[i].getX() + x0, pts[i].getY() + y0);
+         for (Point2D pt : pts) pt.setLocation(pt.getX() + x0, pt.getY() + y0);
          p = new GradientPaint(pts[0], c1, pts[1], c2, false);
       }
       else // Type.RADIAL

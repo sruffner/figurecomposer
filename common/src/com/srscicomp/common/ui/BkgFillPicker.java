@@ -119,9 +119,8 @@ public class BkgFillPicker extends SwatchButton implements ActionListener
     */
    public void setCurrentFill(BkgFill bf, boolean notify)
    {
-      BkgFill curr = getCurrentFill();
-      if(curr.equals(bf)) return;
-      BkgFill oldFill = curr;
+      BkgFill oldFill = getCurrentFill();
+      if(oldFill.equals(bf)) return;
       setBkgFill( (bf != null) ? bf : BkgFill.createSolidFill(Color.BLACK));
       if(notify) firePropertyChange(BKGFILL_PROPERTY, oldFill, getCurrentFill());
    }
@@ -176,7 +175,7 @@ public class BkgFillPicker extends SwatchButton implements ActionListener
          editor.initialize(bfPicker.getCurrentFill());
 
          // create the modeless dialog container and insert pop-up panel into it
-         JDialog dlg = null;
+         JDialog dlg;
          Container owner = invoker.getTopLevelAncestor();
          if(owner instanceof Window) dlg = new JDialog((Window) owner, "", Dialog.ModalityType.MODELESS);
          else
@@ -280,20 +279,17 @@ public class BkgFillPicker extends SwatchButton implements ActionListener
             // focus window is not the pop-up container for this editor panel, then extinguish the panel and make no
             // change to the invoking BkgFillPicker button. NOTE that we have to queue this task on the dispatch thread 
             // to ensure the focus changes have been processed.
-            SwingUtilities.invokeLater(new Runnable() {
-               public void run()
-               {
-                  Window w = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow();
-                  if(w == null || w != PopupPanel.this.getTopLevelAncestor())
-                     extinguish(true);
-               }
+            SwingUtilities.invokeLater(() -> {
+               Window w = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow();
+               if(w == null || w != PopupPanel.this.getTopLevelAncestor())
+                  extinguish(true);
             });
          }
       }
 
       private void onEdit()
       {
-         BkgFill bf = null;
+         BkgFill bf;
          BkgFill.Type type = (BkgFill.Type) typeCombo.getSelectedItem();
          if(type == BkgFill.Type.SOLID)
             bf = BkgFill.createSolidFill(c1Picker.getCurrentColor());
@@ -368,7 +364,7 @@ public class BkgFillPicker extends SwatchButton implements ActionListener
          previewSwatch.addActionListener(this);
          add(previewSwatch);
          
-         typeCombo = new JComboBox<BkgFill.Type>(BkgFill.Type.values());
+         typeCombo = new JComboBox<>(BkgFill.Type.values());
          typeCombo.setToolTipText("Select the background fill type");
          typeCombo.addActionListener(this);
          add(typeCombo);
@@ -458,7 +454,7 @@ public class BkgFillPicker extends SwatchButton implements ActionListener
       }
       
       /** Preview of the currently defined background fill. */
-      private SwatchButton previewSwatch = null;
+      private final SwatchButton previewSwatch;
       /** Combo box selects the fill type for the background fill. */
       private JComboBox<BkgFill.Type> typeCombo = null;
       /** Color picker specifying the color for a solid fill, or the first color for a gradient fill. */

@@ -252,37 +252,38 @@ public class UnicodeSubset extends Character.Subset
     */
    public Iterator<Character> getCharIterator()
    {
-      return(new Iterator<Character>() {
+      return(new Iterator<>() {
 
-         
-         public boolean hasNext() { return(iCurrChar<nChars); }
 
-         public Character next()
-         {
-            if(iCurrChar >= nChars) throw new NoSuchElementException();
-            
-            int n = 0;
-            int rngIdx = 0;
-            while(rngIdx < charRanges.length())
-            {
-               char first = charRanges.charAt(rngIdx++);
-               char last = charRanges.charAt(rngIdx++);
-               int count = ((int) last) - ((int) first) + 1;
-               if(iCurrChar < n + count)
-               {
-                  first += (char) (iCurrChar - n);
-                  ++iCurrChar;
-                  return(first);
-               }
-               n += count;
-            }
-            throw new NoSuchElementException("index=" + iCurrChar);
-         }
+          public boolean hasNext() {
+              return (iCurrChar < nChars);
+          }
 
-         public void remove() { throw new UnsupportedOperationException("Immutable; remove() not suppored."); }
-         
-         private int iCurrChar = 0;
-         private final int nChars = getNumberOfChars();
+          public Character next() {
+              if (iCurrChar >= nChars) throw new NoSuchElementException();
+
+              int n = 0;
+              int rngIdx = 0;
+              while (rngIdx < charRanges.length()) {
+                  char first = charRanges.charAt(rngIdx++);
+                  char last = charRanges.charAt(rngIdx++);
+                  int count = ((int) last) - ((int) first) + 1;
+                  if (iCurrChar < n + count) {
+                      first += (char) (iCurrChar - n);
+                      ++iCurrChar;
+                      return (first);
+                  }
+                  n += count;
+              }
+              throw new NoSuchElementException("index=" + iCurrChar);
+          }
+
+          public void remove() {
+              throw new UnsupportedOperationException("Immutable; remove() not suppored.");
+          }
+
+          private int iCurrChar = 0;
+          private final int nChars = getNumberOfChars();
       });
    }
    
@@ -336,11 +337,10 @@ public class UnicodeSubset extends Character.Subset
 	public boolean containsAll( char[] characters )
 	{
 		if( characters == null ) return( true );
-		for( int i=0; i<characters.length; i++ ) 
-		{
-			if( !contains( characters[i] ) )
-				return( false );
-		}
+        for (char character : characters) {
+            if (!contains(character))
+                return (false);
+        }
 		return( true );
 	}
 
@@ -376,11 +376,10 @@ public class UnicodeSubset extends Character.Subset
 	public boolean containsAny( char[] characters )
 	{
 		if( characters == null ) return( false );
-		for( int i=0; i<characters.length; i++ ) 
-		{
-			if( contains( characters[i] ) )
-				return( true );
-		}
+        for (char character : characters) {
+            if (contains(character))
+                return (true);
+        }
 		return( false );
 	}
 

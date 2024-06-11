@@ -61,8 +61,7 @@ public class CanvasEvent
     */
    static CanvasEvent createRenderProgressEvent(long elapsedTimeMS, double pctComplete)
    {
-      CanvasEvent e = new CanvasEvent(pctComplete, elapsedTimeMS);
-      return( e );
+       return(new CanvasEvent(pctComplete, elapsedTimeMS));
    }
 
    /**
@@ -76,8 +75,7 @@ public class CanvasEvent
     */
    static CanvasEvent createViewportChangedEvent(Rectangle2D rLog)
    {
-      CanvasEvent e = new CanvasEvent(Double.NaN, Double.NaN, rLog);
-      return( e );
+       return(new CanvasEvent(Double.NaN, Double.NaN, rLog));
    }
 
    /**
@@ -92,8 +90,7 @@ public class CanvasEvent
     */
    static CanvasEvent createCursorEvent(double x, double y)
    {
-      CanvasEvent e = new CanvasEvent(x, y, null);
-      return( e );
+       return(new CanvasEvent(x, y, null));
    }
 
    /**

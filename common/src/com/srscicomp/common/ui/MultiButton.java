@@ -167,7 +167,7 @@ public class MultiButton<T> extends JButton implements ActionListener
          choicePopup.setVisible(false);
          
          int idx = -1;
-         try { idx = Integer.parseInt(e.getActionCommand()); } catch(NumberFormatException nfe) {}
+         try { idx = Integer.parseInt(e.getActionCommand()); } catch(NumberFormatException ignored) {}
          
          if(idx > -1 && idx < choiceValues.size() && idx != iSelected)
          {
@@ -255,12 +255,12 @@ public class MultiButton<T> extends JButton implements ActionListener
    private int iconHeight = 0;
    
    /** The choice list. */
-   private final List<T> choiceValues = new ArrayList<T>();
+   private final List<T> choiceValues = new ArrayList<>();
    /** The corresponding iconic buttons in the widget's pop-up menu. */
-   private final List<IconicButton> choiceBtns = new ArrayList<IconicButton>();
+   private final List<IconicButton> choiceBtns = new ArrayList<>();
    
    /** The button widget's pop-up menu. Clicking on the button raises the pop-up. */
-   private JPopupMenu choicePopup = null;
+   private final JPopupMenu choicePopup;
    
    /** The down-arrow decoration that appears to the right of the icon on the face of the button widget. */
    private static final GeneralPath downArrow = new GeneralPath();

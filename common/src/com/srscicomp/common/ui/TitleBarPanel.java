@@ -39,7 +39,7 @@ public class TitleBarPanel extends JPreferredSizePanel implements PropertyChange
    private Color unfocussedTextHiliteColor = Color.BLACK;
 
    /** Font style applied to title text when keyboard focus is not in parent, or focus highlighting is disabled. */
-   private int unfocussedTextStyle = Font.PLAIN;
+   private final int unfocussedTextStyle;
    
    /** Background highlight color when keyboard focus is in parent, IF focus highlighting is enabled. */
    private Color focussedBkgHiliteColor = FFocusPanel.FOCUSCOLOR;

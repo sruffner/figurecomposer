@@ -86,7 +86,7 @@ public abstract class Painter implements Renderable
    /**
     * The collection of graphic attributes that the Painter will apply to its graphic context when it paints itself. 
     */
-   protected PainterStyle style = null;
+   protected PainterStyle style;
 
    /**
     * Set the collection of graphic attributes that the <code>Painter</code> will apply to its graphic context when it 
@@ -102,7 +102,7 @@ public abstract class Painter implements Renderable
    /**
     * The location producer for this <code>Painter</code>.
     */
-   protected Iterable<Point2D> locationProducer = null;
+   protected Iterable<Point2D> locationProducer;
 
    /**
     * Set the location producer which provides an <code>Iterator<Point2D></code> over the defining locations at which 
@@ -158,7 +158,7 @@ public abstract class Painter implements Renderable
       this.progressHook = progressHook;
       updateFontRenderContext(g2d);
       Graphics2D g2dCopy = (Graphics2D) g2d.create();
-      boolean finished = false;
+      boolean finished;
       try 
       { 
          finished = paintInternal(g2dCopy) && !stopPainting(); 

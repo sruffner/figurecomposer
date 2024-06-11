@@ -25,7 +25,7 @@ public class MaxLengthDocumentFilter extends DocumentFilter
    public MaxLengthDocumentFilter(int len, String allowed)
    {
       super();
-      maxLength = (len<1) ? 1 : len;
+      maxLength = Math.max(len, 1);
       allowedChars = (allowed == null || allowed.isEmpty()) ? null : allowed;
    }
 
@@ -71,7 +71,7 @@ public class MaxLengthDocumentFilter extends DocumentFilter
    /** The maximum number of characters allowed by this document filter. */
    private final int maxLength;
    /** The set of characters passed by this document filter. If null, there are no character restrictions. */
-   private String allowedChars = null;
+   private final String allowedChars;
 
 
 }

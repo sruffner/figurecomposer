@@ -94,7 +94,7 @@ public interface ISimpleXMLElement
 	 * indicating a usage error.
 	 * @param tag The element's name tag (without namespace prefix).
 	 * @param attributes List of explicitly set attributes, in name-value pairs: name1, value1, name2, value2, etc.
-	 * @throws <code>XMLException</code> Tf element tag is incorrect, any attributes are unrecognized or illegal, any 
+	 * @throws XMLException Tf element tag is incorrect, any attributes are unrecognized or illegal, any
 	 * attribute in the list lacks an accompanying value, any required attributes are not included in the attribute 
 	 * list, or the method is invoked out of context.
 	 */
@@ -109,7 +109,7 @@ public interface ISimpleXMLElement
 	 * new text content to whatever content came before. Validation of the text content should be put off until after 
 	 * modal binding is complete.
 	 * @param text The element's text content
-	 * @throws <code>XMLException</code> if element does not admit text content, or the method is invoked out of context.
+	 * @throws XMLException if element does not admit text content, or the method is invoked out of context.
 	 * @see #startTag(String, List)
 	 */
 	void appendTextContent(String text) throws XMLException;
@@ -122,7 +122,7 @@ public interface ISimpleXMLElement
 	 * can do so in <code>endTag()</code>. However, it must read the child's tag or otherwise determine its identity to 
 	 * decide whether or not it belongs in this element!
 	 * @param child The simple XML element to be appended. 
-	 * @throws <code>XMLException</code> if adding the child would violate the expected structure of this element, or 
+	 * @throws XMLException if adding the child would violate the expected structure of this element, or
 	 * the method is invoked out of context.
 	 * @see #startTag(String, List)
 	 */
@@ -134,7 +134,7 @@ public interface ISimpleXMLElement
 	 * implementation might have to check for any required elements that are missing from the definition, or check the 
 	 * validity of any text content.
 	 * @param tag The element's name tag (without namespace prefix).
-	 * @throws <code>XMLException</code> if element tag is incorrect, element's internal definition is invalid in any 
+	 * @throws XMLException if element tag is incorrect, element's internal definition is invalid in any
 	 * way, or method is invoked out of context.
 	 * @see #startTag(String, List)
 	 */
@@ -145,7 +145,7 @@ public interface ISimpleXMLElement
 	 * of checking an XML element immediately after reading its end tag from an XML input stream, or prior to writing it 
 	 * to an output stream. The check can be deep (validate all descendants) or shallow (validate this element only).
 	 * @param deep If <code>true</code>, validate all descendants (if any) as well as this element itself.
-	 * @throws <code>XMLException</code> if element's internal definition is invalid in any way, or if method is invoked 
+	 * @throws XMLException if element's internal definition is invalid in any way, or if method is invoked
 	 * during the modal state between calls to <code>startTag()</code> and <code>endTag()</code>.
 	 */
 	void validate(boolean deep) throws XMLException;

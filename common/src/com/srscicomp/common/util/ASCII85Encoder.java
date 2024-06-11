@@ -1,26 +1,26 @@
 package com.srscicomp.common.util;
 
 /**
-* <code>ASCII85Encoder</code> is a utility class that transforms binary data (a sequence of bytes) into an 
-* ASCII85Encoder-encoded character sequence. It was developed to in order to encode binary image data in a Postscript file.
-* 
-* <p>ASCII85Encoder is a printable binary-to-text encoding that is more compact than base64 -- it is only 25% larger than the 
-* original binary sequence vs 33% for base64. (NOTE that it cannot be easily used in XML because it requires some 
-* characters that are reserved in XML and would thus have to be escaped.) When encoding, each group of 4 bytes is taken 
-* as a 32-bit binary number, most significant byte first (ASCII85Encoder uses a big-endian convention). This is converted, by 
-* repeatedly dividing by 85 and taking the remainder, into 5 radix-85 digits. These digits (again, most significant 
-* first) are then encoded as printable characters by adding 33 to them, giving the ASCII characters 33 ("!") to 117 
-* ("u"). One exception to this rule: if the 4 bytes are all zeros and are NOT at the end of the byte sequence, the zero 
-* group is encoded as a single 'z' rather than "!!!!!", which helps to compress data streams containing lots of zeros. 
-* If the byte stream length is not a multiple of 4, the extra N=[1..3] bytes at the end are padded with zeros, converted 
-* to a 5-digit radix-85 number in the usual way, and then only the most significant N+1 ASCII85Encoder characters are included 
-* in the output. Care must be taken when decoding such a truncated block, since truncation can have a rounding down 
-* effect. To correctly decode such a block, simply pad it with 'u' out to 5 characters and decode as usual.</p>
-* 
-* <p>CREDITS: The ASCII85Encoder coding is well-described at wikipedia.com. The implementation here was adapted from open 
-* source C code found here: http://www.stillhq.com/cgi-bin/cvsweb/ascii85.</p>
-* @author sruffner
-*/
+ * <code>ASCII85Encoder</code> is a utility class that transforms binary data (a sequence of bytes) into an
+ * ASCII85Encoder-encoded character sequence. It was developed to in order to encode binary image data in a Postscript file.
+ *
+ * <p>ASCII85Encoder is a printable binary-to-text encoding that is more compact than base64 -- it is only 25% larger than the
+ * original binary sequence vs 33% for base64. (NOTE that it cannot be easily used in XML because it requires some
+ * characters that are reserved in XML and would thus have to be escaped.) When encoding, each group of 4 bytes is taken
+ * as a 32-bit binary number, most significant byte first (ASCII85Encoder uses a big-endian convention). This is converted, by
+ * repeatedly dividing by 85 and taking the remainder, into 5 radix-85 digits. These digits (again, most significant
+ * first) are then encoded as printable characters by adding 33 to them, giving the ASCII characters 33 ("!") to 117
+ * ("u"). One exception to this rule: if the 4 bytes are all zeros and are NOT at the end of the byte sequence, the zero
+ * group is encoded as a single 'z' rather than "!!!!!", which helps to compress data streams containing lots of zeros.
+ * If the byte stream length is not a multiple of 4, the extra N=[1..3] bytes at the end are padded with zeros, converted
+ * to a 5-digit radix-85 number in the usual way, and then only the most significant N+1 ASCII85Encoder characters are included
+ * in the output. Care must be taken when decoding such a truncated block, since truncation can have a rounding down
+ * effect. To correctly decode such a block, simply pad it with 'u' out to 5 characters and decode as usual.</p>
+ *
+ * <p>CREDITS: The ASCII85Encoder coding is well-described at wikipedia.com. The implementation here was adapted from open
+ * source C code found <a href="http://www.stillhq.com/cgi-bin/cvsweb/ascii85">here</a>.</p>
+ * @author sruffner
+ */
 public class ASCII85Encoder 
 {
    /**
@@ -48,7 +48,7 @@ public class ASCII85Encoder
    }
    
    /** The buffer to which the encoded character sequence is appended. */
-   private StringBuffer buffer = null;
+   private final StringBuffer buffer;
    
    /** Accumulate the next 4 bytes in the binary sequence. The MSbyte is the first byte and the LSByte is the 4th. */
    private long tuple = 0;

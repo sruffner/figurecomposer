@@ -212,8 +212,6 @@ public class PolylinePainter extends Painter
       boolean gotValidLoc = false;              // we MUST move to the first valid location in list
       boolean nextOpIsMoveTo = true;
       int nValidLocs = 0;
-      Point2D pLast = null;
-      Point2D pLastMoveto = null;
       for(Point2D p : locationProducer)
       {
          if(Utilities.isWellDefined(p))
@@ -221,15 +219,12 @@ public class PolylinePainter extends Painter
             if((!gotValidLoc) || nextOpIsMoveTo)
             {
                polyline.moveTo((float)p.getX(), (float)p.getY());
-               pLastMoveto = p;
             }
             else
                polyline.lineTo((float)p.getX(), (float)p.getY());
             gotValidLoc = true;
             nextOpIsMoveTo = false;
             ++nValidLocs;
-
-            pLast = p;
          }
          else if(gotValidLoc)
          {
@@ -242,7 +237,6 @@ public class PolylinePainter extends Painter
                if(connect == ConnectPolicy.CLOSED)
                {
                   polyline.closePath();
-                  pLast = pLastMoveto;
                }
             }
          }
@@ -288,8 +282,8 @@ public class PolylinePainter extends Painter
             PathIterator pi = polyline.getPathIterator(null);
             float[] coords = new float[] {0, 0, 0, 0, 0, 0};
             GeneralPath chunk = new GeneralPath(polyline.getWindingRule(), STROKECHUNK);
-            pLast = null;
-            pLastMoveto = null;
+            Point2D pLast = null;
+            Point2D pLastMoveto = null;
             while( !pi.isDone() )
             {
                int i = 0;
@@ -309,7 +303,7 @@ public class PolylinePainter extends Painter
                   else assert(true);
 
                   // accumulate path length travelled so far
-                  if(type == PathIterator.SEG_CLOSE && pLastMoveto != null && pLast != null)
+                  if(type == PathIterator.SEG_CLOSE && pLastMoveto != null)
                      chunkPathLen += pLast.distance(pLastMoveto);
                   else if(pLast != null) 
                      chunkPathLen += pLast.distance(coords[0], coords[1]);
@@ -335,7 +329,7 @@ public class PolylinePainter extends Painter
 
                // start a new chunk that begins with a moveto the end of the previous chunk
                chunk.reset();
-               chunk.moveTo((float)pLast.getX(), (float)pLast.getY());
+               if(pLast != null) chunk.moveTo((float)pLast.getX(), (float)pLast.getY());
 
                // adjust stroke dash phase if stroke is not solid
                if(!isSolid)

@@ -750,7 +750,7 @@ public class Projector implements Cloneable
     */
    public List<Point2D> getXYBackplaneVertices()
    {
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       double zBack = getBackSideZ();
       pts.add(project(xMin, yMin, zBack, null));
       pts.add(project(xMax, yMin, zBack, null));
@@ -790,7 +790,7 @@ public class Projector implements Cloneable
     */
    public List<Point2D> getXZBackplaneVertices()
    {
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       double yBack = getBackSideY();
       pts.add(project(xMin, yBack, zMin, null));
       pts.add(project(xMax, yBack, zMin, null));
@@ -830,7 +830,7 @@ public class Projector implements Cloneable
     */
    public List<Point2D> getYZBackplaneVertices()
    {
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       double xBack = getBackSideX();
       pts.add(project(xBack, yMin, zMin, null));
       pts.add(project(xBack, yMax, zMin, null));
@@ -851,14 +851,13 @@ public class Projector implements Cloneable
     */
    public List<Point2D> getXGridLineVertices(double[] vals, boolean xyOnly)
    {
-      List<Point2D> pts = new ArrayList<Point2D>();
-      if(vals != null) for(int i=0; i<vals.length; i++)
-      {
-         if((!Utilities.isWellDefined(vals[i])) || vals[i] < xMin || vals[i] > xMax) continue;
-         if(!xyOnly) pts.add(project(vals[i], getBackSideY(), getFrontSideZ(), null));
-         pts.add(project(vals[i], getBackSideY(), getBackSideZ(), null));
-         pts.add(project(vals[i], getFrontSideY(), getBackSideZ(), null));
-         pts.add(null);
+      List<Point2D> pts = new ArrayList<>();
+      if(vals != null) for (double val : vals) {
+          if ((!Utilities.isWellDefined(val)) || val < xMin || val > xMax) continue;
+          if (!xyOnly) pts.add(project(val, getBackSideY(), getFrontSideZ(), null));
+          pts.add(project(val, getBackSideY(), getBackSideZ(), null));
+          pts.add(project(val, getFrontSideY(), getBackSideZ(), null));
+          pts.add(null);
       }
       return(pts);
    }
@@ -875,14 +874,13 @@ public class Projector implements Cloneable
     */
    public List<Point2D> getYGridLineVertices(double[] vals, boolean xyOnly)
    {
-      List<Point2D> pts = new ArrayList<Point2D>();
-      if(vals != null) for(int i=0; i<vals.length; i++)
-      {
-         if((!Utilities.isWellDefined(vals[i])) || vals[i] < yMin || vals[i] > yMax) continue;
-         if(!xyOnly) pts.add(project(getBackSideX(), vals[i], getFrontSideZ(), null));
-         pts.add(project(getBackSideX(), vals[i], getBackSideZ(), null));
-         pts.add(project(getFrontSideX(), vals[i], getBackSideZ(), null));
-         pts.add(null);
+      List<Point2D> pts = new ArrayList<>();
+      if(vals != null) for (double val : vals) {
+          if ((!Utilities.isWellDefined(val)) || val < yMin || val > yMax) continue;
+          if (!xyOnly) pts.add(project(getBackSideX(), val, getFrontSideZ(), null));
+          pts.add(project(getBackSideX(), val, getBackSideZ(), null));
+          pts.add(project(getFrontSideX(), val, getBackSideZ(), null));
+          pts.add(null);
       }
       return(pts);
    }
@@ -898,14 +896,13 @@ public class Projector implements Cloneable
     */
    public List<Point2D> getZGridLineVertices(double[] vals)
    {
-      List<Point2D> pts = new ArrayList<Point2D>();
-      if(vals != null) for(int i=0; i<vals.length; i++)
-      {
-         if((!Utilities.isWellDefined(vals[i])) || vals[i] < zMin || vals[i] > zMax) continue;
-         pts.add(project(getFrontSideX(), getBackSideY(), vals[i], null));
-         pts.add(project(getBackSideX(), getBackSideY(), vals[i], null));
-         pts.add(project(getBackSideX(), getFrontSideY(), vals[i], null));
-         pts.add(null);
+      List<Point2D> pts = new ArrayList<>();
+      if(vals != null) for (double val : vals) {
+          if ((!Utilities.isWellDefined(val)) || val < zMin || val > zMax) continue;
+          pts.add(project(getFrontSideX(), getBackSideY(), val, null));
+          pts.add(project(getBackSideX(), getBackSideY(), val, null));
+          pts.add(project(getBackSideX(), getFrontSideY(), val, null));
+          pts.add(null);
       }
       return(pts);
    }
@@ -936,7 +933,7 @@ public class Projector implements Cloneable
     */
    public List<Point2D> getBoxFrontPathVertices()
    {
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       pts.add((Point2D) boxCorners[Corner.YZFRONTXBACK.ordinal()].clone());
       pts.add((Point2D) boxCorners[Corner.XYZFRONT.ordinal()].clone());
       pts.add((Point2D) boxCorners[Corner.XYFRONTZBACK.ordinal()].clone());
@@ -1312,12 +1309,10 @@ public class Projector implements Cloneable
       p3.setLocation(x, y, z);
    }
 
-   @Override public Object clone()
+   @Override public Object clone() throws CloneNotSupportedException
    {
-      Projector copy = null;
-      try { copy = (Projector) super.clone(); } catch(CloneNotSupportedException cnse) {}
-
-       copy.boxCorners = new Point2D[8];
+      Projector copy = (Projector) super.clone();
+      copy.boxCorners = new Point2D[8];
       for(int i=0; i<8; i++) copy.boxCorners[i] = new Point2D.Double();
       copy.recalc();
       return(copy);

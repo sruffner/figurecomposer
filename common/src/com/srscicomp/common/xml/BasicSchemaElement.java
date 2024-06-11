@@ -28,22 +28,22 @@ public class BasicSchemaElement extends DefaultMutableTreeNode implements ISimpl
    private static final long serialVersionUID = 1L;
 
    /** The XML tag name for this element. */
-	private String tag = null;
+	private String tag;
 
 	/** Flag is set whenever the element is currently being bound to an XML fragment. */
  	private boolean isBinding = false;
 
 	/** The schema in which this element is valid; the schema is queried to validate this element's content. */
-	private ISchema ownerSchema = null;
+	private ISchema ownerSchema;
 
 	/** Schema information for this element, obtained from the owner schema. */
-	private SchemaElementInfo schemaInfo = null;
+	private SchemaElementInfo schemaInfo;
 
 	/**
 	 * The map of attributes EXPLICITLY defined for this element.  During binding, each attribute name-value pair is 
 	 * entered in the map, keying each value by its associated name.
 	 */
-	private final Map<String, String> attrMap = new HashMap<String, String>();
+	private final Map<String, String> attrMap = new HashMap<>();
 
 	/**
 	 * If this element admits text content, this buffer will contain it. At construction time, it is empty. If the 
@@ -103,7 +103,7 @@ public class BasicSchemaElement extends DefaultMutableTreeNode implements ISimpl
 	 * 
 	 * @param attr The attribute name.
 	 * @return The attribute value if it has been explicitly set, or <code>null</code> otherwise.
-	 * @throws <code>XMLException</code> if the element does not possess the named attribute in the owner schema.
+	 * @throws XMLException if the element does not possess the named attribute in the owner schema.
 	 */
 	public String getAttributeValueByName(String attr) throws XMLException
 	{
@@ -148,7 +148,7 @@ public class BasicSchemaElement extends DefaultMutableTreeNode implements ISimpl
 	public List<String> getAttributes()
 	{
 		Iterator i = attrMap.entrySet().iterator();
-		List<String> nameValuePairs = new ArrayList<String>();
+		List<String> nameValuePairs = new ArrayList<>();
 		while( i.hasNext() )
 		{
 			Map.Entry entry = (Map.Entry) i.next();
@@ -417,8 +417,8 @@ public class BasicSchemaElement extends DefaultMutableTreeNode implements ISimpl
 	      attrMap.clear();
 	      JSONObject jsonAttrs = jsonEl.getJSONObject("attrs");
 	      String[] keys = JSONObject.getNames(jsonAttrs);
-	      if(keys != null) for(int i=0; i<keys.length; i++) 
-	         setAttributeValueByName(keys[i], jsonAttrs.getString(keys[i]));
+	      if(keys != null)
+			  for (String key : keys) setAttributeValueByName(key, jsonAttrs.getString(key));
 	      
    	   if(allowsTextContent() && jsonEl.has("text"))
    	      setTextContent(jsonEl.getString("text"), false);

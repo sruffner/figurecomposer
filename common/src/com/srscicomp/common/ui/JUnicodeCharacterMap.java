@@ -1,5 +1,7 @@
 package com.srscicomp.common.ui;
 
+import com.srscicomp.common.util.Utilities;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -20,7 +22,6 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.font.TextAttribute;
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 import javax.swing.BorderFactory;
@@ -95,10 +96,10 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 	private int nColsFixed;
 
 	/** Custom table model for the character table; all objects in the model are delivered as MutableCharacters. */
-	private DisplayableCharSetModel characterModel = null;
+	private DisplayableCharSetModel characterModel;
 
 	/** The character table. We always set its display font to the font we wish to map. */
-	private JTable characterTable = null;
+	private final JTable characterTable;
 
 	/**
 	 * The last character selected by double-clicking on a cell in the character table.  Initially set to the null 
@@ -147,8 +148,8 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 	 */
 	public JUnicodeCharacterMap(Font f, UnicodeSubset[] charSets, int nRows, int nCols) 
 	{
-		this.nRowsMin = (nRows < 2) ? 2 : ((nRows > 20) ? 20 : nRows);
-		this.nColsFixed = (nCols < 5) ? 5 : ((nCols > 20) ? 20 : nCols);
+		this.nRowsMin = Utilities.rangeRestrict(2, 20, nRows);
+		this.nColsFixed = Utilities.rangeRestrict(5, 20, nCols);
 
 		// handle null or empty arguments
 		Font mappedFont = (f==null) ? getFont() : f;
@@ -193,9 +194,8 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
       
 		// create the combo box that contains the Unicode character subsets that may be selected for display in the 
 		// character table.  if the map displays only one char set, this combo box is disabled.
-		charSetCombo = new JComboBox<UnicodeSubset>();
-		for( int i=0; i<unicodeSets.length; i++ )
-			charSetCombo.addItem( unicodeSets[i] );
+		charSetCombo = new JComboBox<>();
+        for (UnicodeSubset unicodeSet : unicodeSets) charSetCombo.addItem(unicodeSet);
 		charSetCombo.setSelectedIndex( 0 );
 		charSetCombo.setEnabled( unicodeSets.length > 1 );
 		charSetCombo.addActionListener( this );
@@ -217,8 +217,8 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
     */
    public void setRowsAndColumns(int nRows, int nCols)
    {
-      this.nRowsMin = (nRows < 2) ? 2 : ((nRows > 20) ? 20 : nRows);
-      this.nColsFixed = (nCols < 5) ? 5 : ((nCols > 20) ? 20 : nCols);
+      this.nRowsMin = Utilities.rangeRestrict(2, 20, nRows);
+      this.nColsFixed = Utilities.rangeRestrict(5, 20, nCols);
 
       characterModel = new DisplayableCharSetModel(characterTable.getFont(), getSelectedCharSubset());
       characterTable.setModel(characterModel);
@@ -267,13 +267,7 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 		
 		// found it necessary to update the table on the event dispatch thread because otherwise the previous call to 
 		// setFont() also triggers a revalidation that fouls up the revalidation associated with updating the table...
-		Runnable runner = new Runnable()
-		{
-			public void run()
-			{
-				characterModel.updateDisplayableCharacters( mappedFont, getSelectedCharSubset() );
-			}
-		};
+		Runnable runner = () -> characterModel.updateDisplayableCharacters( mappedFont, getSelectedCharSubset() );
 		SwingUtilities.invokeLater( runner );
 	}
 
@@ -297,8 +291,7 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 	      
       charSetCombo.removeActionListener(this);
       charSetCombo.removeAllItems();
-      for(int i=0; i<unicodeSets.length; i++)
-         charSetCombo.addItem(unicodeSets[i]);
+	  for (UnicodeSubset unicodeSet : unicodeSets) charSetCombo.addItem(unicodeSet);
       charSetCombo.setSelectedIndex(0);
       charSetCombo.setEnabled(unicodeSets.length > 1);
       charSetCombo.addActionListener(this);
@@ -487,7 +480,7 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 				String tip = null;
 				if( mc != null )
 				{
-					String hex = Integer.toHexString( (int) mc.getCharValue() ).toUpperCase();
+					String hex = Integer.toHexString(mc.getCharValue()).toUpperCase();
 					tip = "\\U0000".substring(0, 6-hex.length()) + hex;
 				}
 				((JComponent)c).setToolTipText( tip );
@@ -622,7 +615,7 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 
 	/**
 	 * For test/debug only.
-	 * 
+	 * <p>
 	 * This program displays a JUnicodeCharacterMap in a frame window along with an additional combo box for selecting 
 	 * different fonts.... 
 	 * 
@@ -641,45 +634,38 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 										    UnicodeSubset.MATHOPS, UnicodeSubset.PS_SYMBOL },
 				5, 10 );
 		String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-		final JComboBox<String> fontChooser = new JComboBox<String>( fonts );
-		final JComboBox<String> styleChooser = new JComboBox<String>( 
-		      new String[] {"PLAIN", "BOLD", "ITALIC", "BOLDITALIC"} );
+		final JComboBox<String> fontChooser = new JComboBox<>(fonts);
+		final JComboBox<String> styleChooser = new JComboBox<>(
+                new String[]{"PLAIN", "BOLD", "ITALIC", "BOLDITALIC"});
 		final JLabel psFontNameLabel = new JLabel();
 		final JLabel famFontNameLabel = new JLabel();
 		final JLabel faceNameLabel = new JLabel();
 		final JLabel postureWtLabel = new JLabel();
 
-		final ActionListener action = new ActionListener() {
-			public void actionPerformed(ActionEvent e)
-			{
-				Font f = new Font( (String) fontChooser.getSelectedItem(), styleChooser.getSelectedIndex(), 8 );
-				mapper.setMappedFont( f );
-				psFontNameLabel.setText( f.getPSName() );
-				famFontNameLabel.setText( f.getFamily() );
-				faceNameLabel.setText( f.getFontName() );
-				Object attr = f.getAttributes().get( TextAttribute.POSTURE );
-				String s = (attr == null) ? "none" : ((Float)attr).toString();
-				attr = f.getAttributes().get( TextAttribute.WEIGHT );
-				s += "; " + ((attr == null) ? "none" : ((Float)attr).toString());
-				postureWtLabel.setText( s );
-			}
-		};
+		final ActionListener action = e -> {
+            Font f = new Font( (String) fontChooser.getSelectedItem(), styleChooser.getSelectedIndex(), 8 );
+            mapper.setMappedFont( f );
+            psFontNameLabel.setText( f.getPSName() );
+            famFontNameLabel.setText( f.getFamily() );
+            faceNameLabel.setText( f.getFontName() );
+            Object attr = f.getAttributes().get( TextAttribute.POSTURE );
+            String s = (attr == null) ? "none" : attr.toString();
+            attr = f.getAttributes().get( TextAttribute.WEIGHT );
+            s += "; " + ((attr == null) ? "none" : attr.toString());
+            postureWtLabel.setText( s );
+        };
 		fontChooser.addActionListener( action );
 		styleChooser.addActionListener( action );
 
-		final PropertyChangeListener charChanged = new PropertyChangeListener() {
-
-			public void propertyChange(PropertyChangeEvent e)
-			{
-				if( e.getSource() == mapper && e.getPropertyName().equals(JUnicodeCharacterMap.SELCHAR_PROPERTY) && 
-					 mapper.getSelectedCharacter() != 0 )
-				{
-					String hex = Integer.toHexString( (int) mapper.getSelectedCharacter() );
-					String tip = "+U0000".substring(0, 6-hex.length()) + hex;
-					System.out.println( "User selected char " + tip );
-				}
-			}
-		};
+		final PropertyChangeListener charChanged = e -> {
+            if( e.getSource() == mapper && e.getPropertyName().equals(JUnicodeCharacterMap.SELCHAR_PROPERTY) &&
+                 mapper.getSelectedCharacter() != 0 )
+            {
+                String hex = Integer.toHexString(mapper.getSelectedCharacter());
+                String tip = "+U0000".substring(0, 6-hex.length()) + hex;
+                System.out.println( "User selected char " + tip );
+            }
+        };
 		mapper.addPropertyChangeListener( SELCHAR_PROPERTY, charChanged );
 
 		Font f = new Font( fonts[0], Font.PLAIN, 8 );
@@ -689,9 +675,9 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 		famFontNameLabel.setText( f.getFamily() );
 		faceNameLabel.setText( f.getFontName() );
 		Object attr = f.getAttributes().get( TextAttribute.POSTURE );
-		String s = (attr == null) ? "none" : ((Float)attr).toString();
+		String s = (attr == null) ? "none" : attr.toString();
 		attr = f.getAttributes().get( TextAttribute.WEIGHT );
-		s += "; " + ((attr == null) ? "none" : ((Float)attr).toString());
+		s += "; " + ((attr == null) ? "none" : attr.toString());
 		postureWtLabel.setText( s );
 
 		JPanel panel = new JPreferredSizePanel();

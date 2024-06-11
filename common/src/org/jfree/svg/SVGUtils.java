@@ -151,8 +151,7 @@ public class SVGUtils {
                 if (writer != null) {
                     writer.close();
                 }
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+            } catch (IOException ignored) {
             }
         } 
     }
@@ -197,14 +196,13 @@ public class SVGUtils {
     }
 
     /**
-     * Returns a string representing the specified double value.  Internally
-     * this method is using the code from: https://github.com/ulfjack/ryu which
-     * is optimised for speed.
-     * 
+     * Returns a string representing the specified double value.  Internally this method is using the code from
+     * <a href="https://github.com/ulfjack/ryu">the Ryu project</a> which is optimised for speed.
+     *
      * @param d  the value.
-     * 
+     *
      * @return A string representation of the double.
-     * 
+     *
      * @since 5.0
      */
     public static String doubleToString(double d) {

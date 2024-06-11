@@ -52,7 +52,7 @@ class CGTestApp extends JFrame
    }
 
 
-    private Graph2DViewer viewer = null;
+    private final Graph2DViewer viewer;
 
    public CGTestApp() throws HeadlessException
    {
@@ -140,10 +140,10 @@ class CGTestApp extends JFrame
       private final static double WIDTH = 7500;
       private final static double HEIGHT = 7500;
       
-      private IDataGrid dataGrid = null;
-      private double scaleXToMI = 0;
-      private double scaleYToMI = 0;
-      private ContourGenerator contourGen = null;
+      private final IDataGrid dataGrid;
+      private final double scaleXToMI;
+      private final double scaleYToMI;
+      private final ContourGenerator contourGen;
       private List<ContourGenerator.Contour> contours = null;
       private GeneralPath gridPath = null;
 

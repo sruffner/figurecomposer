@@ -27,8 +27,8 @@ public class GaussRNG implements IRandomNG
 
    public double next()
    {
-      double value = 0;
-      if(gotNext)
+      double value;
+      if(!gotNext)
       {
          // get two uniform deviates v1,v2 such that (v1,v2) lies strictly inside unit circle, but not at the origin
          double v1, v2, rsq, fac;

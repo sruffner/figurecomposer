@@ -204,7 +204,7 @@ public class NumericTextField extends JTextField implements ActionListener, Focu
       if(!ok) throw new IllegalArgumentException("Invalid range specified");
       
       isInteger = false;
-      maxSigDig = (nSig < RANGE_SIGDIG[0]) ? RANGE_SIGDIG[0] : ((nSig > RANGE_SIGDIG[1]) ? RANGE_SIGDIG[1] : nSig);
+      maxSigDig = Utilities.rangeRestrict(RANGE_SIGDIG[0], RANGE_SIGDIG[1], nSig);
       maxFracDig = (nFrac >= RANGE_FRACDIG[0] && nFrac <= RANGE_FRACDIG[1]) ? nFrac : -1;
       
       minValue = Utilities.limitSigAndFracDigits(min, maxSigDig, maxFracDig);
@@ -307,7 +307,7 @@ public class NumericTextField extends JTextField implements ActionListener, Focu
       if(isInteger)
       {
          boolean corrected = false;
-         int iValue = 0;
+         int iValue;
          try
          {
             iValue = Integer.parseInt(s);
@@ -324,7 +324,7 @@ public class NumericTextField extends JTextField implements ActionListener, Focu
       }
       else
       {
-         double dValue = 0;
+         double dValue;
          try
          {
             dValue = Utilities.limitSigAndFracDigits(Double.parseDouble(s), maxSigDig, maxFracDig);

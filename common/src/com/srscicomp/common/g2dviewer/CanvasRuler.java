@@ -29,22 +29,22 @@ import com.srscicomp.common.util.Utilities;
  * In keeping with the RenderingCanvas's convention, coordinates increase rightward along the horizontal ruler and 
  * upward along the vertical ruler.  In addition, a translucent blue arrow serves to indicate the mouse cursor's 
  * position whenever it is inside the canvas viewport.
- * 
+ *
  * <p>To use a vertical CanvasRuler, lay it out in the container immediately to the left of the RenderingCanvas in 
  * such a way that it is ALWAYS the same height as the canvas (the width is fixed). Connect it to the canvas by 
  * registering it as a CanvasListener. An analogous discussion applies to a horizontal CanvasRuler.</p>
- * 
+ *
  * <p>
  * ------------------------------------------------------------------------------------------------------------------- 
  * CREDITS:  This class was adapted from the class Rule.java that was part of the ScrollDemo program in Sun 
- * Microsystem's Java Tutorial for JS2E 1.4.x.  There was no author line in that file, so I've listed below the link 
- * for the file on Sun's Java website:
- *   http://java.sun.com/docs/books/tutorial/uiswing/components/example-1dot4/Rule.java
+ * Microsystem's Java Tutorial for JS2E 1.4.x.  There was no author line in that file, so here's a
+ * <a href="http://java.sun.com/docs/books/tutorial/uiswing/components/example-1dot4/Rule.java">link</a>f or the file
+ * on Sun's Java website.
  * ------------------------------------------------------------------------------------------------------------------- 
  * </p>
- * 
- * @see		com.srscicomp.common.g2dviewer.RenderingCanvas
- * @author 	sruffner
+ *
+ * @see        RenderingCanvas
+ * @author sruffner
  */
 final class CanvasRuler extends JComponent implements CanvasListener
 {
@@ -106,7 +106,7 @@ final class CanvasRuler extends JComponent implements CanvasListener
 	/**
 	 * Flag determines ruler's orientation (horizontal or vertical).
 	 */
-	private boolean isHorizontal = true;
+	private final boolean isHorizontal;
 
 	/**
 	 * Construct a CanvasRuler in the specified orientation that reflects horizontal or vertical position in 
@@ -286,14 +286,12 @@ final class CanvasRuler extends JComponent implements CanvasListener
       // now decide what needs repainting, if anything, based on change in cursor rectangle's pos.
       int w = isHorizontal ? CURSORTHICKNESS : CURSORLEN;
       int h = isHorizontal ? CURSORLEN : CURSORTHICKNESS;
-      if((currentCursorUL.x < 0) && (oldX < 0))
-         return;
-      else if((currentCursorUL.x >= 0) && (oldX <0))
+      if(oldX < 0)
       {
-         // cursor has just entered the canvas viewport
-         repaint(currentCursorUL.x, currentCursorUL.y, w, h);
+          // repaint if cursor has just entered the canvas viewport
+          if(currentCursorUL.x >= 0) repaint(currentCursorUL.x, currentCursorUL.y, w, h);
       }
-      else if((currentCursorUL.x < 0) && (oldX >= 0))
+      else if(currentCursorUL.x < 0)
       {
          // cursor has just left the canvas viewport
          repaint(oldX, oldY, w, h);
@@ -391,8 +389,8 @@ final class CanvasRuler extends JComponent implements CanvasListener
       // nearby labelled tick marks, we expand the endpoints of the ruler section that's being repainted...
       double expand = ((isHorizontal) ? fm.stringWidth("000") : fm.getHeight())/2.0;
       if(expand < 1) expand = 1;
-      startDev -= expand;
-      endDev += expand;
+      startDev -= (int) expand;
+      endDev += (int) expand;
 
 		// draw the one-inch tick marks that are within the clip rectangle, along with associated tick labels.  If the 
 		// distance in pixels between consecutive tick marks is too small, then we increment the tick interval until the 

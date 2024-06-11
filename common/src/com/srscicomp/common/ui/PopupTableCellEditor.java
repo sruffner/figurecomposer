@@ -81,8 +81,8 @@ final public class PopupTableCellEditor<E> extends AbstractCellEditor
       popup.addMouseWheelListener(this);
       popup.addPopupMenuListener(this);
       
-      choiceList = new ArrayList<E>();
-      menuItems = new ArrayList<JCheckBoxMenuItem>();
+      choiceList = new ArrayList<>();
+      menuItems = new ArrayList<>();
       configure(choices, nVis, sIntv);
    }
 
@@ -177,9 +177,17 @@ final public class PopupTableCellEditor<E> extends AbstractCellEditor
          cellBtn.removeActionListener(this);
          
          // ensure that only the menu item corresponding to the current value is selected.
-         int idx = choiceList.indexOf(currValue);
+         int idx = -1;
+         for(int i=0; i<choiceList.size(); i++)
+         {
+            if(choiceList.get(i).equals(currValue))
+            {
+               idx = i;
+               break;
+            }
+         }
          for(int i=0; i<menuItems.size(); i++) menuItems.get(i).setSelected(i==idx);
-         
+
          // when the number of items exceeds the visible item count, we have to manage the sublist of menu items 
          // installed in the menu, with the up/down scroll buttons appearing at  the top/bottom of the menu. When 
          // raising the popup, we try to set the first visible item index so that the current selection is mid-range.
@@ -251,7 +259,7 @@ final public class PopupTableCellEditor<E> extends AbstractCellEditor
    {
       if(menuItems.size() > visItemCount)
       {
-         int delta = 0;
+         int delta;
          if(e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL)
          {
             delta = e.getUnitsToScroll();
@@ -321,7 +329,7 @@ final public class PopupTableCellEditor<E> extends AbstractCellEditor
    private List<E> choiceList = null;
    
    /** Button installed as the editor component in the client table; it fires the action event that raises the popup. */
-   private PTCEButton cellBtn = null;
+   private final PTCEButton cellBtn;
    /** Scroll-up button installed as the first item in the popup menu, when needed. */
    private PTCEButton upBtn = null;
    /** Scroll-down button installed as the first item in the popup menu, when needed. */
@@ -329,7 +337,7 @@ final public class PopupTableCellEditor<E> extends AbstractCellEditor
    /** Timer fires at regular intervals while either scroll button is depressed in the popup menu. */
    private Timer scrollTimer = null;
    /** The popup menu. */
-   private JPopupMenu popup = null;
+   private final JPopupMenu popup;
    /** 
     * List of all menu items in the popup, in the same order as the choice list. If the choice list exceeds the
     * editor's visible item count, only a contiguous subset of these items are installed in the popup. 
@@ -425,8 +433,8 @@ final public class PopupTableCellEditor<E> extends AbstractCellEditor
          finally { if(g2d != null) g2d.dispose(); }
       }
       
-      private GeneralPath arrow = null;
-      private boolean isCellBtn = false;
+      private final GeneralPath arrow;
+      private final boolean isCellBtn;
    }
 
    private final static Color azure = new Color(0, 128, 255);

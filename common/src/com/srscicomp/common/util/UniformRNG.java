@@ -65,7 +65,7 @@ public class UniformRNG implements IRandomNG
    }
 
    /** The shuffle table. */
-   private int[] shuffle = null;
+   private final int[] shuffle;
    
    /** The last integer taken from the shuffle table. */
    private int lastOut;

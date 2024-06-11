@@ -9,7 +9,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.FloatBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -26,13 +25,13 @@ import java.util.StringTokenizer;
 public class Utilities
 {
    /** Flag set if operating system platform is Macintosh OSX. */
-   private static boolean isMac = false;
+   private static final boolean isMac;
    /** Flag set if operating system platform is Windows. */
-   private static boolean isWindows = false;
+   private static final boolean isWindows;
    /** Flag set if operating system platform is Windows 2000. */
-   private static boolean isWin2000 = false;
+   private static final boolean isWin2000;
    /** Flag set if operating system platform is a flavor of Linux. */
-   private static boolean isLinux = false;
+   private static final boolean isLinux;
    
    static
    {
@@ -99,7 +98,7 @@ public class Utilities
       int version = 0;
       if(jv != null)
       {
-         String strMajor = "";
+         String strMajor;
          if(jv.startsWith("1."))
          {
             // Pre-JDK9 version string format: 1.M.m_nnn, where M is the major version number
@@ -114,7 +113,7 @@ public class Utilities
             strMajor = dot1 > -1 ? jv.substring(0,dot1) : jv;
          }
          
-         try { version = Integer.parseInt(strMajor); } catch(NumberFormatException nfe) {}
+         try { version = Integer.parseInt(strMajor); } catch(NumberFormatException ignored) {}
 
       }
 
@@ -149,8 +148,9 @@ public class Utilities
    /**
     * Utility method that copies a source file to a destination file, creating the destination file if it does not yet
     * exist or replacing its original content otherwise. The method uses Java NIO channels to perform the file copy.
-    * <p>CREDIT: Implementation adapted from https://gist.github.com/mrenouf/889747.</p>
-    * 
+    * <p>CREDIT: Implementation adapted from <a href="https://gist.github.com/mrenouf/889747">Java snippet by
+    * Mark Renouf</a>.</p>
+    *
     * @param src Source file.
     * @param dst Destination file. It must exist, or it must be possible to create a file at this location.
     * @return Null if successful, otherwise a description of the IO exception caught. Possible reasons for failure: 
@@ -168,8 +168,7 @@ public class Utilities
       try 
       {
          // if destination does not exist, create a new file
-         boolean dstExisted = dst.exists();
-         if(!dstExisted) dst.createNewFile();
+         boolean dstExisted = !dst.createNewFile();
 
          fIn = new FileInputStream(src);
          srcFC = fIn.getChannel();
@@ -191,11 +190,11 @@ public class Utilities
       catch(IOException ioe) { eMsg = "File copy failed: " + ioe.getMessage(); }
       finally 
       {
-        if(srcFC != null) try { srcFC.close(); } catch(IOException ioe) {}
-        else if(fIn != null) try { fIn.close(); } catch(IOException ioe) {}
+        if(srcFC != null) try { srcFC.close(); } catch(IOException ignored) {}
+        else if(fIn != null) try { fIn.close(); } catch(IOException ignored) {}
         
-        if(dstFC != null) try { dstFC.close(); } catch(IOException ioe) {}
-        else if(fOut != null) try { fOut.close(); } catch(IOException ioe) {}
+        if(dstFC != null) try { dstFC.close(); } catch(IOException ignored) {}
+        else if(fOut != null) try { fOut.close(); } catch(IOException ignored) {}
       }
       
       return(eMsg);
@@ -213,28 +212,22 @@ public class Utilities
 	 */
 	public static boolean dumpToFile(File dst, StringBuilder buf) 
 	{
-	   BufferedWriter out = null;
-	   boolean ok = false;
-	   try
-	   {
-	      FileOutputStream fos = new FileOutputStream(dst);
-	      fos.getChannel().truncate(0);
-	      if(buf.length() > 0)
-	      {
-	         out = new BufferedWriter(new OutputStreamWriter(fos, StandardCharsets.US_ASCII));
-	         out.write(buf.toString());
-	      }
-	      ok = true;
-	   }
-	   catch(UnsupportedEncodingException uee) { throw new NeverOccursException(uee); }
-	   catch(IOException ioe) {}
-	   finally
-	   {
-	      try { if(out != null) out.close(); } catch(IOException ioe) {}
-	   }
-	   
-	   return(ok);
-	}
+        // delete file if it exists
+        if(dst.isFile())
+            if(!dst.delete())
+                return(false);
+
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.US_ASCII)))
+        {
+            writer.write(buf.toString());
+            return(true);
+        }
+        catch(IOException ignored)
+        {
+            return(false);
+        }
+    }
 	
 	/**
 	 * Do the specified abstract pathnames refer to the same file system object? Method returns true iff neither
@@ -255,7 +248,7 @@ public class Utilities
 	public static boolean filesEqual(File f1, File f2)
 	{
 	   if(f1 == null || f2 == null) return(false);
-	   boolean same = false;
+	   boolean same;
 	   try
 	   {
 	      File f1c = f1.getCanonicalFile();
@@ -275,7 +268,6 @@ public class Utilities
 	 */
 	public static String limitLength(String s, int lim)
 	{
-	   if(lim <= 0 || s==null) return("");
 	   return((lim <= 0 || s==null) ? "" : ((s.length() <= lim) ? s : s.substring(0, lim)));
 	}
 	
@@ -365,9 +357,9 @@ public class Utilities
 	 */
 	public static double limitPrecision(double d, int prec)
 	{
-      if( Double.isInfinite(d) || Double.isNaN(d) || d == 0 ) return( d );                // special cases
+        if( Double.isInfinite(d) || Double.isNaN(d) || d == 0 ) return( d );                // special cases
 
-		int adjPrec = (prec<0) ? 0 : ((prec>10) ? 10 : prec);
+		int adjPrec = Utilities.rangeRestrict(0, 10, prec);
 		double absD = Math.abs(d);
 		if( absD < 1.0 )
 		{
@@ -390,7 +382,7 @@ public class Utilities
    public static double limitFracDigits(double d, int nFrac)
    {
       if(Double.isInfinite(d) || Double.isNaN(d) || d == 0) return(d);                // special cases
-      int adj = (nFrac<0) ? 0 : ((nFrac>10) ? 10 : nFrac);
+      int adj = Utilities.rangeRestrict(0, 10, nFrac);
       double scale = Math.pow(10, adj);
       return(Math.rint(d*scale)/scale);
    }
@@ -399,9 +391,10 @@ public class Utilities
     * Limit the number of significant digits in a double-valued number by rounding the value to the specified number of 
     * significant digits.
     * <p>(NOTE: The algorithm is not perfect due to limitations with the representation of double-precision floating
-    * point values. For example, with nSig=3 and value=1.255, the method returns 1.25 instead of 1.26. Based on:
-    * https://stackoverflow.com/questions/202302/rounding-to-an-arbitrary-number-of-significant-digits.)
-    * 
+    * point values. For example, with nSig=3 and value=1.255, the method returns 1.25 instead of 1.26. Based on an
+    * <a href="https://stackoverflow.com/questions/202302/rounding-to-an-arbitrary-number-of-significant-digits.">
+    * algorithm posted on StackOverflow</a>.
+    *
     * @param d The number to be rounded.
     * @param nSig The allowed number of significant digits. Allowed range is [1..16].
     * @return The same number rounded and limited to the specified number of significant digits. No action is taken if
@@ -411,7 +404,7 @@ public class Utilities
    {
       if(Double.isInfinite(d) || Double.isNaN(d) || d == 0) return(d);                // special cases
       
-      nSig = (nSig < 1) ? 1 : (nSig > 16 ? 16 : nSig);
+      nSig = Utilities.rangeRestrict(1, 16, nSig);
       
       final double exp = Math.ceil(Math.log10(d < 0 ? -d: d));
       final int power = nSig - (int) exp;
@@ -437,7 +430,7 @@ public class Utilities
    {
       if(Double.isInfinite(d) || Double.isNaN(d) || d == 0) return(d);                // special cases
 
-      nSig = (nSig < 1) ? 1 : (nSig > 16 ? 16 : nSig);
+      nSig = Utilities.rangeRestrict(1, 16, nSig);
       if(nFrac > 10) nFrac = 10;
       
       int maxFrac = nSig - ((int) Math.log10(d < 0 ? -d: d)) - 1;
@@ -503,7 +496,7 @@ public class Utilities
       if(num == 0) return("0");
       
       int exp = (int) Math.log10(Math.abs(num));
-      nSig = (nSig < 1) ? 1 : (nSig > 16 ? 16 : nSig);
+      nSig = Utilities.rangeRestrict(1, 16, nSig);
 
       // round to limit # of fractional digits if warranted, then round to limit # of significant digits. 
       if(nFrac >= 0 && nFrac <= 3 && (nSig - exp - 1) > nFrac) num = Utilities.limitFracDigits(num, nFrac);
@@ -548,7 +541,7 @@ public class Utilities
 	 */
 	public static String toString(int[] values)
 	{
-	   StringBuffer sb = new StringBuffer();
+	   StringBuilder sb = new StringBuilder();
 	   if(values != null && values.length > 0)
 	   {
 	      for(int i=0; i<values.length-1; i++) sb.append(values[i]).append(" ");
@@ -572,7 +565,7 @@ public class Utilities
 	 */
 	public static String toString(double[] values, int nSig, int nFrac)
 	{
-      StringBuffer sb = new StringBuffer();
+      StringBuilder sb = new StringBuilder();
       if(values != null && values.length > 0)
       {
          for(int i=0; i<values.length-1; i++) sb.append(toString(values[i], nSig, nFrac)).append(" ");
@@ -602,7 +595,7 @@ public class Utilities
    public static String toString(float[] values, int start, int n, int nSig, int nFrac)
    {
       if(values == null || values.length == 0 || start < 0 || start >= values.length) return("");
-      nSig = (nSig < 1) ? 1 : (nSig > 7 ? 7 : nSig);
+      nSig = Utilities.rangeRestrict(1, 7, nSig);
       
       StringBuilder sb = new StringBuilder();
       int last = Math.min(values.length, start+n) - 1;
@@ -643,7 +636,7 @@ public class Utilities
    public static String toString(FloatBuffer fBuf, int nSig, int nFrac)
    {
       if(fBuf == null || !fBuf.hasRemaining()) return("");
-      nSig = (nSig < 1) ? 1 : (nSig > 7 ? 7 : nSig);
+      nSig = Utilities.rangeRestrict(1, 7, nSig);
 
       StringBuilder sb = new StringBuilder();
       while(fBuf.hasRemaining())
@@ -873,10 +866,9 @@ public class Utilities
 	{
 		if( pts == null ) return( false );
 
-		for( int i=0; i<pts.length; i++ )
-		{
-			if( !isWellDefined( pts[i] ) ) return( false );
-		}
+        for (Point2D pt : pts) {
+            if (!isWellDefined(pt)) return (false);
+        }
 		return( true );
 	}
 
@@ -964,7 +956,7 @@ public class Utilities
     * @param src2 The second source rectangle.
     * @param dst This argument will contain the union of the two source rectangles. One of the source rectangles can
     * also be safely specified as the destination.
-    * @throw IllegalArgumentException if any argument is <code>null</code>.
+    * @throws IllegalArgumentException if any argument is <code>null</code>.
     */
    public static void rectUnion(Rectangle2D src1, Rectangle2D src2, Rectangle2D dst)
    {
@@ -996,6 +988,7 @@ public class Utilities
     * resulting clipped line segment: 1 is returned if only <code>p0</code> is changed, 2 if only <code>p1</code> is 
     * changed, and 3 if both endpoints must be changed. No other return values are possible.
     */
+   @SuppressWarnings("ConstantValue")
    public static int clipLine(Point2D p0, Point2D p1, Rectangle2D rClip)
    {
       // careful! Rectangle2D assumes left-handed coord system! (see below).
@@ -1092,7 +1085,7 @@ public class Utilities
    {
       if(polyline == null || polyline.isEmpty() || rClip == null || rClip.isEmpty()) return(null);
 
-      List<Point2D> insidePts = doClipPts ? new ArrayList<Point2D>() : null;
+      List<Point2D> insidePts = doClipPts ? new ArrayList<>() : null;
 
       // get first well-defined point along the polyline, removing any initial ill-defined points. If there are no 
       // well-defined points, we'll effectively empty the polyline point list!
@@ -1148,7 +1141,6 @@ public class Utilities
          }
 
          p0 = p1;
-         p1 = null;
       }
 
       // the endpoint of the polyline should now be in p0. We include it in the clipped polyline IF it is inside the 

@@ -83,8 +83,7 @@ import javax.swing.event.MouseInputListener;
  */
 public class TabStrip extends JComponent implements MouseInputListener, ChangeListener, ActionListener
 {
-   /** Minimum width in pixels (if the layout manager will respect it!). */
-   //private final static int MINWIDTH = 150;
+    //private final static int MINWIDTH = 150;
    /** Design height in pixels. */
    private final static int TABHEIGHT = 25;
    /** Size of rounded corner on tabs and in UL and UR corners of strip's border. */
@@ -155,7 +154,7 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
    public static int getDesignHeight() { return(TABHEIGHT + 1); }
    
    /** The underlying "data model" for the tab strip: #tabs, selected tab, tab labels, etc. */
-   private TabStripModel model = null;
+   private final TabStripModel model;
    
    /** The current selection color. */
    private Color selectColor = DEF_SELECTCOLOR;
@@ -202,10 +201,10 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
    }
 
    /** Current widths of all tabs -- recomputed whenever a resize occurs or the tab strip model changes. */
-   private final List<Integer> tabWidths = new ArrayList<Integer>();
+   private final List<Integer> tabWidths = new ArrayList<>();
    
    /** Current tab labels -- reconstructed whenever the tab strip model changes. */
-   private final List<String> tabLabels = new ArrayList<String>();
+   private final List<String> tabLabels = new ArrayList<>();
    
    /** Y-coordinate of common baseline for all visible tab labels. */
    private int yLabelBaseline = 0;
@@ -266,7 +265,7 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
          }
          if(yLabelBaseline <= 0 || yLabelBaseline >= TABHEIGHT) yLabelBaseline = TABHEIGHT-1;
       }
-      finally { if(g2d != null) g2d.dispose(); }
+      finally { g2d.dispose(); }
       
       // if there are no tabs, there's nothing further to do!
       if(nTabs == 0)
@@ -377,7 +376,7 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
          // reflect how the tabs would look if the dragged tab were dropped at the current drop location. To animate the
          // tab-drag gesture, a "hole" appears at the current drop location (including the tab's original location),
          // and a translucent version of the dragged tab follows the mouse cursor (but stays in the strip bounds).
-         List<Integer> visTabs = new ArrayList<Integer>();
+         List<Integer> visTabs = new ArrayList<>();
          for(int i=0; i<nVisTabs; i++) visTabs.add(iFirstVisTab + i);
          
          int iCurrDropLoc = isDraggingTab ? getVisibleTabUnder(dragCurrPt, true) : -1;
@@ -394,7 +393,7 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
          int xTranslation = 0;
          for(int i=0; i<visTabs.size(); i++)
          {
-            int tabIdx = visTabs.get(i).intValue();
+            int tabIdx = visTabs.get(i);
             int tabW = tabWidths.get(tabIdx);
             
             // skip over the selected tab for now. However, if it is the tab being dragged, we want to draw its left
@@ -456,12 +455,10 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
          {
             g2d.translate(-xTranslation, 0);
             xTranslation = 0;
-            for(int i=0; i<visTabs.size(); i++)
-            {
-               int tabIdx = visTabs.get(i).intValue();
-               if(tabIdx == iSelectedTab) break;
-               xTranslation += tabWidths.get(tabIdx);
-            }
+             for (Integer visTab : visTabs) {
+                 if (visTab == iSelectedTab) break;
+                 xTranslation += tabWidths.get(visTab);
+             }
             g2d.translate(xTranslation, 0);
             
             int lblW = tabWidths.get(iSelectedTab);
@@ -626,14 +623,12 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
    public void mouseClicked(MouseEvent e) 
    {
       Point p = e.getPoint();
-      if(p != null && (e.getButton() == MouseEvent.BUTTON1))
+      if(e.getButton() == MouseEvent.BUTTON1)
       {
          int i = getVisibleTabUnder(p, false);
          if(i < 0 && nVisTabs < model.getNumTabs() && isOnMoreIcon(p))
          {
-            SwingUtilities.invokeLater(new Runnable() {
-               public void run() {raiseHiddenTabsMenu();}
-            });
+            SwingUtilities.invokeLater(this::raiseHiddenTabsMenu);
          }
          else if(isOnTabClose(i, p))
             model.closeTab(i);
@@ -775,7 +770,9 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
             g2d.translate(-x, 0);
          }
       }
-      finally{ if(g2d != null) g2d.dispose(); }
+      finally{
+          g2d.dispose();
+      }
    }
    
    /**
@@ -914,7 +911,7 @@ public class TabStrip extends JComponent implements MouseInputListener, ChangeLi
       
       int which = -1;
       try { which = Integer.parseInt(e.getActionCommand()); }
-      catch(Throwable t) {}
+      catch(Throwable ignored) {}
       if(which >= 0)
          model.setSelectedTab(which);
    }

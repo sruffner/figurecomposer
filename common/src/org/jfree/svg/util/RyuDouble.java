@@ -32,7 +32,7 @@ public final class RyuDouble {
 
   // Only for debugging.
   private static final boolean DEBUG = false;
-  private static final BigInteger[] POW5 = new BigInteger[POS_TABLE_SIZE];
+  // private static final BigInteger[] POW5 = new BigInteger[POS_TABLE_SIZE];   not used
   private static final BigInteger[] POW5_INV = new BigInteger[NEG_TABLE_SIZE];
 
   private static final int POW5_BITCOUNT = 121; // max 3*31 = 124
@@ -46,26 +46,21 @@ public final class RyuDouble {
   static {
     BigInteger mask = BigInteger.valueOf(1).shiftLeft(POW5_QUARTER_BITCOUNT).subtract(BigInteger.ONE);
     BigInteger invMask = BigInteger.valueOf(1).shiftLeft(POW5_INV_QUARTER_BITCOUNT).subtract(BigInteger.ONE);
-    for (int i = 0; i < Math.max(POW5.length, POW5_INV.length); i++) {
+    for (int i = 0; i < POS_TABLE_SIZE; i++) {
       BigInteger pow = BigInteger.valueOf(5).pow(i);
       int pow5len = pow.bitLength();
       int expectedPow5Bits = pow5bits(i);
       if (expectedPow5Bits != pow5len) {
         throw new IllegalStateException(pow5len + " != " + expectedPow5Bits);
       }
-      if (i < POW5.length) {
-        POW5[i] = pow;
-      }
-      if (i < POW5_SPLIT.length) {
-        for (int j = 0; j < 4; j++) {
-          POW5_SPLIT[i][j] = pow
-              .shiftRight(pow5len - POW5_BITCOUNT + (3 - j) * POW5_QUARTER_BITCOUNT)
-              .and(mask)
-              .intValueExact();
-        }
-      }
 
-      if (i < POW5_INV_SPLIT.length) {
+        for (int j = 0; j < 4; j++) {
+            POW5_SPLIT[i][j] = pow
+                    .shiftRight(pow5len - POW5_BITCOUNT + (3 - j) * POW5_QUARTER_BITCOUNT)
+                    .and(mask)
+                    .intValueExact();
+        }
+
         // We want floor(log_2 5^q) here, which is pow5len - 1.
         int j = pow5len - 1 + POW5_INV_BITCOUNT;
         BigInteger inv = BigInteger.ONE.shiftLeft(j).divide(pow).add(BigInteger.ONE);
@@ -77,7 +72,6 @@ public final class RyuDouble {
             POW5_INV_SPLIT[i][k] = inv.shiftRight((3 - k) * POW5_INV_QUARTER_BITCOUNT).and(invMask).intValueExact();
           }
         }
-      }
     }
   }
 
@@ -122,7 +116,7 @@ public final class RyuDouble {
     boolean even = (m2 & 1) == 0;
     final long mv = 4 * m2;
     final long mp = 4 * m2 + 2;
-    final int mmShift = ((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent <= 1)) ? 1 : 0;
+    final int mmShift = ((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent == 1)) ? 1 : 0;
     final long mm = 4 * m2 - 1 - mmShift;
     e2 -= 2;
 

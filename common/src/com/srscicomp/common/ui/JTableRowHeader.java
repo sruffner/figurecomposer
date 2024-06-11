@@ -23,18 +23,19 @@ import javax.swing.table.TableModel;
  * stay in sync with that table, and it uses the main table model to determine the number of rows in the header and
  * the label for each row. To use it, it must be installed as the row header component in the scroll pane container for 
  * the main table.
- * 
+ *
  * <p>By default, the label for each row will simply reflect the row number in string form ("1", "2", and so on). If
  * you would like to customize the row labels, the main table model must implement the {@link RowHeaderTM} interface;
- * this interface augments {@link TableModel} with a method that supplies a header label for each row: {@link 
+ * this interface augments {@link TableModel} with a method that supplies a header label for each row: {@link
  * RowHeaderTM#getRowName(int)}.</p>
- * 
+ *
  * <p>The helper class {@link Renderer} implements a cell renderer for the row header table that attempts to mimic the
  * appearance of {@link JTableHeader}. If you want some additional control over the appearance, you can specify your
  * own renderer in the constructor.</p>
- * 
- * <p>CREDIT: Based on Rob Camick's RowNumberTable, https://tips4java.wordpress.com/2008/11/18/row-number-table.</p>
- *  
+ *
+ * <p>CREDIT: Based on <a href="https://tips4java.wordpress.com/2008/11/18/row-number-table">Rob Camick's
+ * RowNumberTable</a>.</p>
+ *
  * @author sruffner
  */
 public class JTableRowHeader extends JTable implements ChangeListener, PropertyChangeListener

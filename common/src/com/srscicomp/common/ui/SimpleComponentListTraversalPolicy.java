@@ -71,7 +71,7 @@ public class SimpleComponentListTraversalPolicy extends FocusTraversalPolicy
    @Override public Component getFirstComponent(Container con)
    {
       Component res = null;
-      if(con != null && theComponents.length > 0)
+      if(con != null)
       {
          for(Component c : theComponents) if(accept(con, c))
          { 

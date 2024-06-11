@@ -75,26 +75,22 @@ public class LocalFontEnvironment
 	{
 		// first, cache all installed fonts
 		Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
-		envFonts = new HashMap<String, List<String>>();
-		for( int i=0; i<fonts.length; i++ )
-		{
-			String family = fonts[i].getFamily();
-			// skip logical font families; we want real font names only
-			if( !(family.equalsIgnoreCase("dialog") || family.equalsIgnoreCase("dialoginput") || 
-				 family.equalsIgnoreCase("serif") || family.equalsIgnoreCase("sansserif") ||
-				 family.equalsIgnoreCase("monospaced")) )
-			{
-				List<String> variants = envFonts.get(family);
-				if( variants == null )
-				{
-					variants = new ArrayList<String>(2);
-					variants.add( fonts[i].getFontName() );
-					envFonts.put(family,variants);
-				}
-				else 
-					variants.add( fonts[i].getFontName() );
-			}
-		}
+		envFonts = new HashMap<>();
+        for (Font font : fonts) {
+            String family = font.getFamily();
+            // skip logical font families; we want real font names only
+            if (!(family.equalsIgnoreCase("dialog") || family.equalsIgnoreCase("dialoginput") ||
+                    family.equalsIgnoreCase("serif") || family.equalsIgnoreCase("sansserif") ||
+                    family.equalsIgnoreCase("monospaced"))) {
+                List<String> variants = envFonts.get(family);
+                if (variants == null) {
+                    variants = new ArrayList<>(2);
+                    variants.add(font.getFontName());
+                    envFonts.put(family, variants);
+                } else
+                    variants.add(font.getFontName());
+            }
+        }
 
 		// don't continue if there are no fonts on the system!
 		if(envFonts.isEmpty())
@@ -209,16 +205,15 @@ public class LocalFontEnvironment
    public static String[] getInstalledFontFamilies(UnicodeSubset charSet, boolean strict)
    {
       String[] allFamilies = getInstalledFontFamilies();
-      List<String> goodFamList = new ArrayList<String>(10);
-      for( int i=0; i<allFamilies.length; i++ )
-      {
-         Font f = new Font(getInstalledVariant(allFamilies[i],false,false), Font.PLAIN, 8);
-         if(charSet.isDisplayableIn(f, strict))
-            goodFamList.add( allFamilies[i] );
-      }
+      List<String> goodFamList = new ArrayList<>(10);
+       for (String allFamily : allFamilies) {
+           Font f = new Font(getInstalledVariant(allFamily, false, false), Font.PLAIN, 8);
+           if (charSet.isDisplayableIn(f, strict))
+               goodFamList.add(allFamily);
+       }
 
       String[] goodFamilies = new String[goodFamList.size()];
-      for(int i=0; i<goodFamList.size(); i++) goodFamilies[i] = (String) goodFamList.get(i);
+      for(int i=0; i<goodFamList.size(); i++) goodFamilies[i] = goodFamList.get(i);
       return(goodFamilies);
    }
 
@@ -239,7 +234,7 @@ public class LocalFontEnvironment
 		if(envFonts == null) initialize();
 		List<String> variants = envFonts.get(family);
 		if(variants == null) return(null);
-		if(variants.size() == 1) return((String) variants.get(0));
+		if(variants.size() == 1) return variants.get(0);
 
 		return(getStyleVariant(family, isBold, isItalic));
 	}
@@ -315,7 +310,7 @@ public class LocalFontEnvironment
 	@SuppressWarnings("rawtypes")
 	private static String getStyleVariant(String family, boolean isBold, boolean isItalic)
 	{
-		List variants = (List) envFonts.get(family);
+		List variants = envFonts.get(family);
 		if(variants == null) throw new IllegalStateException();
 		
 		// if the font family has a bold keyword, then we should ignore the bold style flag; similarly for italic flag
@@ -327,17 +322,16 @@ public class LocalFontEnvironment
 		String boldVariant = null;
 		String italicVariant = null;
 		String biVariant = null;
-		for( int i=0; i<variants.size(); i++ )
-		{
-			String fontName = (String) variants.get(i);
-			boolean bold = ignoreBold || hasKeyword( fontName.toLowerCase(), boldKeywords );
-			boolean ital = ignoreItalic || hasKeyword( fontName.toLowerCase(), italicKeywords );
+        for (Object variant : variants) {
+            String fontName = (String) variant;
+            boolean bold = ignoreBold || hasKeyword(fontName.toLowerCase(), boldKeywords);
+            boolean ital = ignoreItalic || hasKeyword(fontName.toLowerCase(), italicKeywords);
 
-			if( bold && ital && biVariant == null ) biVariant = fontName;
-			if( bold && !ital && boldVariant == null ) boldVariant = fontName;
-			if( !bold && ital && italicVariant == null ) italicVariant = fontName;
-			if( !bold && !ital && plainVariant == null ) plainVariant = fontName;
-		}
+            if (bold && ital && biVariant == null) biVariant = fontName;
+            if (bold && !ital && boldVariant == null) boldVariant = fontName;
+            if (!bold && ital && italicVariant == null) italicVariant = fontName;
+            if (!bold && !ital && plainVariant == null) plainVariant = fontName;
+        }
 
 		// return the variant which satisfies as many style constraints as possible.  if bold-italic variant is not 
 		// available, use italic one 
@@ -380,10 +374,9 @@ public class LocalFontEnvironment
 	 */
 	private static boolean hasKeyword(String fontName, String[] keywords)
 	{
-		for(int i=0; i<keywords.length; i++) 
-		{
-			if(fontName.indexOf(keywords[i]) >= 0) return(true);
-		}
+        for (String keyword : keywords) {
+            if (fontName.contains(keyword)) return (true);
+        }
 		return(false);
 	}
 
@@ -421,7 +414,7 @@ public class LocalFontEnvironment
 	public static int getBestMatchFontStyle(String family, int desiredStyle)
 	{
 		if(envFonts == null) initialize();
-		List variants = (List) envFonts.get(family);
+		List variants = envFonts.get(family);
 		if(variants == null) return(Font.PLAIN);
 
 		// if the font family has a bold keyword, then we should ignore the bold style flag; similarly for italic flag
@@ -433,17 +426,16 @@ public class LocalFontEnvironment
 		String boldVariant = null;
 		String italicVariant = null;
 		String biVariant = null;
-		for( int i=0; i<variants.size(); i++ )
-		{
-			String fontName = (String) variants.get(i);
-			boolean bold = ignoreBold || hasKeyword( fontName.toLowerCase(), boldKeywords );
-			boolean ital = ignoreItalic || hasKeyword( fontName.toLowerCase(), italicKeywords );
+        for (Object variant : variants) {
+            String fontName = (String) variant;
+            boolean bold = ignoreBold || hasKeyword(fontName.toLowerCase(), boldKeywords);
+            boolean ital = ignoreItalic || hasKeyword(fontName.toLowerCase(), italicKeywords);
 
-			if( bold && ital && biVariant == null ) biVariant = fontName;
-			if( bold && !ital && boldVariant == null ) boldVariant = fontName;
-			if( !bold && ital && italicVariant == null ) italicVariant = fontName;
-			if( !bold && !ital && plainVariant == null ) plainVariant = fontName;
-		}
+            if (bold && ital && biVariant == null) biVariant = fontName;
+            if (bold && !ital && boldVariant == null) boldVariant = fontName;
+            if (!bold && ital && italicVariant == null) italicVariant = fontName;
+            if (!bold && !ital && plainVariant == null) plainVariant = fontName;
+        }
 
 		// return the best style match available
 		int bestMatch = Font.PLAIN;
@@ -456,7 +448,6 @@ public class LocalFontEnvironment
 		else if( desiredStyle == Font.BOLD )
 		{
 			if( boldVariant != null ) bestMatch = Font.BOLD;
-			else if( plainVariant != null ) bestMatch = Font.PLAIN;
 			else if( biVariant != null ) bestMatch = Font.BOLD + Font.ITALIC;
 		}
 		else if( desiredStyle == Font.ITALIC )
@@ -483,14 +474,13 @@ public class LocalFontEnvironment
 		LocalFontEnvironment.initialize();
 		String[] installed = getInstalledFontFamilies();
 		System.out.println( "Installed font families:" );
-		for(int i=0; i<installed.length; i++)
-		{
-			System.out.println( "   " + installed[i] );
-			System.out.println( "      plain=" + getStyleVariant(installed[i], false, false) );
-			System.out.println( "      bold=" + getStyleVariant(installed[i], true, false) );
-			System.out.println( "      italic=" + getStyleVariant(installed[i], false, true) );
-			System.out.println( "      bolditalic=" + getStyleVariant(installed[i], true, true) );
-		}
+        for (String s : installed) {
+            System.out.println("   " + s);
+            System.out.println("      plain=" + getStyleVariant(s, false, false));
+            System.out.println("      bold=" + getStyleVariant(s, true, false));
+            System.out.println("      italic=" + getStyleVariant(s, false, true));
+            System.out.println("      bolditalic=" + getStyleVariant(s, true, true));
+        }
 		System.out.println( "Generic font mappings:" );
 		System.out.println( "   sans-serif=" + getSansSerifFont() );
 		System.out.println( "   serif=" + getSerifFont() );
@@ -498,7 +488,6 @@ public class LocalFontEnvironment
 
 		Object[] charSetNames = Charset.availableCharsets().keySet().toArray();
 		System.out.println( "Supported charsets:" );
-		for( int i=0; i<charSetNames.length; i++ )
-			System.out.println( charSetNames[i] );
+        for (Object charSetName : charSetNames) System.out.println(charSetName);
 	}
 }

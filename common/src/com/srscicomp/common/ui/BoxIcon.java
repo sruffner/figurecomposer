@@ -10,11 +10,12 @@ import javax.swing.Icon;
  * BoxIcon is custom icon that paints a square filled with a specified color.  The side of the square is restricted to 
  * the range [8..64] pixels.  The color can be changed programmatically.  If no color is specified, BoxIcon will take 
  * on the foreground color of its parent component.
- * 
- * <p>CREDITS:  This class was modelled after the example ArrowIcon in Sun's Java Tutorial at 
- * http://java.sun.com/docs/books/tutorial/uiswing/misc/example-1dot4/ArrowIcon.java.</p>
- * 
- * @author 	sruffner
+ *
+ * <p>CREDITS:  This class was modelled after the
+ * <a href="http://java.sun.com/docs/books/tutorial/uiswing/misc/example-1dot4/ArrowIcon.java">ArrowIcon in Sun's Java
+ * Tutorial</a>.</p>
+ *
+ * @author sruffner
  */
 public class BoxIcon implements Icon
 {

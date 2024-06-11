@@ -60,7 +60,7 @@ public interface IDataGrid
     * @param r The row index.
     * @param c The column index.
     * @return The Z value at (r,c).
-    * @throw IndexOutOfBoundsException if either index is invalid.
+    * @throws IndexOutOfBoundsException if either index is invalid.
     */
    double getZ(int r, int c);
 }

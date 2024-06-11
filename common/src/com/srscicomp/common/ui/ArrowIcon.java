@@ -13,13 +13,14 @@ import javax.swing.Icon;
  * arrow is constrained to lie within the bounds of a NxN-pixel square, where N is restricted to the range [8..64]. If 
  * no color is specified, the arrow is rendered in the parent component's current foreground color. Both the color and
  * direction of the arrow may be changed while in use.
- * 
+ *
  * <p>If a border color is specified via {@link #setOutlineColor(Color)}, the arrow icon is outlined in that color.</p>
- * 
- * <p>CREDITS:  This class was modelled after an example in Sun's Java Tutorial at 
- * http://java.sun.com/docs/books/tutorial/uiswing/misc/example-1dot4/ArrowIcon.java.</p>
- * 
- * @author 	sruffner
+ *
+ * <p>CREDITS:  This class was modelled after
+ * <a href="http://java.sun.com/docs/books/tutorial/uiswing/misc/example-1dot4/ArrowIcon.java">an example in Sun's Java
+ * Tutorial</a>.</p>
+ *
+ * @author sruffner
  */
 public class ArrowIcon implements Icon
 {

@@ -66,7 +66,7 @@ public final class FunctionParser {
 	/**
 	 * After parsing this contains the operands and operators that represent the function, in postfix order.
 	 */
-	private final List<Token> postFixFunction = new ArrayList<Token>(20);
+	private final List<Token> postFixFunction = new ArrayList<>(20);
 
 
 	/**
@@ -167,7 +167,7 @@ public final class FunctionParser {
 		if( Double.isNaN( x ) || !isValid() ) return( Double.NaN );
 
 		// operand stack holds intermediate results as we proceed through the function in postfix order
-		Stack<Double> operands = new Stack<Double>();
+		Stack<Double> operands = new Stack<>();
 
 		// evaluate function:  Operand values (NOT the operand tokens themselves) are pushed onto the operand stack in the 
 		// order encountered.  When an operator is encountered, the required number of operand values are popped from the 
@@ -176,32 +176,27 @@ public final class FunctionParser {
 		// result is NaN, then we stop processing immediately and return NaN.  Note that we do not modify the postfix list 
 		// representing the function -- so it can be reused over and over each time the method is invoked.
 		double[] args = new double[2];
-		for( int i=0; i<postFixFunction.size(); i++ )
-		{
-			Token t = (Token) postFixFunction.get(i);
-			if( Operand.isOperand(t) )
-			{
-				Operand arg = (Operand)t;
-				operands.push(arg.getValue(x));
-			}
-			else 
-			{
-				Operator op = (Operator)t;
-				int nArgs = op.getNumOperands();
-				if( operands.size() < nArgs )
-					throw new RuntimeException( "DEBUG:  Malformed function.  Not enough operands for " + op.getToken() );
-				for( int n=0; n<nArgs; n++ ) 
-					args[n] = ((Double) operands.pop()).doubleValue();
-				double result = op.evaluate( args, nArgs );
-				if( Double.isNaN(result) ) return( result );
-				operands.push(result);
-			}
-		}
+        for (Token t : postFixFunction) {
+            if (Operand.isOperand(t)) {
+                Operand arg = (Operand) t;
+                operands.push(arg.getValue(x));
+            } else {
+                Operator op = (Operator) t;
+                int nArgs = op.getNumOperands();
+                if (operands.size() < nArgs)
+                    throw new RuntimeException("DEBUG:  Malformed function.  Not enough operands for " + op.getToken());
+                for (int n = 0; n < nArgs; n++)
+                    args[n] = operands.pop();
+                double result = op.evaluate(args, nArgs);
+                if (Double.isNaN(result)) return (result);
+                operands.push(result);
+            }
+        }
 
 		if( operands.size() != 1 ) 
 			throw new RuntimeException( "DEBUG:  Malformed function.  Unexpected #operands left after computation" );
 
-		return( ((Double) operands.pop()).doubleValue() );
+		return(operands.pop());
 	}
 
 
@@ -224,70 +219,57 @@ public final class FunctionParser {
 		if( tokens == null ) return;
 
 		// phase 2:  put tokens into postfix order, eliminating all grouping operators (ie, parentheses and commas)
-		Stack<Token> opStack = new Stack<Token>();
-		for( int i=0; i<tokens.size(); i++ )
-		{
-			Token t = (Token) tokens.get(i);
-			if( Operand.isOperand(t) )
-			{
-				// all operands are added to the postfix list in the order encountered
-				postFixFunction.add( t );
-			}
-			else
-			{
-				// operators are either grouping operators or mathematical operators. 
-				Operator currOp = (Operator) t;
-				if( Operator.isLeftParenthesis(currOp) )
-				{
-					// a left parenthesis is pushed onto operator stack when encountered.  it is removed when matching 
-					// right parenthesis is processed. 
-					opStack.push( currOp );
-				}
-				else if( Operator.isRightParenthesis(currOp) || Operator.isComma(currOp) )
-				{
-					// the comma and right parenthesis are processed similarly.  we pop items off the operator stack and add 
-					// them to the postfix list until the first left parenthesis is found.  if we're processing a comma, the 
-					// left parenthesis is left on the stack -- else the later right parenthesis will not have a match!
-					// observe that none of the grouping operators is added to the postfix list.
-					boolean foundLeft = false;
-					while( !(foundLeft || opStack.isEmpty()) )
-					{
-						Token pop = (Token) opStack.pop();
-						if( Operator.isLeftParenthesis(pop) ) 
-						{
-							// if we're processing a comma, we need to push the left paren back on stack -- else the later 
-							// right paren will not have a match!
-							foundLeft = true;
-							if( Operator.isComma(currOp) )
-								opStack.push(pop);
-						}
-						else 
-							postFixFunction.add( pop );
-					}
-					if( !foundLeft ) 
-						throw new RuntimeException( "DEBUG: Encountered unmatched comma or right paren in parse()!" );
-				}
-				else
-				{
-					// for all non-grouping operators, we need to pop any operators with precedence greater than or equal 
-					// to the current operator, then push the current operator onto the operator stack.  stop as soon as 
-					// we encounter an operator with a lesser precedence
-					while( !opStack.isEmpty() )
-					{
-						Operator o = (Operator) opStack.peek();
-						if( o.getPrecedence() >= currOp.getPrecedence() )
-							postFixFunction.add( (Token) opStack.pop() );
-						else
-							break;
-					}
-					opStack.push( currOp );
-				}
-			}
-		}
+		Stack<Token> opStack = new Stack<>();
+        for (Object token : tokens) {
+            Token t = (Token) token;
+            if (Operand.isOperand(t)) {
+                // all operands are added to the postfix list in the order encountered
+                postFixFunction.add(t);
+            } else {
+                // operators are either grouping operators or mathematical operators.
+                Operator currOp = (Operator) t;
+                if (Operator.isLeftParenthesis(currOp)) {
+                    // a left parenthesis is pushed onto operator stack when encountered.  it is removed when matching
+                    // right parenthesis is processed.
+                    opStack.push(currOp);
+                } else if (Operator.isRightParenthesis(currOp) || Operator.isComma(currOp)) {
+                    // the comma and right parenthesis are processed similarly.  we pop items off the operator stack and add
+                    // them to the postfix list until the first left parenthesis is found.  if we're processing a comma, the
+                    // left parenthesis is left on the stack -- else the later right parenthesis will not have a match!
+                    // observe that none of the grouping operators is added to the postfix list.
+                    boolean foundLeft = false;
+                    while (!(foundLeft || opStack.isEmpty())) {
+                        Token pop = opStack.pop();
+                        if (Operator.isLeftParenthesis(pop)) {
+                            // if we're processing a comma, we need to push the left paren back on stack -- else the later
+                            // right paren will not have a match!
+                            foundLeft = true;
+                            if (Operator.isComma(currOp))
+                                opStack.push(pop);
+                        } else
+                            postFixFunction.add(pop);
+                    }
+                    if (!foundLeft)
+                        throw new RuntimeException("DEBUG: Encountered unmatched comma or right paren in parse()!");
+                } else {
+                    // for all non-grouping operators, we need to pop any operators with precedence greater than or equal
+                    // to the current operator, then push the current operator onto the operator stack.  stop as soon as
+                    // we encounter an operator with a lesser precedence
+                    while (!opStack.isEmpty()) {
+                        Operator o = (Operator) opStack.peek();
+                        if (o.getPrecedence() >= currOp.getPrecedence())
+                            postFixFunction.add(opStack.pop());
+                        else
+                            break;
+                    }
+                    opStack.push(currOp);
+                }
+            }
+        }
 
 		// if there are any operators left on the stack, add them to the postfix list 
 		while( !opStack.isEmpty() )
-			postFixFunction.add( (Token) opStack.pop() );
+			postFixFunction.add(opStack.pop());
 	}
 
 	/**
@@ -319,7 +301,7 @@ public final class FunctionParser {
 		}
 
 		// the list of tokens found
-		List<Token> tokens = new ArrayList<Token>(20);
+		List<Token> tokens = new ArrayList<>(20);
 
 		int len = functionDefinition.length();
 		int iPos = 0;
@@ -341,7 +323,7 @@ public final class FunctionParser {
 				// if first character of next token is a decimal point or digit, then consume token as a number operand. 
 				// the number can contain at most one decimal point.  scientific format "1.0e+3" is NOT supported.
 				boolean gotDecimalPt = (firstChar == '.');
-				String strNum = "" + firstChar;
+				StringBuilder strNum = new StringBuilder("" + firstChar);
 				while( ++iPos < len )
 				{
 					char c = functionDefinition.charAt(iPos);
@@ -357,12 +339,12 @@ public final class FunctionParser {
 						}
 						gotDecimalPt = true;
 					}
-					strNum += c;
+					strNum.append(c);
 				}
 
 				// parse the number token.  this could fail if the token is merely a decimal point!
-				double d = 0;
-				try { d = Double.parseDouble(strNum); } 
+				double d;
+				try { d = Double.parseDouble(strNum.toString()); }
 				catch( NumberFormatException nfe )
 				{
 					parseErrorPos = iTokenStart;
@@ -399,7 +381,7 @@ public final class FunctionParser {
 			}
 
 			// validate the token based on the identity of the previous token.
-			Token prevToken = (Token) (tokens.isEmpty() ? null : tokens.get( tokens.size()-1 ));
+			Token prevToken = tokens.isEmpty() ? null : tokens.get( tokens.size()-1 );
 			boolean valid = false;
 			if( Operand.isOperand(nextToken) || Operator.isFunction(nextToken) )
 			{
@@ -466,7 +448,7 @@ public final class FunctionParser {
 		}
 		else
 		{
-			Token lastToken = (Token) tokens.get( tokens.size()-1 );
+			Token lastToken = tokens.get( tokens.size()-1 );
 			if( !(Operand.isOperand(lastToken) || Operator.isRightParenthesis(lastToken)) )
 			{
 				parseErrorPos = functionDefinition.length() - 1;

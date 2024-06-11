@@ -165,11 +165,9 @@ public class JSONArray {
 	public JSONArray(Collection collection) {
 		this.myArrayList = new ArrayList();
 		if (collection != null) {
-			Iterator iter = collection.iterator();
-            while (iter.hasNext()) {
-			    Object o = iter.next();
-                this.myArrayList.add(JSONObject.wrap(o));  
-			}
+            for (Object o : collection) {
+                this.myArrayList.add(JSONObject.wrap(o));
+            }
 		}
     }
 
@@ -244,7 +242,7 @@ public class JSONArray {
         try {
             return o instanceof Number ?
                 ((Number)o).doubleValue() :
-                Double.valueOf((String)o).doubleValue();
+                    Double.parseDouble((String) o);
         } catch (Exception e) {
             throw new JSONException("JSONArray[" + index +
                 "] is not a number.");
@@ -348,7 +346,7 @@ public class JSONArray {
      */
     public String join(String separator) throws JSONException {
         int len = length();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < len; i += 1) {
             if (i > 0) {
@@ -830,7 +828,7 @@ public class JSONArray {
      *  representation of the object, beginning
      *  with <code>[</code>&nbsp;<small>(left bracket)</small> and ending
      *  with <code>]</code>&nbsp;<small>(right bracket)</small>.
-     * @throws JSONException
+     * @throws JSONException if JSON array contains an invalid value
      */
     public String toString(int indentFactor) throws JSONException {
         return toString(indentFactor, 0);
@@ -845,7 +843,7 @@ public class JSONArray {
      * @param indent The indention of the top level.
      * @return a printable, displayable, transmittable
      *  representation of the array.
-     * @throws JSONException
+     * @throws JSONException if JSON array contains an invalid value.
      */
     String toString(int indentFactor, int indent) throws JSONException {
         int len = length();
@@ -853,7 +851,7 @@ public class JSONArray {
             return "[]";
         }
         int i;
-        StringBuffer sb = new StringBuffer("[");
+        StringBuilder sb = new StringBuilder("[");
         if (len == 1) {
             sb.append(JSONObject.valueToString(this.myArrayList.get(0),
                     indentFactor, indent));
@@ -864,9 +862,7 @@ public class JSONArray {
                 if (i > 0) {
                     sb.append(",\n");
                 }
-                for (int j = 0; j < newindent; j += 1) {
-                    sb.append(' ');
-                }
+                sb.append(" ".repeat(Math.max(0, newindent)));
                 sb.append(JSONObject.valueToString(this.myArrayList.get(i),
                         indentFactor, newindent));
             }
@@ -887,7 +883,7 @@ public class JSONArray {
      * Warning: This method assumes that the data structure is acyclical.
      *
      * @return The writer.
-     * @throws JSONException
+     * @throws JSONException if an IO error occurs or if JSON array contains an invalid value.
      */
     public Writer write(Writer writer) throws JSONException {
         try {

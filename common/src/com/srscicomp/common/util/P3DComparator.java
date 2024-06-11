@@ -32,13 +32,13 @@ public class P3DComparator implements Comparator<Point3D>
          if(o1.getX() != o2.getX())
             return((xRev ? -1 : 1) * (o1.getX() < o2.getX() ? -1 : 1));
          else
-            return((yRev ? -1 : 1) * ((o1.getY() == o2.getY()) ? 0 : (o1.getY() < o2.getY() ? -1 : 1)));
+            return((yRev ? -1 : 1) * (Double.compare(o1.getY(), o2.getY())));
       }
       
       if(o1.getY() != o2.getY())
          return((yRev ? -1 : 1) * (o1.getY() < o2.getY() ? -1 : 1));
       else
-         return((xRev ? -1 : 1) * ((o1.getX() == o2.getX()) ? 0 : (o1.getX() < o2.getX() ? -1 : 1)));
+         return((xRev ? -1 : 1) * (Double.compare(o1.getX(), o2.getX())));
    }
    
    /** 

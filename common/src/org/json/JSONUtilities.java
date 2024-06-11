@@ -33,7 +33,6 @@ public class JSONUtilities
       catch(IOException ioe)
       {
          System.out.println("Unexpected IO error while reading file path:\n   " + ioe.getMessage() + "\nQUITTING!");
-         fname = null;
       }
       
       if(fname == null)
@@ -43,10 +42,9 @@ public class JSONUtilities
       File f = new File(fname);
       String emsg = null;
       try { readJSONObject(f); }
-      catch(JSONException jse) { emsg = jse.getMessage(); }
-      catch(IOException ioe) { emsg = ioe.getMessage(); }
-      
-      if(emsg != null) System.out.println("FAIL: " + emsg);
+      catch(JSONException | IOException jse) { emsg = jse.getMessage(); }
+
+       if(emsg != null) System.out.println("FAIL: " + emsg);
       else System.out.println("SUCCESS!");
    }
    
@@ -64,18 +62,12 @@ public class JSONUtilities
    {
       if(f == null) throw new IllegalArgumentException("Null file argument!");
       
-      JSONObject jsonObj = null;
-      BufferedReader rdr = null;
-      try
-      {
-         rdr = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.US_ASCII));
-         JSONTokener tokener = new JSONTokener(rdr);
-         jsonObj = new JSONObject(tokener);
-      }
-      finally
-      {
-         try { if( rdr != null ) rdr.close(); } catch(IOException ioe) {}
-      }
+      JSONObject jsonObj;
+       try (BufferedReader rdr = new BufferedReader(
+               new InputStreamReader(new FileInputStream(f), StandardCharsets.US_ASCII))) {
+           JSONTokener tokener = new JSONTokener(rdr);
+           jsonObj = new JSONObject(tokener);
+       }
       return(jsonObj);
    }
    
@@ -93,17 +85,12 @@ public class JSONUtilities
    public static void writeJSONObject(File f, JSONObject jsonObj, boolean pretty) throws IOException, JSONException
    {
       if(f == null || jsonObj == null) throw new IllegalArgumentException("Null argument!");
-      
-      BufferedWriter writer = null;
-      try
+
+      try (BufferedWriter writer = new BufferedWriter(
+               new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.US_ASCII)))
       {
-         writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.US_ASCII));
-         if(pretty) jsonObj.write(writer, 2, 0);
+         if (pretty) jsonObj.write(writer, 2, 0);
          else jsonObj.write(writer);
-      }
-      finally
-      {
-         try{ if(writer != null) writer.close(); } catch(IOException ioe) {}
       }
    }
    
@@ -121,17 +108,12 @@ public class JSONUtilities
    {
       if(f == null) throw new IllegalArgumentException("Null file argument!");
       
-      JSONArray jsonAr = null;
-      BufferedReader rdr = null;
-      try
+      JSONArray jsonAr;
+      try (BufferedReader rdr = new BufferedReader(
+               new InputStreamReader(new FileInputStream(f), StandardCharsets.US_ASCII)))
       {
-         rdr = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.US_ASCII));
-         JSONTokener tokener = new JSONTokener(rdr);
-         jsonAr = new JSONArray(tokener);
-      }
-      finally
-      {
-         try { if( rdr != null ) rdr.close(); } catch(IOException ioe) {}
+           JSONTokener tokener = new JSONTokener(rdr);
+           jsonAr = new JSONArray(tokener);
       }
       return(jsonAr);
    }
@@ -150,17 +132,12 @@ public class JSONUtilities
    public static void writeJSONArray(File f, JSONArray jsonAr, boolean pretty) throws IOException, JSONException
    {
       if(f == null || jsonAr == null) throw new IllegalArgumentException("Null argument!");
-      
-      BufferedWriter writer = null;
-      try
+
+      try (BufferedWriter writer = new BufferedWriter(
+               new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.US_ASCII)))
       {
-         writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.US_ASCII));
-         if(pretty) jsonAr.write(writer, 2, 0);
+         if (pretty) jsonAr.write(writer, 2, 0);
          else jsonAr.write(writer);
-      }
-      finally
-      {
-         try{ if(writer != null) writer.close(); } catch(IOException ioe) {}
       }
    }
    

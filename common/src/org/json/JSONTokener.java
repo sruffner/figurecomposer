@@ -213,7 +213,7 @@ public class JSONTokener {
 
     /**
      * Get the next char in the string, skipping whitespace.
-     * @throws JSONException
+     * @throws JSONException if source raises an IO error.
      * @return  A character, or 0 if there are no more characters.
      */
     public char nextClean() throws JSONException {
@@ -239,7 +239,7 @@ public class JSONTokener {
      */
     public String nextString(char quote) throws JSONException {
         char c;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (;;) {
             c = next();
             switch (c) {
@@ -295,7 +295,7 @@ public class JSONTokener {
      * @return   A string.
      */
     public String nextTo(char d) throws JSONException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (;;) {
             char c = next();
             if (c == d || c == 0 || c == '\n' || c == '\r') {
@@ -317,7 +317,7 @@ public class JSONTokener {
      */
     public String nextTo(String delimiters) throws JSONException {
         char c;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (;;) {
             c = next();
             if (delimiters.indexOf(c) >= 0 || c == 0 ||
@@ -365,7 +365,7 @@ public class JSONTokener {
          * formatting character.
          */
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         while (c >= ' ' && ",:]}/\\\"[{;=#".indexOf(c) < 0) {
             sb.append(c);
             c = next();
@@ -373,7 +373,7 @@ public class JSONTokener {
         back();
 
         s = sb.toString().trim();
-        if (s.equals("")) {
+        if (s.isEmpty()) {
             throw syntaxError("Missing value");
         }
         return JSONObject.stringToValue(s);

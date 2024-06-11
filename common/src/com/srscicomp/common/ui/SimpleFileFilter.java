@@ -15,8 +15,8 @@ import com.srscicomp.common.util.Utilities;
  */
 public class SimpleFileFilter extends FileFilter
 {
-	private String[] allowedExts = null;
-	private String fileDescription = null;
+	private final String[] allowedExts;
+	private final String fileDescription;
 
 	/** 
 	 * Construct a simple file filter for JFileChooser that admits any file having one of the specified extensions, plus 
@@ -30,14 +30,16 @@ public class SimpleFileFilter extends FileFilter
 	{
 		allowedExts = new String[extensions.length];
 		for( int i=0; i<extensions.length; i++ ) allowedExts[i] = extensions[i].toLowerCase();
-			
-		fileDescription = fileDesc + " (";
+
+		StringBuilder builder = new StringBuilder();
+		builder.append(fileDesc).append(" (");
 		for( int i=0; i<allowedExts.length; i++ )
 		{
-			fileDescription += "*." + allowedExts[i];
-			if( i < allowedExts.length - 1 ) fileDescription += ";";
+			builder.append("*.").append(allowedExts[i]);
+			if( i < allowedExts.length - 1 ) builder.append(";");
 		}
-		fileDescription += ")";
+		builder.append(")");
+		fileDescription = builder.toString();
 	}
 
 	/**
@@ -80,14 +82,12 @@ public class SimpleFileFilter extends FileFilter
 	public File validateExtension( File f )
 	{
 		String ext = Utilities.getExtension(f);
-		for( int i=0; i<allowedExts.length; i++ )
-		{
-			if( allowedExts[i].equalsIgnoreCase(ext) ) return( f );
-		}
+        for (String allowedExt : allowedExts) {
+            if (allowedExt.equalsIgnoreCase(ext)) return (f);
+        }
 
 		String base = f.getAbsolutePath();
-		if( base == null ) base = ""; 
-		int i = base.lastIndexOf('.');
+        int i = base.lastIndexOf('.');
 		if( i >= 0 ) base = base.substring(0,i);
 		return( new File( base + "." + allowedExts[0] ) );
 	}

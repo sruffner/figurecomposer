@@ -106,8 +106,6 @@ public interface ISchema extends ISimpleXMLContent
 	 * old schema will be emptied during migration. Therefore, callers must not assume that the old  schema will be left 
 	 * unaltered.</p>
 	 * @param oldSchema A complete valid XML document conforming to the previous version of this schema.
-	 * @return The content modified as necessary and bound to this schema instance, while preserving the author's 
-	 * original intent as much as possible.
 	 * @throws XMLException if the schema provided does not conform to the previous version, or if the migration is not 
 	 * possible.
 	 */

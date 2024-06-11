@@ -25,6 +25,7 @@ import java.awt.geom.Rectangle2D;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,7 +80,7 @@ public class FontFamilyButton extends JButton implements ActionListener
 {
    /**
     * TEMPORARY -- Will use this for testing purposes...
-    * @param args
+    * @param args Command-line arguments (not used).
     */
    public static void main(String[] args)
    {
@@ -319,7 +320,7 @@ public class FontFamilyButton extends JButton implements ActionListener
    }
    
    /** List of available font families. See {@link #updateFontList(String)}. */
-   private static final List<String> fontFamilies = new ArrayList<String>();
+   private static final List<String> fontFamilies = new ArrayList<>();
 
    /**
     * Update the font family list. 
@@ -337,11 +338,11 @@ public class FontFamilyButton extends JButton implements ActionListener
    private static void updateFontList(String entry)
    {
       // lazily create the (static) list of available fonts. They will be in alphabetical order
-      if(fontFamilies == null || fontFamilies.isEmpty())
+      if(fontFamilies.isEmpty())
       {
          String[] installedFonts = LocalFontEnvironment.getInstalledFontFamilies(
                new UnicodeSubset("Latin Basic", "\u0030\u0039\u0041\u005A\u0061\u007A"), true);
-         for(String s : installedFonts) fontFamilies.add(s);
+         fontFamilies.addAll(Arrays.asList(installedFonts));
       }
 
       if(entry != null)
@@ -403,7 +404,7 @@ public class FontFamilyButton extends JButton implements ActionListener
          popupSingleton.setSelection(invoker.getFontFamily());
          
          // create the modeless dialog container and insert pop-up panel into it
-         JDialog dlg = null;
+         JDialog dlg;
          Container owner = invoker.getTopLevelAncestor();
          if(owner instanceof Window) dlg = new JDialog((Window) owner, "", Dialog.ModalityType.MODELESS);
          else
@@ -539,7 +540,7 @@ public class FontFamilyButton extends JButton implements ActionListener
          enterFontTF.setToolTipText("If font family is not in the list, enter the name here");
          add(enterFontTF);
          
-         fontList = new JList<String>();
+         fontList = new JList<>();
          fontList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
          fontList.setVisibleRowCount(20);
          fontList.setCellRenderer(new FontListCellRenderer());
@@ -572,7 +573,7 @@ public class FontFamilyButton extends JButton implements ActionListener
       }
       
       /** Label displays some sample text in the current selected font in 16 pt. */
-      private JLabel sampleLabel = null;
+      private final JLabel sampleLabel;
       /** The user can manually enter a font family name in this field (to enter a font name not in list). */
       private JTextField enterFontTF = null;
       /** List widget displaying the list of font family names. */

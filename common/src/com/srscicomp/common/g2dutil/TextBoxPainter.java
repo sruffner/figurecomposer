@@ -99,7 +99,7 @@ public class TextBoxPainter extends Painter
    public void setText(String s)
    {
       String text = (s == null) ? "" : s.trim();
-      AttributedString aStr = (text == null || text.isEmpty()) ? null : new AttributedString(text);
+      AttributedString aStr = text.isEmpty() ? null : new AttributedString(text);
       setText(aStr);
       isPlainText = (aStr != null);
    }
@@ -125,7 +125,7 @@ public class TextBoxPainter extends Painter
       if(ok)
       {
          location = new Point2D.Double(loc.getX(), loc.getY());
-         List<Point2D> ptList = new ArrayList<Point2D>();
+         List<Point2D> ptList = new ArrayList<>();
          ptList.add(location);
          super.setLocationProducer(ptList);
          
@@ -151,7 +151,7 @@ public class TextBoxPainter extends Painter
       if(Utilities.isWellDefined(loc))
       {
          location = new Point2D.Double(loc.getX(), loc.getY());
-         List<Point2D> ptList = new ArrayList<Point2D>();
+         List<Point2D> ptList = new ArrayList<>();
          ptList.add(location);
          super.setLocationProducer(ptList);
       }
@@ -198,7 +198,7 @@ public class TextBoxPainter extends Painter
          if(Utilities.isWellDefined(first))
          {
             location = new Point2D.Double(first.getX(), first.getY());
-            ptList = new ArrayList<Point2D>();
+            ptList = new ArrayList<>();
             ptList.add(location);
          }
       }
@@ -362,8 +362,8 @@ public class TextBoxPainter extends Painter
       // less margins. Preserve line-feed characters in the original text string by inserting additional line breaks
       // as needed. At the same time, compute the average character width.
       double avgCharW = 0;
-      List<TextLayout> lines = new ArrayList<TextLayout>();
-      List<AttributedString> textFrags = new ArrayList<AttributedString>();
+      List<TextLayout> lines = new ArrayList<>();
+      List<AttributedString> textFrags = new ArrayList<>();
       while(lineBreaker.getPosition() < iterC.getEndIndex())
       {
          // if there are any line feed characters after the line just laid out, insert a blank line (null) for each one
@@ -498,7 +498,7 @@ public class TextBoxPainter extends Painter
       // as needed. At the same time, compute the average character width and the advance of the longest line.
       double avgCharW = 0;
       double maxAdvance = 0;
-      List<TextLayout> lines = new ArrayList<TextLayout>();
+      List<TextLayout> lines = new ArrayList<>();
       while(lineBreaker.getPosition() < iterC.getEndIndex())
       {
          // if there are any line feed characters after the line just laid out, insert a blank line (null) for each one
@@ -619,8 +619,8 @@ public class TextBoxPainter extends Painter
       // less margins. Preserve line-feed characters in the original text string by inserting additional line breaks
       // as needed. At the same time, compute the average character width.
       double avgCharW = 0;
-      List<AttributedString> textFrags = new ArrayList<AttributedString>();
-      List<TextLayout> lines = new ArrayList<TextLayout>();
+      List<AttributedString> textFrags = new ArrayList<>();
+      List<TextLayout> lines = new ArrayList<>();
       while(lineBreaker.getPosition() < iterC.getEndIndex())
       {
          // if there are any line feed characters after the line just laid out, insert a blank line (null) for each one

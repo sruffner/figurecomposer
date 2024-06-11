@@ -144,7 +144,7 @@ public class Graph2DViewer extends JPanel implements RenderableModelViewer
     * The canvas on which graphics are rendered. <code>Graph2DViewer</code> is simply a publicly visible container 
     * for this canvas.
     */
-   private RenderingCanvas canvas = null;
+   private RenderingCanvas canvas;
 
    /** 
     * Construct a fully interactive <code>Graph2DViewer</code>, with scale-to-fit feature initially off and with a
@@ -158,7 +158,7 @@ public class Graph2DViewer extends JPanel implements RenderableModelViewer
    /**
     * Construct a <code>Graph2DViewer</code> in interactive or non-interactive mode, with scale-to-fit feature
     * turned on and with a 1-pixel border drawn.
-    * @param isInteractive
+    * @param isInteractive True if viewer configured to support user interactions.
     */
    public Graph2DViewer(boolean isInteractive)
    {
@@ -439,7 +439,7 @@ public class Graph2DViewer extends JPanel implements RenderableModelViewer
    {
       Graphics2D g2d = null;
       if(canvas != null) 
-         g2d = (Graphics2D) canvas.getRenderingGraphics();
+         g2d = canvas.getRenderingGraphics();
       return(g2d);
    }
    

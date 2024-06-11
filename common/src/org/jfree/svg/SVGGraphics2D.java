@@ -295,10 +295,10 @@ public final class SVGGraphics2D extends Graphics2D {
     /** The last font that was set. */
     private Font font = new Font("SansSerif", Font.PLAIN, 12);
 
-    /** 
+    /**
      * The font render context.  The fractional metrics flag solves the glyph
-     * positioning issue identified by Christoph Nahr:
-     * http://news.kynosarges.org/2014/06/28/glyph-positioning-in-jfreesvg-orsonpdf/
+     * positioning issue <a href="http://news.kynosarges.org/2014/06/28/glyph-positioning-in-jfreesvg-orsonpdf/">
+     * identified by Christoph Nahr</a>.
      */
     private final FontRenderContext fontRenderContext = new FontRenderContext(
             null, false, true);
@@ -426,6 +426,7 @@ public final class SVGGraphics2D extends Graphics2D {
      * 
      * @param parent  the parent ({@code null} not permitted).
      */
+    @SuppressWarnings("CopyConstructorMissesField")
     private SVGGraphics2D(final SVGGraphics2D parent) {
         this(parent.width, parent.height, parent.units, parent.sb);
         this.fontFunction = parent.fontFunction;
@@ -1321,10 +1322,7 @@ public final class SVGGraphics2D extends Graphics2D {
      * @return The SVG RGB color string.
      */
     private String rgbColorStr(Color c) {
-        StringBuilder b = new StringBuilder("rgb(");
-        b.append(c.getRed()).append(",").append(c.getGreen()).append(",")
-                .append(c.getBlue()).append(")");
-        return b.toString();
+        return "rgb(" + c.getRed() + "," + c.getGreen() + "," + c.getBlue() + ")";
     }
     
     /**
@@ -1727,7 +1725,7 @@ public final class SVGGraphics2D extends Graphics2D {
      */
     @Override
     public void translate(int tx, int ty) {
-        translate((double) tx, (double) ty);
+        translate(tx, (double) ty);
     }
 
     /**
@@ -1896,10 +1894,8 @@ public final class SVGGraphics2D extends Graphics2D {
      */
     @Override
     public Rectangle getClipBounds() {
-        if (this.clip == null) {
-            return null;
-        }
-        return getClip().getBounds();
+        Shape clipShape = getClip();
+        return(clipShape == null ? null : clipShape.getBounds());
     }
 
     /**
@@ -1984,20 +1980,18 @@ public final class SVGGraphics2D extends Graphics2D {
     }
     
     private String getSVGTransform(AffineTransform t) {
-        StringBuilder b = new StringBuilder("matrix(");
-        b.append(transformDP(t.getScaleX())).append(",");
-        b.append(transformDP(t.getShearY())).append(",");
-        b.append(transformDP(t.getShearX())).append(",");
-        b.append(transformDP(t.getScaleY())).append(",");
-        b.append(transformDP(t.getTranslateX())).append(",");
-        b.append(transformDP(t.getTranslateY())).append(")");
-        return b.toString();
+        return "matrix(" + transformDP(t.getScaleX()) + "," +
+                transformDP(t.getShearY()) + "," +
+                transformDP(t.getShearX()) + "," +
+                transformDP(t.getScaleY()) + "," +
+                transformDP(t.getTranslateX()) + "," +
+                transformDP(t.getTranslateY()) + ")";
     }
 
     /**
      * Clips to the intersection of the current clipping region and the
      * specified shape. 
-     * 
+     * <p>
      * According to the Oracle API specification, this method will accept a 
      * {@code null} argument, however there is a bug report (opened in 2004
      * and fixed in 2021) that describes the passing of {@code null} as 
@@ -2720,11 +2714,8 @@ public final class SVGGraphics2D extends Graphics2D {
                         this.radialGradientPaints.get(key), key.getPaint()));
             }
             for (int i = 0; i < this.clipPaths.size(); i++) {
-                StringBuilder b = new StringBuilder("<clipPath id='")
-                        .append(this.defsKeyPrefix).append(CLIP_KEY_PREFIX).append(i)
-                        .append("'>");
-                b.append("<path ").append(this.clipPaths.get(i)).append("/>");
-                b.append("</clipPath>");
+                String b = "<clipPath id='" + this.defsKeyPrefix + CLIP_KEY_PREFIX + i + "'>" +
+                        "<path " + this.clipPaths.get(i) + "/>" + "</clipPath>";
                 defs.append(b);
             }
             defs.append("</defs>");
@@ -2754,12 +2745,11 @@ public final class SVGGraphics2D extends Graphics2D {
      * @return An SVG document.
      */
     public String getSVGDocument() {
-        StringBuilder b = new StringBuilder();
-        b.append("<?xml version=\"1.0\"?>\n");
-        b.append("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" ");
-        b.append("\"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n");
-        b.append(getSVGElement());
-        return b.append("\n").toString();
+        return "<?xml version=\"1.0\"?>\n" +
+                "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" " +
+                "\"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n" +
+                getSVGElement() +
+                "\n";
     }
     
     /**
@@ -2928,9 +2918,7 @@ public final class SVGGraphics2D extends Graphics2D {
         if (this.clipRef == null) {
             this.clipRef = registerClip(getClip());
         }
-        StringBuilder b = new StringBuilder();
-        b.append("clip-path='url(#").append(this.clipRef).append(")'");
-        return b.toString();
+        return "clip-path='url(#" + this.clipRef + ")'";
     }
     
     /**

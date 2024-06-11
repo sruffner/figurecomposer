@@ -44,17 +44,14 @@ public class SchemaElementInfo
 	{
 		this.allowsText = allowsText;
 
-		allowedChildren = new HashMap<String, String>();
-		for(int i=0; i<children.length; i++) 
-			allowedChildren.put(children[i],null);
+		allowedChildren = new HashMap<>();
+        for (String child : children) allowedChildren.put(child, null);
 
-		allowedAttributes = new HashMap<String, String>();
-		for(int i=0; i<attrs.length; i++) 
-			allowedAttributes.put(attrs[i],null);
+		allowedAttributes = new HashMap<>();
+        for (String attr : attrs) allowedAttributes.put(attr, null);
 
 		reqdAttributes = new String[attrReqd.length];
-		for(int i=0; i<attrReqd.length; i++)
-			reqdAttributes[i] = attrReqd[i];
+        System.arraycopy(attrReqd, 0, reqdAttributes, 0, attrReqd.length);
 	}
 
 	/**
@@ -98,10 +95,9 @@ public class SchemaElementInfo
 	 */
 	public boolean isAttributeRequired(String attr)
 	{
-		for(int i=0; i<reqdAttributes.length; i++)
-		{
-			if(reqdAttributes[i].equals(attr)) return(true);
-		}
+        for (String reqdAttribute : reqdAttributes) {
+            if (reqdAttribute.equals(attr)) return (true);
+        }
 		return(false);
 	}
 
@@ -115,10 +111,9 @@ public class SchemaElementInfo
 	 */
 	public String checkForRequiredAttributes(Map<String, ?> attrMap)
 	{
-		for(int i=0; i<reqdAttributes.length; i++)
-		{
-			if(!attrMap.containsKey(reqdAttributes[i])) return(reqdAttributes[i]);
-		}
+        for (String reqdAttribute : reqdAttributes) {
+            if (!attrMap.containsKey(reqdAttribute)) return(reqdAttribute);
+        }
 		return(null);
 	}
 }

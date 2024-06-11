@@ -75,7 +75,7 @@ public class ComboCellEditor<E> extends DefaultCellEditor
    /** Shows the drop down list for the combo box cell editor. */
    protected void showPopup() 
    {
-      SwingUtilities.invokeLater(new Runnable() { public void run() { getComponent().setPopupVisible(true); } });
+      SwingUtilities.invokeLater(() -> getComponent().setPopupVisible(true));
    }
 
    /**

@@ -128,7 +128,7 @@ public class LineSegmentPainter extends Painter
       // set up internal painter for rendering adornments
       adornPainter = new ShapePainter();
       pAdorn = new Point2D.Double();
-      List<Point2D> adornLoc = new ArrayList<Point2D>();
+      List<Point2D> adornLoc = new ArrayList<>();
       adornLoc.add(pAdorn);
       adornPainter.setLocationProducer(adornLoc);
       setAdornment(null, null, 0f, null, false, false, true, true);
@@ -148,13 +148,13 @@ public class LineSegmentPainter extends Painter
     * The <code>ShapePainter</code> used to draw endpoint/midpoint adornments for this <code>LineSegmentPainter</code>. 
     * It is set up during a rendering pass.
     */
-   private ShapePainter adornPainter = null;
+   private final ShapePainter adornPainter;
 
    /**
     * The point at which an adornment is drawn by the internal <code>ShapePainter</code>. It is reused to draw all 
     * adornments during a rendering pass.
     */
-   private Point2D pAdorn = null;
+   private final Point2D pAdorn;
 
    @Override
    protected boolean paintInternal(Graphics2D g2d)
@@ -173,8 +173,8 @@ public class LineSegmentPainter extends Painter
       g2d.setStroke(style.getStroke(0));
       Line2D lineSeg = new Line2D.Double();
       Iterator<Point2D> locIterator = locationProducer.iterator();
-      Point2D p0 = null;
-      Point2D p1 = null;
+      Point2D p0;
+      Point2D p1;
       while(locIterator.hasNext())
       {
          // get next pair of points from location provider
@@ -259,8 +259,8 @@ public class LineSegmentPainter extends Painter
       double yMin = Double.POSITIVE_INFINITY;
       double yMax = Double.NEGATIVE_INFINITY;
       Iterator<Point2D> locIterator = locationProducer.iterator();
-      Point2D p0 = null;
-      Point2D p1 = null;
+      Point2D p0;
+      Point2D p1;
       while(locIterator.hasNext())
       {
          // get next pair of points from location provider

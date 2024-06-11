@@ -85,13 +85,14 @@ public class ShapePainter extends Painter
          while(tokenizer.hasMoreTokens())
          {
             String token = tokenizer.nextToken();
+            //noinspection IfCanBeSwitch
             if(token.equals("M"))
             {
                // the next two tokens must be numbers, representing the coordinate of the point to move to.
                double x = Double.parseDouble(tokenizer.nextToken());
                double y = Double.parseDouble(tokenizer.nextToken());
 
-               // always move to the first point in the path. We ignore any subsequent moveto if the new location is the 
+               // always move to the first point in the path. We ignore any subsequent moveto if the new location is the
                // same as the current point.
                if((!gotFirstMoveto) || (x != currentPt.getX()) || (y != currentPt.getY()))
                {
@@ -104,7 +105,7 @@ public class ShapePainter extends Painter
             {
                if(!gotFirstMoveto)
                   throw new Exception("Shape path must start with M!");
-              
+
                // the next two tokens must be numbers, representing the coordinate of the point to move to.
                double x = Double.parseDouble(tokenizer.nextToken());
                double y = Double.parseDouble(tokenizer.nextToken());
@@ -134,7 +135,7 @@ public class ShapePainter extends Painter
             shape = p;
          }
       }
-      catch(Exception e) {}
+      catch(Exception ignored) {}
 
       return(shape);
    }
@@ -187,8 +188,9 @@ public class ShapePainter extends Painter
     */
    public void setSize(float size)
    {
-      this.width = (size<0f) ? 0f : size;
-      this.height = this.width;
+      float sq = Math.max(size, 0f);
+      this.width = sq;
+      this.height = sq;
       updateScaledShape();
    }
 
@@ -200,8 +202,8 @@ public class ShapePainter extends Painter
     */
    public void setSize(float w, float h)
    {
-      this.width = (w<0f) ? 0f : w;
-      this.height = (h<0f) ? 0f : h;
+      this.width = Math.max(w, 0f);
+      this.height = Math.max(h, 0f);
       updateScaledShape();
    }
    
@@ -344,8 +346,9 @@ public class ShapePainter extends Painter
    {
       super(style, producer);
       setPaintedShape(s);
-      this.width = (size < 0f) ? 0f : size;
-      this.height = this.width;
+      float sq = Math.max(size, 0f);
+      this.width = sq;
+      this.height = sq;
       this.attrLabel = (label==null || label.isEmpty()) ? null : new AttributedString(label);
       this.isPlainText = true;
       this.bkgFill = null;

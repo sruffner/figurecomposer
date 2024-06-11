@@ -13,11 +13,12 @@ import javax.swing.Icon;
  * within the bounds of a 2:1 (h:w) rectangle of specified height.  The enclosing rectangle is not rendered, and its 
  * height is restricted to the range [8..64] pixels.  If no color is specified, the check mark is rendered in the 
  * parent component's current foreground color.</p>
- * 
- * <p>CREDITS:  This class was modelled after the example ArrowIcon in Sun's Java Tutorial at 
- * http://java.sun.com/docs/books/tutorial/uiswing/misc/example-1dot4/ArrowIcon.java.</p>
- * 
- * @author 	sruffner
+ *
+ * <p>CREDITS:  This class was modelled after the example
+ * <a href="http://java.sun.com/docs/books/tutorial/uiswing/misc/example-1dot4/ArrowIcon.java">ArrowIcon in Sun's Java
+ * Tutorial</a>.</p>
+ *
+ * @author sruffner
  */
 public class CheckMarkIcon implements Icon
 {
