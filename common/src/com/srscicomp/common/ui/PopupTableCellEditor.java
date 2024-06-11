@@ -55,7 +55,6 @@ import com.srscicomp.common.util.Utilities;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 final public class PopupTableCellEditor<E> extends AbstractCellEditor
       implements TableCellEditor, ActionListener, ChangeListener, MouseWheelListener, PopupMenuListener
 {

@@ -82,7 +82,6 @@ import javax.swing.event.ChangeListener;
  *
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class RGBColorPicker extends SwatchButton implements ActionListener
 {
    /**

@@ -27,8 +27,7 @@ import javax.swing.event.PopupMenuListener;
  * </ul>
  * @author sruffner
  */
-@SuppressWarnings("serial")
-public class ComboCellEditor<E> extends DefaultCellEditor 
+public class ComboCellEditor<E> extends DefaultCellEditor
       implements PopupMenuListener, PropertyChangeListener, AncestorListener
 {
    /**

@@ -4,15 +4,18 @@ import java.io.File;
 import java.util.List;
 
 /**
- * This interface defines the required functionality of a Java application so that it can use {@link OSXAdapter} to 
- * handle file-open events from Mac OSX (outside of the application's own file-open command mechanisms -- eg, when
- * double-clicking a file that the application is registered to handle), as well as three standard items in the Mac OSX 
- * "Application" menu: the "About", "Preferences", and "Quit" menu commands. All application objects implementing this
- * interface must handle the "About" and "Quit" menu events; support for handling the "Preferences" menu event or a
- * file-open event is optional.
- * 
+ * <b>DEPRECATED</b>: This interface defined the required functionality of a Java application so that it could use
+ * OSXAdapter to handle file-open events from Mac OSX (outside of the application's own file-open command mechanisms --
+ * eg, when double-clicking a file that the application is registered to handle), as well as three standard items in the
+ * Mac OSX "Application" menu: the "About", "Preferences", and "Quit" menu commands. All application objects
+ * implementing this interface must handle the "About" and "Quit" menu events; support for handling the "Preferences"
+ * menu event or a file-open event is optional.
+ *
+ * <p>As of Java 9, applications should use java.awt.Desktop to achieve this functiality. This class is marked for
+ * removal.</p>
  * @author 	sruffner
  */
+@Deprecated
 public interface OSXCompatibleApp
 {
    /**

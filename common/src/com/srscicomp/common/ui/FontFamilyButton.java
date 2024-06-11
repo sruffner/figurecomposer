@@ -75,7 +75,6 @@ import com.srscicomp.common.util.Utilities;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class FontFamilyButton extends JButton implements ActionListener
 {
    /**

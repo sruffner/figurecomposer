@@ -68,7 +68,6 @@ import javax.swing.SwingUtilities;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class BkgFillPicker extends SwatchButton implements ActionListener
 {
    /** 
