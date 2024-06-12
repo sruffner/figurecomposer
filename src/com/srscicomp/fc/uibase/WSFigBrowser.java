@@ -30,11 +30,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.EventListener;
-import java.util.List;
+import java.util.*;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -162,9 +158,7 @@ public class WSFigBrowser extends JPanel
             noteDivLoc = locs[1];
             if(!noteHidden)
             {
-               SwingUtilities.invokeLater(new Runnable() {
-                  public void run() { splitPreview.setDividerLocation(noteDivLoc); }
-              });
+               SwingUtilities.invokeLater(() -> splitPreview.setDividerLocation(noteDivLoc));
             }
          }
          
@@ -248,15 +242,15 @@ public class WSFigBrowser extends JPanel
          if(src == figFolderList)
          {
             // include any workspace directories containing either FypML or Matlab FIG files
-            File dir = (File) figFolderList.getSelectedValue();
+            File dir = figFolderList.getSelectedValue();
             List<File> files = workspace.getWorkspaceFiles(dir, FCWorkspace.SrcType.FYP);
             List<File> figFiles = workspace.getWorkspaceFiles(dir, FCWorkspace.SrcType.MATFIG);
             for(File f : files) figFiles.remove(f);
             files.addAll(figFiles);
-            if(workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE) Collections.sort(files, fileSorter);
+            if(workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE) files.sort(fileSorter);
             
             figFileList.setListData(files.toArray(new File[0]));
-            if(files.size() > 0) figFileList.setSelectedIndex(0);
+            if(!files.isEmpty()) figFileList.setSelectedIndex(0);
             updatePreviewedFile();
          }
          else if(src == figFileList)
@@ -326,7 +320,7 @@ public class WSFigBrowser extends JPanel
       Object src = e.getSource();
       if((src == previewer) || (src == figFileList && e.getClickCount() == 2))
       {
-         File f = (File) figFileList.getSelectedValue();
+         File f = figFileList.getSelectedValue();
          if(f != null && f.isFile())
          {
             FCFileType ft = FCFileType.getFileType(f);
@@ -415,13 +409,13 @@ public class WSFigBrowser extends JPanel
    }
 
    /** Current user's <em>DataNav</em> workspace. */
-   private FCWorkspace workspace = null;
+   private final FCWorkspace workspace;
 
    /**
     * This simple rendered model is installed in preview canvas while loading the real preview, or to display an error
     * message, or to indicate no selection.
     */
-   private CenteredMessageModel placeHolderPreview = new CenteredMessageModel("LOADING...");
+   private final CenteredMessageModel placeHolderPreview = new CenteredMessageModel("LOADING...");
 
    /** The figure file currently selected in the browser's file list. Will be null if there is no selection. */
    private File selectedFile = null;
@@ -442,7 +436,7 @@ public class WSFigBrowser extends JPanel
    private transient boolean isReloading = false;
    
    /** The set of listeners registered to receive events broadcast by this workspace figures browser. */
-   private EventListenerList listeners = new EventListenerList();
+   private final EventListenerList listeners = new EventListenerList();
 
    /** Listing of all workspace folders containing any figure files. */
    private JList<File> figFolderList = null;
@@ -480,7 +474,7 @@ public class WSFigBrowser extends JPanel
    private JButton closeBtn = null;
    
    /** A rounded rectangle border for the (custom-painted) panel. */
-   private RoundRectangle2D borderPath = new RoundRectangle2D.Double();
+   private final RoundRectangle2D borderPath = new RoundRectangle2D.Double();
    
    /** Construct and layout the UI for this workspace figures browser. */
    private void construct()
@@ -492,7 +486,7 @@ public class WSFigBrowser extends JPanel
       //
       File proto = new File("a_long_file_name.ext");
 
-      figFolderList = new JList<File>();
+      figFolderList = new JList<>();
       figFolderList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
       figFolderList.setCellRenderer(new FigOrFolderLCE());
       // figFolderList.setVisibleRowCount(NVISROWS);
@@ -500,7 +494,7 @@ public class WSFigBrowser extends JPanel
       figFolderList.addListSelectionListener(this);
       JScrollPane folderScroller = new JScrollPane(figFolderList);
       
-      figFileList = new JList<File>();
+      figFileList = new JList<>();
       figFileList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
       figFileList.setCellRenderer(new FigOrFolderLCE());
       // figFileList.setVisibleRowCount(NVISROWS);
@@ -530,7 +524,7 @@ public class WSFigBrowser extends JPanel
       noteArea.setToolTipText(NOTETOOLTIP);
       noteScroller = new JScrollPane(noteArea);
       
-      sortOrderCB = new JComboBox<FCWorkspace.SortOrder>(FCWorkspace.SortOrder.values());
+      sortOrderCB = new JComboBox<>(FCWorkspace.SortOrder.values());
       sortOrderCB.setSelectedItem(workspace.getFileSortOrder());
       sortOrderCB.addActionListener(this);
 
@@ -625,7 +619,7 @@ public class WSFigBrowser extends JPanel
     */
    private void showHideNoteText()
    {
-      boolean hide = (noteArea.getText().length() == 0);
+      boolean hide = (noteArea.getText().isEmpty());
       if(noteHidden == hide) return;
       
       boolean wasHidden = noteHidden;
@@ -691,7 +685,7 @@ public class WSFigBrowser extends JPanel
          if(needSort) Collections.sort(dirs);
          figFolderList.setListData(dirs.toArray(new File[0]));
          figFolderList.clearSelection();
-         File iniDir = dirs.contains(oldDir) ? oldDir : ((dirs.size() > 0) ? dirs.get(0) : null);
+         File iniDir = dirs.contains(oldDir) ? oldDir : ((!dirs.isEmpty()) ? dirs.get(0) : null);
          
          boolean hasFiles = false;
          if(iniDir != null)
@@ -702,11 +696,11 @@ public class WSFigBrowser extends JPanel
             List<File> figFiles = workspace.getWorkspaceFiles(iniDir, FCWorkspace.SrcType.MATFIG);
             // for(File f : files) figFiles.remove(f);  NOT SURE WHY THIS WAS HERE!
             files.addAll(figFiles);
-            if(needSort) Collections.sort(files, fileSorter);
+            if(needSort) files.sort(fileSorter);
 
             figFileList.setListData(files.toArray(new File[0]));
             figFileList.clearSelection();
-            hasFiles = (files.size() > 0);
+            hasFiles = (!files.isEmpty());
          }
          if(hasFiles)
          {
@@ -720,7 +714,7 @@ public class WSFigBrowser extends JPanel
    }
 
    /** For sorting contents of figure folder and file lists IAW user's sort order preference. */
-   private FCWorkspace.FileComparator fileSorter = new FCWorkspace.FileComparator();
+   private final FCWorkspace.FileComparator fileSorter = new FCWorkspace.FileComparator();
 
    /** 
     * Worker reads the selected FypML figure file or Matlab FIG file and constructs its graphic model in the background,
@@ -736,8 +730,8 @@ public class WSFigBrowser extends JPanel
     */
    private void updatePreviewedFile()
    {
-      File f = (File) figFileList.getSelectedValue();
-      if(selectedFile==f || (selectedFile != null && selectedFile.equals(f)))
+      File f = figFileList.getSelectedValue();
+      if(Objects.equals(selectedFile, f))
       {
          if(selectedFile == null || selectedFile.lastModified() == selFileLastMod) return;
       }
@@ -780,7 +774,7 @@ public class WSFigBrowser extends JPanel
    {
       if(isReloading) return;
       List<File> selection = figFileList.getSelectedValuesList();
-      if(selection.size() == 0) return;
+      if(selection.isEmpty()) return;
       
       isReloading = true;
       try
@@ -790,7 +784,7 @@ public class WSFigBrowser extends JPanel
          // copy selected files and add them to the user's workspace. The file copy appears in the same directory as the
          // source file, but the name is changed from "name.ext" to "name_Copyn.ext", where n is an integer string to 
          // ensure uniqueness
-         List<File> selAfter = new ArrayList<File>();
+         List<File> selAfter = new ArrayList<>();
          for(File f : selection) 
          {
             // get base name and extension for filename. Then construct a filename for the copied file that does not
@@ -807,14 +801,14 @@ public class WSFigBrowser extends JPanel
                selAfter.add(dst);
             }
          }
-         if(selAfter.size() == 0) return;
+         if(selAfter.isEmpty()) return;
          
          // now reload the figure file list to reflect the new files
          List<File> files = workspace.getWorkspaceFiles(dir, FCWorkspace.SrcType.FYP);
          List<File> figFiles = workspace.getWorkspaceFiles(dir, FCWorkspace.SrcType.MATFIG);
          for(File f : files) figFiles.remove(f);
          files.addAll(figFiles);
-         if((workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE)) Collections.sort(files, fileSorter);
+         if((workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE)) files.sort(fileSorter);
 
          figFileList.setListData(files.toArray(new File[0]));
          
@@ -867,7 +861,7 @@ public class WSFigBrowser extends JPanel
    {
       if(isReloading) return;
       List<File> selection = figFileList.getSelectedValuesList();
-      if(selection.size() == 0) return;
+      if(selection.isEmpty()) return;
       
       isReloading = true;
       try
@@ -895,10 +889,10 @@ public class WSFigBrowser extends JPanel
          List<File> files = workspace.getWorkspaceFiles(dir, FCWorkspace.SrcType.FYP);
          List<File> figFiles = workspace.getWorkspaceFiles(dir, FCWorkspace.SrcType.MATFIG);
          files.addAll(figFiles);
-         if((workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE)) Collections.sort(files, fileSorter);
+         if((workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE)) files.sort(fileSorter);
 
          figFileList.setListData(files.toArray(new File[0]));
-         if(files.size() > 0)
+         if(!files.isEmpty())
          {
             if(idx >= files.size()) idx = 0;  // just in case
             figFileList.setSelectedValue(files.get(idx), true);
@@ -1013,7 +1007,7 @@ public class WSFigBrowser extends JPanel
          List<File> figFiles = workspace.getWorkspaceFiles(dir, FCWorkspace.SrcType.MATFIG);
          for(File f : files) figFiles.remove(f);
          files.addAll(figFiles);
-         if((workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE)) Collections.sort(files, fileSorter);
+         if((workspace.getFileSortOrder() != FCWorkspace.SortOrder.NONE)) files.sort(fileSorter);
 
          figFileList.setListData(files.toArray(new File[0]));
          figFileList.setSelectedValue(renamedFile, true);
@@ -1048,7 +1042,7 @@ public class WSFigBrowser extends JPanel
       @Override protected FGraphicModel doInBackground() throws Exception
       {
          StringBuffer eBuf = new StringBuffer();
-         FGraphicModel model = null;
+         FGraphicModel model;
          if(FCFileType.getFileType(figSrcFile) == FCFileType.FYP)
             model = FGModelSchemaConverter.fromXML(figSrcFile, eBuf);
          else
@@ -1094,7 +1088,7 @@ public class WSFigBrowser extends JPanel
       }
 
       /** The figure source file processed by this figure loader. */
-      private File figSrcFile = null;
+      private final File figSrcFile;
       /** If not null, this is a brief description of the error that occurred while attempting to load figure. */
       private String emsg = null;
    }
@@ -1109,10 +1103,10 @@ public class WSFigBrowser extends JPanel
     * a list has the keyboard focus or not.
     * @author sruffner
     */
-   private class FigOrFolderLCE extends DefaultListCellRenderer
+   private static class FigOrFolderLCE extends DefaultListCellRenderer
    {
-      @Override public Component getListCellRendererComponent(JList<? extends Object> list, Object value, int index, 
-            boolean select, boolean focus)
+      @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                              boolean select, boolean focus)
       {
          super.getListCellRendererComponent(list, value, index, select, focus);
          String s = "";
@@ -1128,8 +1122,8 @@ public class WSFigBrowser extends JPanel
             {
                icon = FCFileType.getFileType(f) == FCFileType.FYP ? FCIcons.V4_FIGURE_16 : FCIcons.V4_MATFIG_16;
                sb.setLength(0);
-               sb.append("<html>" + f.getAbsolutePath().replace("/", "&#47;") + "<br/>");
-               sb.append("" + f.length() + " bytes<br/>");
+               sb.append("<html>").append(f.getAbsolutePath().replace("/", "&#47;")).append("<br/>");
+               sb.append(f.length()).append(" bytes<br/>");
                long t = f.lastModified();
                if(t == 0) sb.append("--");
                else
@@ -1168,9 +1162,9 @@ public class WSFigBrowser extends JPanel
          return(this);
       }
       
-      private DateFormat dateFormatter = DateFormat.getDateTimeInstance();
-      private Date lastModDate = new Date(0);
-      private StringBuilder sb = new StringBuilder();
+      private final DateFormat dateFormatter = DateFormat.getDateTimeInstance();
+      private final Date lastModDate = new Date(0);
+      private final StringBuilder sb = new StringBuilder();
    }
    
    /**
@@ -1184,14 +1178,11 @@ public class WSFigBrowser extends JPanel
       final Object[] rcvrs = listeners.getListenerList();
       if(rcvrs.length == 0) return;
       
-      SwingUtilities.invokeLater(new Runnable() {
-         public void run()
+      SwingUtilities.invokeLater(() -> {
+         for(int i = rcvrs.length-2; i>=0; i-=2) if(rcvrs[i] == Listener.class)
          {
-            for(int i = rcvrs.length-2; i>=0; i-=2) if(rcvrs[i] == Listener.class)
-            {
-               if(figFile == null) ((Listener) rcvrs[i+1]).onWSFBClose();
-               else ((Listener) rcvrs[i+1]).onWSFBOpenFigure(figFile);
-            }
+            if(figFile == null) ((Listener) rcvrs[i+1]).onWSFBClose();
+            else ((Listener) rcvrs[i+1]).onWSFBOpenFigure(figFile);
          }
       });
    }
@@ -1227,7 +1218,7 @@ public class WSFigBrowser extends JPanel
          dndInternalFlavor = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType + ";class=\"" +
                ArrayList.class.getName() + "\"");
       }
-      catch(ClassNotFoundException cnfe) {}
+      catch(ClassNotFoundException ignored) {}
    }
    
    /**
@@ -1237,11 +1228,11 @@ public class WSFigBrowser extends JPanel
     * 
     * @author sruffner
     */
-   private class FileListTransferable implements Transferable
+   private static class FileListTransferable implements Transferable
    {
       FileListTransferable(List<File> fileValues)
       {
-         files = new ArrayList<File>();
+         files = new ArrayList<>();
          files.addAll(fileValues);
       }
       
@@ -1252,10 +1243,10 @@ public class WSFigBrowser extends JPanel
       @Override public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException
       {
          if(!dndInternalFlavor.equals(flavor)) throw new UnsupportedFlavorException(flavor);
-         return(new ArrayList<File>(files));
+         return(new ArrayList<>(files));
       }
       
-      private List<File> files;
+      private final List<File> files;
    }
    
    /**
@@ -1277,9 +1268,7 @@ public class WSFigBrowser extends JPanel
          if(!info.isDataFlavorSupported(dndInternalFlavor)) return(false);
          
          // we ONLY allow drop onto the figure folder list.
-         if(info.getComponent() != figFolderList) return(false);
-         
-         return(true);
+         return info.getComponent() == figFolderList;
       }
 
       /** The transferable is the list of files currently selected in the workspace browser's figure file list. */
@@ -1287,9 +1276,9 @@ public class WSFigBrowser extends JPanel
       {
          if(c != figFileList) return(null);
          List<File> values = figFileList.getSelectedValuesList();
-         if(values.size() == 0) return(null);
+         if(values.isEmpty()) return(null);
          
-         return( new FileListTransferable(values));
+         return(new FileListTransferable(values));
       }
       
       /** Selected files may be copied or moved to the drop folder in the workspace browser's figure folder list. */
@@ -1301,7 +1290,7 @@ public class WSFigBrowser extends JPanel
        * folder list, and the transferable is the list of files selected in the figure file list. Furthermore, this
        * method handles both the "import" and "export" aspects of the operation. The selected files are copied to the
        * target folder, and then removed from their original parent folder in the DnD is a "move" rather than a "copy"
-       * operation. No action is taken in {@link #exportDone()}.
+       * operation. No action is taken in {@link #exportDone(JComponent, Transferable, int)}.
        */
       @SuppressWarnings("unchecked")
       public boolean importData(TransferSupport info)
@@ -1310,21 +1299,21 @@ public class WSFigBrowser extends JPanel
          if(info.getComponent() != figFolderList) return(false);
           
          JList.DropLocation dl = (JList.DropLocation) info.getDropLocation();
-         File targetDir = (File) figFolderList.getModel().getElementAt(dl.getIndex());
+         File targetDir = figFolderList.getModel().getElementAt(dl.getIndex());
          
          // get the list of files that are being dropped
          Transferable t = info.getTransferable();
          List<File> files;
          try { files = (List<File>) t.getTransferData(dndInternalFlavor); } 
          catch (Exception e) { return(false); }
-         if(files == null || files.isEmpty()) return(false);
+         if(files.isEmpty()) return(false);
           
          // if the first file's parent directory is the same as the target directory, then there's nothing to do!
          File parent = files.get(0).getParentFile();
          if(Utilities.filesEqual(targetDir, parent)) return(false);
           
          // copy or move the files to the target directory. 
-         List<File> selAfter = new ArrayList<File>();
+         List<File> selAfter = new ArrayList<>();
          boolean isMove = (info.getDropAction() == TransferHandler.MOVE);
          int nOk = 0;
          for(File f : files)

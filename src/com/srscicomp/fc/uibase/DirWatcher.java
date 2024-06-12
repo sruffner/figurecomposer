@@ -100,28 +100,28 @@ public class DirWatcher implements Runnable
    private long timeoutSec = 30;
    
    /**
-    * Private constructor. Use {@link #startWatcher(List)} to start watching directories.
+    * Private constructor. Use {@link #startWatcher(List, boolean, boolean, String[])} to start watching directories.
     */
    private DirWatcher(String[] exts)
    {
       // process file extension list, if any
       if(exts != null)
       {
-         ArrayList<String> accepted = new ArrayList<String>();
-         for(String s : exts) if((s != null) && (s.length() > 0) && !s.contains("."))
+         ArrayList<String> accepted = new ArrayList<>();
+         for(String s : exts) if((s != null) && (!s.isEmpty()) && !s.contains("."))
             accepted.add(s.toLowerCase());
-         watchedExts = (accepted.size() > 0) ? accepted.toArray(new String[0]) : null;
+         watchedExts = (!accepted.isEmpty()) ? accepted.toArray(new String[0]) : null;
       }
       else
          watchedExts = null;
       try
       {
          watcher = FileSystems.getDefault().newWatchService();
-         watchedMap = new ConcurrentHashMap<Path, WatchKey>();
-         droppedMap = new ConcurrentHashMap<Path, Long>();
+         watchedMap = new ConcurrentHashMap<>();
+         droppedMap = new ConcurrentHashMap<>();
          available = true;
       }
-      catch(Exception e) {}
+      catch(Exception ignored) {}
    }
    
    /**
@@ -131,7 +131,7 @@ public class DirWatcher implements Runnable
     * @param directories The directory list. Each existing directory in the list is registered in the watcher's active
     * watche list, while any non-existent directory is added to the watcher's "dropped directories" list. Any invalid
     * directory path is ignored. Can be null or empty, in which case no directories are registered initially. See 
-    * {@link #registerDirectory()}.
+    * {@link #registerDirectory(File)}.
     * @param ignoreDotFiles If true, the watcher ignores changes to a file within a watched directory if that file's
     * name begins with a period ('.').
     * @param ignoreSubdirectories If true, the watcher ignores changes to any subdirectory within a watched directory.
@@ -173,8 +173,8 @@ public class DirWatcher implements Runnable
     */
    public boolean isRegistered(File dir)
    {
-      try { return(dir == null ? false : isRegistered(dir.toPath())); }
-      catch(InvalidPathException ipe) {}
+      try { return(dir != null && isRegistered(dir.toPath())); }
+      catch(InvalidPathException ignored) {}
       return(false);
    }
    
@@ -195,9 +195,8 @@ public class DirWatcher implements Runnable
     */
    public File[] getRegisteredDirectories()
    {
-      Set<Path> paths = new HashSet<Path>();
-      for(Path p : watchedMap.keySet()) paths.add(p);
-      for(Path p : droppedMap.keySet()) paths.add(p);
+      Set<Path> paths= new HashSet<>(watchedMap.keySet());
+      paths.addAll(droppedMap.keySet());
       File[] out = new File[paths.size()];
       int i = 0;
       for(Path p : paths) out[i++] = p.toFile();
@@ -228,10 +227,10 @@ public class DirWatcher implements Runnable
             watchedMap.put(dirPath, key);
          }
          else 
-            droppedMap.put(dirPath, new Long(System.currentTimeMillis()));
+            droppedMap.put(dirPath, System.currentTimeMillis());
          ok = true;
       }
-      catch(Exception e) {}
+      catch(Exception ignored) {}
       return(ok);
    }
    
@@ -259,7 +258,7 @@ public class DirWatcher implements Runnable
                notifyListeners(new Event(EventKind.UNREGISTERED, dir));
          }
       } 
-      catch(Exception e) {}
+      catch(Exception ignored) {}
    }
    
    /**
@@ -305,7 +304,7 @@ public class DirWatcher implements Runnable
    {
       if(available)
       {
-         try { watcher.close(); } catch(IOException ioe) {}
+         try { watcher.close(); } catch(IOException ignored) {}
          available = false;
          notifyListeners(new Event(EventKind.CLOSED, null));
       }
@@ -316,8 +315,8 @@ public class DirWatcher implements Runnable
    {
       try
       {
-         boolean poll = true;
-         while(poll)
+         //noinspection InfiniteLoopStatement
+         while(true)
          {
             // poll watch service with a finite timeout
             WatchKey key = watcher.poll(timeoutSec, TimeUnit.SECONDS);
@@ -363,7 +362,7 @@ public class DirWatcher implements Runnable
                if(!valid) 
                {
                   watchedMap.remove(dir);
-                  droppedMap.put(dir, new Long(System.currentTimeMillis()));
+                  droppedMap.put(dir, System.currentTimeMillis());
                   if(eventChain == null) 
                      eventChain = new Event(EventKind.DROPPED, dir.toFile());
                   else
@@ -379,7 +378,7 @@ public class DirWatcher implements Runnable
                {
                   key = watchedMap.remove(p);
                   key.cancel();
-                  droppedMap.put(p, new Long(System.currentTimeMillis()));
+                  droppedMap.put(p, System.currentTimeMillis());
                   if(eventChain == null) eventChain = new Event(EventKind.DROPPED, f);
                   else eventChain.append(new Event(EventKind.DROPPED, f));
                }
@@ -412,7 +411,7 @@ public class DirWatcher implements Runnable
          }
          
       }
-      catch(InterruptedException|ClosedWatchServiceException e) {}
+      catch(InterruptedException|ClosedWatchServiceException ignored) {}
 
       stop();
    }
@@ -424,10 +423,10 @@ public class DirWatcher implements Runnable
    
 
    /** The set of listeners registered to receive events broadcast by the directory watcher. */
-   private EventListenerList listeners = new EventListenerList();
+   private final EventListenerList listeners = new EventListenerList();
 
    /** Enumeration of the kinds of events broadcast by the directory watcher. */
-   public static enum EventKind {
+   public enum EventKind {
       /** An entry was created within a watched directory. */ CREATE,
       /** An entry was modified within a watched directory. */ MODIFY,
       /** An entry was deleted within a watched directory. */ DELETE,
@@ -486,7 +485,7 @@ public class DirWatcher implements Runnable
        * monitored by the directory watcher.
        * 
        * @param e The event object. The watcher may chain several events together in a single notification. Call {@link 
-       * Event#next()} to traverse the chain (not in any particular order).
+       * Event#getNext()} to traverse the chain (not in any particular order).
        */
       void onDirectoryWatchUpdate(Event e);
    }
@@ -518,7 +517,7 @@ public class DirWatcher implements Runnable
          for(Listener r : rcvrs) r.onDirectoryWatchUpdate(event);
       }
 
-      private Event event;
+      private final Event event;
    }
 
    /** 
@@ -552,12 +551,11 @@ public class DirWatcher implements Runnable
    }
 }
 
-@SuppressWarnings("serial")
 final class DirWatcherTestApp extends JFrame implements ActionListener, ListSelectionListener, Listener
 {
    private DirWatcher watcher = null;
    private JTextArea messageArea = null;
-   private JList<File> watchList = null;
+   private final JList<File> watchList;
    private JTextField pathField = null;
    private JButton addBtn = null;
    private JButton rmvBtn = null;
@@ -569,7 +567,7 @@ final class DirWatcherTestApp extends JFrame implements ActionListener, ListSele
    {
       super("Test Directory Watcher");
       
-      watchList = new JList<File>();
+      watchList = new JList<>();
       watchList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
       watchList.setVisibleRowCount(20);
       watchList.addListSelectionListener(this);
@@ -653,7 +651,7 @@ final class DirWatcherTestApp extends JFrame implements ActionListener, ListSele
       watcher.addListener(this);
    }
    
-   protected void onExit()
+   void onExit()
    {
       watcher.stop();
       System.exit(0);

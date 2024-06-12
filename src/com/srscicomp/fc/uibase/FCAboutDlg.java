@@ -4,8 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -58,9 +56,7 @@ public class FCAboutDlg extends JDialog
 
 		// an OK button to close the dialog
 		JButton okBtn = new JButton("OK");
-		okBtn.addActionListener(new ActionListener() {  
-			public void actionPerformed(ActionEvent event) { setVisible(false); dispose(); } 
-		});
+		okBtn.addActionListener(event -> { setVisible(false); dispose(); });
 
 		// layout L->R with border layout
 		Container contentPane = getContentPane();

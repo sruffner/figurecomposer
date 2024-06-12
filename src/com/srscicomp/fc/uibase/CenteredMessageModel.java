@@ -30,7 +30,7 @@ public class CenteredMessageModel extends AbstractRenderableModel implements Roo
    {
       painter = new TextBoxPainter();
       painter.setStyle(BasicPainterStyle.createBasicPainterStyle(
-               BasicPainterStyle.getFontForPainter("Arial", GenericFont.SANSERIF, FontStyle.BOLD, 16*1000/72), 
+               BasicPainterStyle.getFontForPainter("Arial", GenericFont.SANSERIF, FontStyle.BOLD, 16.0*1000/72),
                0, null, Color.BLACK, Color.RED));
       painter.setText(msg==null ? "" : msg.trim());
       painter.setAlignment(TextAlign.CENTERED, TextAlign.CENTERED);
@@ -39,7 +39,7 @@ public class CenteredMessageModel extends AbstractRenderableModel implements Roo
    }
    
    /** The internal painter that renders the text message laid out in a 4x4-in text box. */
-   private TextBoxPainter painter = null;
+   private final TextBoxPainter painter;
 
    /** The fixed size of the square graphic rendered, in milli-inches.  */
    private final static int FIXEDSZ = 4000;

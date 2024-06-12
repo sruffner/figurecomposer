@@ -42,7 +42,7 @@ public class StyledTextCellEditor extends AbstractCellEditor implements TableCel
       return(editor);
    }
 
-   private StyledTextEditor editor;
+   private final StyledTextEditor editor;
 
    @Override public void actionPerformed(ActionEvent e) { fireEditingStopped(); }
 }

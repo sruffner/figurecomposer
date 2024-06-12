@@ -38,16 +38,16 @@ public enum FCFileType implements FileFilter
    /** Any <i>Figure Composer</i>-compatible data source. */ 
    DNX(new String[0], "Figure Composer data source (*.*)", FCIcons.V4_DATA_16);
    
-   private FCFileType(String[] exts, String desc, Icon icon) 
+   FCFileType(String[] exts, String desc, Icon icon)
    { 
       this.validExts = exts;
       this.fileDescription = desc;
    }
    
    /** Supported file extensions for this file type. If zero-length, any extension is considered valid. */
-   private String[] validExts;
+   private final String[] validExts;
    /** A short description of this file type. */
-   private String fileDescription;
+   private final String fileDescription;
    /** A 16x16 representative icon. */
    private Icon fileIcon;
    
@@ -71,8 +71,8 @@ public enum FCFileType implements FileFilter
       if(validExts.length == 0) return(true);
       String ext = Utilities.getExtension(fname);
       if(ext == null) return(false);
-      
-      for(int i=0; i<validExts.length; i++) if(validExts[i].equals(ext)) return(true);
+
+      for(String validExt : validExts) if(validExt.equals(ext)) return (true);
       
       return(false);
    }
@@ -89,10 +89,10 @@ public enum FCFileType implements FileFilter
    {
       if(hasValidExtension(fname)) return(fname);
       String ext = Utilities.getExtension(fname);
-      if(ext == null || ext.length() == 0) return( fname + (fname.endsWith(".") ? "" : ".") + validExts[0]);
+      if(ext == null || ext.isEmpty()) return( fname + (fname.endsWith(".") ? "" : ".") + validExts[0]);
       
       String base = fname.substring(0, fname.lastIndexOf('.'));
-      for(int i=0; i<validExts.length; i++) if(validExts[i].startsWith(ext)) return(base + "." + validExts[i]);
+      for(String validExt : validExts) if(validExt.startsWith(ext)) return (base + "." + validExt);
       
       return(fname + "." + validExts[0]);
    }
@@ -109,8 +109,8 @@ public enum FCFileType implements FileFilter
       if(validExts.length == 0) return(true);
       String ext = Utilities.getExtension(f);
       if(ext == null) return(false);
-      
-      for(int i=0; i<validExts.length; i++) if(validExts[i].equals(ext)) return(true);
+
+      for(String validExt : validExts) if(validExt.equals(ext)) return (true);
       
       return(false);
    }
@@ -129,7 +129,7 @@ public enum FCFileType implements FileFilter
       String fName = f.getName();
       int iDot = fName.lastIndexOf('.');
       String adjFName = (iDot < 0) ? fName : fName.substring(0, iDot);
-      if(adjFName.length() == 0) adjFName = "Untitled";
+      if(adjFName.isEmpty()) adjFName = "Untitled";
       adjFName += "." + validExts[0];
       
       return(new File(f.getParentFile(), adjFName));
@@ -142,7 +142,7 @@ public enum FCFileType implements FileFilter
     */
    public boolean accept(File f) 
    { 
-      return((f==null) ? false : ((!f.getName().startsWith(".")) && (f.isDirectory() || hasValidExtension(f)))); 
+      return(f != null && ((!f.getName().startsWith(".")) && (f.isDirectory() || hasValidExtension(f))));
    }
    
    /**

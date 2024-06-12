@@ -13,6 +13,7 @@ import java.awt.print.Paper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -58,7 +59,7 @@ import com.srscicomp.fc.fig.PSTransformable;
 
 /**
  * TODO: Consider revising so that the three private dialogs are reused. Then clean up comments throughout.
- * 
+ * <p>
  * <code>PrinterSupport</code> is a helper class encapsulating support for printing <em>DataNav</em> figures to a 
  * selected printer available on the host system. It uses the Java Print Service (JPS) API to locate any printer 
  * services that are available, and it provides substitutes for the standard "Page Setup" and "Print" dialogs of 
@@ -112,7 +113,7 @@ public class PrinterSupport
 	private final static String UIPROPS_FILE = "/com/srscicomp/fc/resources/printersupportui.properties";
 
 	/** Properties of the page and print dialogs provided by <code>PrinterSupport</code>. Loaded at class-load time. */
-	private static Properties uiProperties = null;
+	private static final Properties uiProperties;
 	static 
 	{
 		uiProperties = new Properties();
@@ -120,7 +121,7 @@ public class PrinterSupport
 		{
 			uiProperties.load( PrinterSupport.class.getResourceAsStream(UIPROPS_FILE) );
 		}
-		catch( IOException ioe ) { }
+		catch(IOException ignored) { }
 	}
 
 	
@@ -137,7 +138,7 @@ public class PrinterSupport
 	 * The current page format for all <em>DataNav</em> figures printed via <code>PrinterSupport</code>. Initialized to 
     * standard letter size (8.5x11in) with 1/2-in margins all around.
 	 */
-	private PageFormat prnPageFmt = null;
+	private PageFormat prnPageFmt;
 
 	/** Flag set once printer services have been queries and set up. Print support is unavailable until then. */
    private boolean initialized = false;
@@ -150,14 +151,18 @@ public class PrinterSupport
 	 */
 	private PrinterSupport()
 	{
-      SwingWorker<Object, Object> worker = new SwingWorker<Object, Object>() {
-         @Override protected Object doInBackground() throws Exception
+      SwingWorker<Object, Object> worker = new SwingWorker<>()
+      {
+         @Override
+         protected Object doInBackground() throws Exception
          {
             prnServices = PrintServiceLookup.lookupPrintServices(null, null);
             prnServ = PrintServiceLookup.lookupDefaultPrintService();
-            return(null);
+            return (null);
          }
-         @Override protected void done()
+
+         @Override
+         protected void done()
          {
             initialized = true;
          }
@@ -184,25 +189,25 @@ public class PrinterSupport
 	 * Get the list of all media sizes supported by the specified printer. 
 	 * 
 	 * @param prn The print service to be queried. May be <code>null</code>.
-	 * @return List of names identifying the media sizes supported on the specified printer. If the print service is 
+	 * @return Array of names identifying the media sizes supported on the specified printer. If the print service is
 	 * <code>null</code>, or if it does not provide media size information, then the method returns an array of length 1 
     * containing the standard "letter" size, MediaSizeName.NA_LETTER.
 	 */
 	static public MediaSizeName[] getAvailableMediaSizesFor(PrintService prn)
 	{
-		List<Media> available = new ArrayList<Media>(10);
+		List<Media> available = new ArrayList<>(10);
 
 		if(prn != null)
 		{
 			Media[] media = (Media[]) prn.getSupportedAttributeValues(Media.class, null, null);
-			if(media != null) for(int i=0; i<media.length; i++)
-			{
-				if((media[i] instanceof MediaSizeName) && (MediaSize.getMediaSizeForName((MediaSizeName) media[i]) != null))
-					available.add(media[i]);
-			}
+			if(media != null) for(Media value : media)
+         {
+            if((value instanceof MediaSizeName) && (MediaSize.getMediaSizeForName((MediaSizeName) value) != null))
+               available.add(value);
+         }
 		}
 
-		if(available.size() == 0) available.add(MediaSizeName.NA_LETTER);
+		if(available.isEmpty()) available.add(MediaSizeName.NA_LETTER);
 
 		MediaSizeName[] msn = new MediaSizeName[available.size()];
 		for(int i=0; i<msn.length; i++) msn[i] = (MediaSizeName) available.get(i);
@@ -374,14 +379,15 @@ public class PrinterSupport
 	   int count = 0;
 	   if(figs != null)
 	   {
-	      for(int i=0; i<figs.length; i++) if(figs[i] != null) ++count;
+         for(FGraphicModel fig : figs) if(fig != null) ++count;
 	   }
       if(count == 0) return;
       
       FGraphicModel[] nonNullFigs = new FGraphicModel[count];
       int j=0;
-      for(int i=0; i<figs.length; i++) if(figs[i] != null)
-         nonNullFigs[j++] = figs[i];
+      for(FGraphicModel fig : figs)
+         if(fig != null)
+            nonNullFigs[j++] = fig;
 
 		// if there are no print services installed on the host system, bag it
 		if((!initialized) || prnServ == null)
@@ -441,22 +447,22 @@ public class PrinterSupport
       private final static String CANCEL = "Cancel";
 
       /** Current choice for printer service. */
-      private JComboBox<String> cbPrinter = null;
+      private final JComboBox<String> cbPrinter;
 
       /** Static label with icon that indicates whether or not current printer is accepting jobs. */
-      private JLabel lblAcceptingJobs = null;
+      private final JLabel lblAcceptingJobs;
 
       /** Static label with icon that indicates whether or not current printer is Postscript-compatible. */
-      private JLabel lblPostscript = null;
+      private final JLabel lblPostscript;
 
       /**
        * If checked, then native Java2D-to-PS converter is used rather than <em>Phyplot</em>-generated Postscript code. 
        * Enabled only if printer is Postscript-compatible.
        */
-      private JCheckBox chkNativePS = null;
+      private final JCheckBox chkNativePS;
 
       /** The figure(s) being printed. */
-      private FGraphicModel[] figures = null;
+      private final FGraphicModel[] figures;
 
       /**
        * Construct a modal <code>PrintDialog</code> to select a printer and specify several other attributes of a print 
@@ -484,7 +490,7 @@ public class PrinterSupport
             psNames[i] = prnServices[i].getName();
             if(prnServ.equals(prnServices[i])) nCurrServ = i;
          }
-         cbPrinter = new JComboBox<String>(psNames);
+         cbPrinter = new JComboBox<>(psNames);
          cbPrinter.setSelectedIndex(nCurrServ);
          cbPrinter.setActionCommand(NAME_LABEL);
          cbPrinter.addActionListener(this);
@@ -588,7 +594,7 @@ public class PrinterSupport
 
          // set icon that indicates whether or not current printer is accepting jobs.  If unable to determine, an 
          // "unknown" icon is used.
-         PrinterIsAcceptingJobs accepting = (PrinterIsAcceptingJobs) prnServ.getAttribute(PrinterIsAcceptingJobs.class);
+         PrinterIsAcceptingJobs accepting = prnServ.getAttribute(PrinterIsAcceptingJobs.class);
          icon = FCIcons.V4_HELP_16;
          if(accepting != null)
             icon = (accepting == PrinterIsAcceptingJobs.ACCEPTING_JOBS) ? FCIcons.V4_OK_16 : FCIcons.V4_NOTOK_16;
@@ -608,7 +614,7 @@ public class PrinterSupport
          {
             // user changed current printer
             int sel = cbPrinter.getSelectedIndex();
-            PrintService prn = (PrintService) prnServices[ sel ];
+            PrintService prn = prnServices[ sel ];
             if(!prn.equals(prnServ))
             {
                prnServ = prn;
@@ -658,16 +664,14 @@ public class PrinterSupport
    {
       private static final long serialVersionUID = 1L;
 
-      private String CANCEL_LABEL = "Cancel";
-      private String DISMISS_LABEL = "OK";
-      
-      PrintProgressDlg(Frame owner, PrintJobThread pjt) 
+      PrintProgressDlg(Frame owner, PrintJobThread pjt)
       { 
          super(owner, true); 
          setUndecorated(true);
          setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
          msgLabel = new JLabel(STARTING_JOB, JLabel.LEADING);
-         confirmBtn = new JButton(CANCEL_LABEL);
+
+         confirmBtn = new JButton("Cancel");
          confirmBtn.addActionListener(this);
 
          JPanel p = new JPanel();
@@ -689,8 +693,8 @@ public class PrinterSupport
          if(printTask != null) printTask.setProgressDlg(this);
       }
       
-      private JLabel msgLabel = null;
-      private JButton confirmBtn = null;
+      private final JLabel msgLabel;
+      private final JButton confirmBtn;
 
       private PrintJobThread printTask = null;
       
@@ -701,7 +705,7 @@ public class PrinterSupport
          else if(msg != null)
          {
             msgLabel.setText(msg);
-            confirmBtn.setText(DISMISS_LABEL);
+            confirmBtn.setText("OK");
          }
          else
             setVisible(false);
@@ -768,7 +772,8 @@ public class PrinterSupport
        * sent to the printer. The method does not return until all print jobs complete or an error is detected, or the
        * operation is cancelled.
        */
-	   @Override protected Object doInBackground() throws Exception
+	   @SuppressWarnings("BusyWait")
+      @Override protected Object doInBackground() throws Exception
       {
          boolean doesPS = prnServ.isDocFlavorSupported(DocFlavor.INPUT_STREAM.POSTSCRIPT);
          boolean doesJava2D = prnServ.isDocFlavorSupported(DocFlavor.SERVICE_FORMATTED.PRINTABLE);
@@ -826,7 +831,7 @@ public class PrinterSupport
 
                // WAIT UNTIL PRINT JOB FINISHES OR WE GET INTERRUPTED BY USER CANCEL!
                try{ while(!(isCancelled() || isCurrentPrnJobDone())) Thread.sleep(100); }
-               catch(InterruptedException ie) {}
+               catch(InterruptedException ignored) {}
             }
             catch(UnsupportedOperationException uoe)
             {
@@ -853,15 +858,13 @@ public class PrinterSupport
                if((printJob instanceof CancelablePrintJob) && (!prnJobDone) && isCancelled())
                {
                   final DocPrintJob job = printJob;
-                  Thread cancelThread = new Thread() {
-                     public void run() {
-                        try
-                        {
-                           ((CancelablePrintJob)job).cancel();
-                        }
-                        catch(Throwable t) { }
+                  Thread cancelThread = new Thread(() -> {
+                     try
+                     {
+                        ((CancelablePrintJob)job).cancel();
                      }
-                  };
+                     catch(Throwable ignored) { }
+                  });
                   cancelThread.setDaemon(true);
                   cancelThread.start();
                }
@@ -869,7 +872,7 @@ public class PrinterSupport
                // make sure stream that fed print job is closed (SimpleDoc does not do this)
                if(is != null)
                {
-                  try {is.close(); is = null;} catch(IOException ioe) {}
+                  try {is.close(); is = null;} catch(IOException ignored) {}
                }
 
                printJob = null;
@@ -908,7 +911,7 @@ public class PrinterSupport
             progressDlg.printJobUpdate(errMsg, true);
 
          // release resources
-         for(int i=0; i<figures.length; i++) figures[i] = null;
+         Arrays.fill(figures, null);
          figures = null; 
          printAttrs = null;
          printJob = null;
@@ -921,17 +924,17 @@ public class PrinterSupport
 	    * printing a figure as Java2D graphics (rather than using <em>DataNav</em>-generated Postscript). The reference 
 	    * to each figure is released as soon as the corresponding print job terminates.
 	    */
-	   private FGraphicModel[] figures = null;
+	   private FGraphicModel[] figures;
 
 	   /**
 	    * If set, this flag tells the <code>PrintJobThread</code> to use native Java2D-to-Postscript conversion, rather 
 	    * than sending <em>DataNav</em>-generated PS code to the targeted printer. It is relevant only if the printer is 
 	    * PS-compatible.
 	    */
-	   private boolean useNativePS = false;
+	   private final boolean useNativePS;
 
 	   /** Print job attributes to be submitted with each print job. */
-	   private PrintRequestAttributeSet printAttrs = null;
+	   private PrintRequestAttributeSet printAttrs;
 
 	   /** Print job progress messages are posted to this dialog on the event dispatch thread. */
 	   private PrintProgressDlg progressDlg = null;
@@ -1026,19 +1029,19 @@ public class PrinterSupport
 		private final static int THUMBNAIL_MAXDIM = 140;
 
 		/** The page layout parameters as modified by this <code>PageSetupDialog</code>. */
-		private PageFormat pageFormat = null;
+		private final PageFormat pageFormat;
 
 		/**
 		 * The print service that is selected in this <code>PageSetupDialog</code>. If the host system has multiple 
        * printers available, the user may choose a different printer which supports the desired paper size.
 		 */
-		private PrintService printer = null;
+		private PrintService printer;
 
 		/** Flag indicating whether or not the user cancelled out of the dialog. */
 		private boolean wasCancelled = false;
 
 		/** A thumbnail preview of the current page layout. */
-		private Graph2DViewer thumbnail = null;
+		private final Graph2DViewer thumbnail;
 
 		/**
 		 * Current choice for printer service. Changing the printer service may affect the list of available media sizes.
@@ -1064,10 +1067,7 @@ public class PrinterSupport
 		/** Radio button selects the "Portrait" orientation. */
 		private JRadioButton portraitBtn = null;
 
-		/** Radio button selects the "Landscape" orientation. */
-		private JRadioButton landscapeBtn = null;
-
-		/** Numeric text field for editing the left margin. */
+      /** Numeric text field for editing the left margin. */
 		private NumericTextField tfLeft = null;
 
 		/** Numeric text field for editing the right margin. */
@@ -1135,7 +1135,7 @@ public class PrinterSupport
 					psNames[i] = prnServices[i].getName();
 					if(prnServ.equals(prnServices[i])) nCurrServ = i;
 				}
-				cbPrinter = new JComboBox<String>(psNames);
+				cbPrinter = new JComboBox<>(psNames);
 				cbPrinter.setSelectedIndex(nCurrServ);
 				cbPrinter.setActionCommand(PRINTER_LABEL);
 				cbPrinter.addActionListener(this);
@@ -1144,7 +1144,7 @@ public class PrinterSupport
 				cbPrinter = null;
 
 			// create, initialize, and hook up widgets to display editable parameters in the PageSetup
-			cbMediaSize = new JComboBox<String>();
+			cbMediaSize = new JComboBox<>();
 			reloadPaperSizes();
 			cbMediaSize.setActionCommand(SIZE_LABEL);
 			cbMediaSize.addActionListener(this);
@@ -1173,7 +1173,7 @@ public class PrinterSupport
 			portraitBtn.setSelected(pageFormat.getOrientation() == PageFormat.PORTRAIT);
 			portraitBtn.addActionListener(this);
 
-			landscapeBtn = new JRadioButton("Landscape");
+         JRadioButton landscapeBtn=new JRadioButton("Landscape");
 			landscapeBtn.setSelected(pageFormat.getOrientation() == PageFormat.LANDSCAPE);
 			landscapeBtn.addActionListener(this);
 
@@ -1350,28 +1350,28 @@ public class PrinterSupport
 		{
 			boolean isPortrait = (pageFormat.getOrientation() == PageFormat.PORTRAIT);
 			Paper paper = pageFormat.getPaper();
-			double m = 0;
-			if(which.equals(LEFT_LABEL))
-			{
-				m = isPortrait ? paper.getImageableX() : 
-				                 paper.getHeight() - (paper.getImageableY() + paper.getImageableHeight());
-			}
-			else if(which.equals(RIGHT_LABEL))
-			{
-				m = isPortrait ? paper.getWidth() - (paper.getImageableX() + paper.getImageableWidth()) :
-									  paper.getImageableY();
-			}
-			else if(which.equals(TOP_LABEL))
-			{
-				m = isPortrait ? paper.getImageableY() : paper.getImageableX();
-			}
-			else if(which.equals(BOTTOM_LABEL))
-			{
-				m = isPortrait ? paper.getHeight() - (paper.getImageableY() + paper.getImageableHeight()) :
-									  paper.getWidth() - (paper.getImageableX() + paper.getImageableWidth());
-			}
-			else 	// we should NEVER get here
-				throw new Error("Internal error in " + PageSetupDialog.class.getName());
+			double m;
+         switch(which)
+         {
+         case LEFT_LABEL:
+            m = isPortrait ? paper.getImageableX() :
+                  paper.getHeight() - (paper.getImageableY() + paper.getImageableHeight());
+            break;
+         case RIGHT_LABEL:
+            m = isPortrait ? paper.getWidth() - (paper.getImageableX() + paper.getImageableWidth()) :
+                  paper.getImageableY();
+            break;
+         case TOP_LABEL:
+            m = isPortrait ? paper.getImageableY() : paper.getImageableX();
+            break;
+         case BOTTOM_LABEL:
+            m = isPortrait ? paper.getHeight() - (paper.getImageableY() + paper.getImageableHeight()) :
+                  paper.getWidth() - (paper.getImageableX() + paper.getImageableWidth());
+            break;
+         default:
+				// we should NEVER get here
+            throw new Error("Internal error in " + PageSetupDialog.class.getName());
+         }
 
 			return((currentUnits == MediaSize.INCH) ? m / 72.0 : m * 25.4 / 72.0);
 		}
@@ -1392,7 +1392,7 @@ public class PrinterSupport
 
 			boolean isPortrait = (pageFormat.getOrientation() == PageFormat.PORTRAIT);
 			Paper paper = pageFormat.getPaper();
-			boolean ok = false;
+			boolean ok;
 			double w = paper.getWidth();
 			double h = paper.getHeight();
 			double x = paper.getImageableX();
@@ -1403,68 +1403,64 @@ public class PrinterSupport
 			// in each case, we adjust the imageable width or height IAW the new value of the specified margin, while 
 			// keeping its opposite margin unchanged.  If this results in a non-positive imageable width or height, 
 			// then the change is rejected.
-			if(which.equals(LEFT_LABEL))
-			{
-				if(isPortrait) 
-				{
-					double right = w - x - imgW;
-					x = value;
-					imgW = w - x - right;
-					ok = imgW > 0;
-				} 
-				else
-				{
-					imgH = h - y - value;
-					ok = imgH > 0;
-				}
-			}
-			else if(which.equals(RIGHT_LABEL))
-			{
-				if(isPortrait) 
-				{
-					imgW = w - x - value;
-					ok = imgW > 0;
-				} 
-				else
-				{
-					double left = h - y - imgH;
-					y = value;
-					imgH = h - y - left;
-					ok = imgH > 0;
-				}
-			}
-			else if(which.equals(TOP_LABEL))
-			{
-				if(isPortrait) 
-				{
-					double bottom = h - y - imgH;
-					y = value;
-					imgH = h - y - bottom;
-					ok = imgH > 0;
-				} 
-				else
-				{
-					double bottom = w - x - imgW;
-					x = value;
-					imgW = w - x - bottom;
-					ok = imgW > 0;
-				}
-			}
-			else if(which.equals(BOTTOM_LABEL))
-			{
-				if(isPortrait) 
-				{
-					imgH = h - y - value;
-					ok = imgH > 0;
-				} 
-				else
-				{
-					imgW = w - x - value;
-					ok = imgW > 0;
-				}
-			}
-			else 	// we should NEVER get here
-				throw new Error("Internal error in " + PageSetupDialog.class.getName());
+         switch(which)
+         {
+         case LEFT_LABEL:
+            if(isPortrait)
+            {
+               double right = w - x - imgW;
+               x = value;
+               imgW = w - x - right;
+               ok = imgW > 0;
+            } else
+            {
+               imgH = h - y - value;
+               ok = imgH > 0;
+            }
+            break;
+         case RIGHT_LABEL:
+            if(isPortrait)
+            {
+               imgW = w - x - value;
+               ok = imgW > 0;
+            } else
+            {
+               double left = h - y - imgH;
+               y = value;
+               imgH = h - y - left;
+               ok = imgH > 0;
+            }
+            break;
+         case TOP_LABEL:
+            if(isPortrait)
+            {
+               double bottom = h - y - imgH;
+               y = value;
+               imgH = h - y - bottom;
+               ok = imgH > 0;
+            } else
+            {
+               double bottom = w - x - imgW;
+               x = value;
+               imgW = w - x - bottom;
+               ok = imgW > 0;
+            }
+            break;
+         case BOTTOM_LABEL:
+            if(isPortrait)
+            {
+               imgH = h - y - value;
+               ok = imgH > 0;
+            } else
+            {
+               imgW = w - x - value;
+               ok = imgW > 0;
+            }
+            break;
+         default:
+				// we should NEVER get here
+            throw new Error("Internal error in " + PageSetupDialog.class.getName());
+         }
 
 			// if change is valid, update the page layout accordingly
 			if(ok)
@@ -1519,7 +1515,7 @@ public class PrinterSupport
 
 			// reload the combo box that displays paper size
 			cbMediaSize.removeAllItems();
-			for(int i=0; i<mediaLabels.length; i++) cbMediaSize.addItem(mediaLabels[i]);
+         for(String mediaLabel : mediaLabels) cbMediaSize.addItem(mediaLabel);
 			cbMediaSize.setSelectedIndex(iBestSize);
 
 			// get preferred units for the currently selected media size (in or mm)
@@ -1563,92 +1559,96 @@ public class PrinterSupport
 		{
 			boolean done = false;
 			String cmd = e.getActionCommand();
-			if(cmd.equals(OK))
-			{
-				// the user has OK'd any changes made, so make the modified page layout the current layout and update the 
-				// current printer.
-				prnPageFmt = pageFormat;
-				if(printer != null) prnServ = printer;
-				done = true;
-			}
-			else if(cmd.equals(CANCEL))
-			{
-				done = true;
-				wasCancelled = true;
-			}
-			else if(cmd.equals(LEFT_LABEL) || cmd.equals(RIGHT_LABEL) || cmd.equals(TOP_LABEL) || cmd.equals(BOTTOM_LABEL))
-			{
-				// a margin was changed.  Try to set the new margin value, unless text entered. Update relevant text field 
+         switch(cmd)
+         {
+         case OK:
+            // the user has OK'd any changes made, so make the modified page layout the current layout and update the
+            // current printer.
+            prnPageFmt = pageFormat;
+            if(printer != null) prnServ = printer;
+            done = true;
+            break;
+         case CANCEL:
+            done = true;
+            wasCancelled = true;
+            break;
+         case LEFT_LABEL:
+         case RIGHT_LABEL:
+         case TOP_LABEL:
+         case BOTTOM_LABEL:
+            // a margin was changed.  Try to set the new margin value, unless text entered. Update relevant text field
             // if the validated margin value is not the same as what was entered.
-				NumericTextField tf = (NumericTextField) e.getSource();
-				double oldMargin = getMargin(cmd);
-				boolean ok = setMargin(cmd, tf.getValue().doubleValue());
-				if(!ok) tf.setValue(oldMargin);
-				else thumbnail.setPageFormat(pageFormat);
-			}
-			else if(cmd.equals(SIZE_LABEL))
-			{
-				int sel = cbMediaSize.getSelectedIndex();
-				MediaSize msChosen = availableMediaSizes[sel<0 ? 0 : sel];
-				boolean reloadMargins = !changePaperSize(msChosen, pageFormat);
+            NumericTextField tf = (NumericTextField) e.getSource();
+            double oldMargin = getMargin(cmd);
+            boolean ok = setMargin(cmd, tf.getValue().doubleValue());
+            if(!ok) tf.setValue(oldMargin);
+            else thumbnail.setPageFormat(pageFormat);
+            break;
+         case SIZE_LABEL:
+         {
+            int sel = cbMediaSize.getSelectedIndex();
+            MediaSize msChosen = availableMediaSizes[Math.max(sel, 0)];
+            boolean reloadMargins = !changePaperSize(msChosen, pageFormat);
 
-				// if the preferred units for the selected media is different, update the label on the "Margins" panel
-				// to indicate the change in units.
-				int units = PrinterSupport.getPreferredUnitsForMediaSize(msChosen);
-				if(units != currentUnits)
-				{
-					reloadMargins = true;
-					currentUnits = units;
-					String label = (currentUnits==MediaSize.INCH) ? MARGIN_IN_LABEL : MARGIN_MM_LABEL;
-					marginsPanel.setBorder(BorderFactory.createCompoundBorder( 
-						BorderFactory.createTitledBorder(label), BorderFactory.createEmptyBorder(2,2,2,2)));
-				}
+            // if the preferred units for the selected media is different, update the label on the "Margins" panel
+            // to indicate the change in units.
+            int units = PrinterSupport.getPreferredUnitsForMediaSize(msChosen);
+            if(units != currentUnits)
+            {
+               reloadMargins = true;
+               currentUnits = units;
+               String label = (currentUnits == MediaSize.INCH) ? MARGIN_IN_LABEL : MARGIN_MM_LABEL;
+               marginsPanel.setBorder(BorderFactory.createCompoundBorder(
+                     BorderFactory.createTitledBorder(label), BorderFactory.createEmptyBorder(2, 2, 2, 2)));
+            }
 
-				// reload margin widgets if the paper size change affected their contents
-				if(reloadMargins)
-				{
-					tfLeft.setValue(getMargin(LEFT_LABEL));
-					tfRight.setValue(getMargin(RIGHT_LABEL) );
-					tfTop.setValue(getMargin(TOP_LABEL));
-					tfBottom.setValue(getMargin(BOTTOM_LABEL));
-				}
+            // reload margin widgets if the paper size change affected their contents
+            if(reloadMargins)
+            {
+               tfLeft.setValue(getMargin(LEFT_LABEL));
+               tfRight.setValue(getMargin(RIGHT_LABEL));
+               tfTop.setValue(getMargin(TOP_LABEL));
+               tfBottom.setValue(getMargin(BOTTOM_LABEL));
+            }
 
-				// refresh thumbnail IAW new paper size
-				thumbnail.setVisible(false);
-				setThumbnailSize();
-				thumbnail.setPageFormat(pageFormat);
-				thumbnail.setVisible(true);
-			}
-			else if(cmd.equals(PRINTER_LABEL))
-			{
-				// user changed current printer
-				int sel = cbPrinter.getSelectedIndex();
-				PrintService prn = (PrintService) prnServices[sel];
-				if(!prn.equals(printer))
-				{
-					printer = prn;
+            // refresh thumbnail IAW new paper size
+            thumbnail.setVisible(false);
+            setThumbnailSize();
+            thumbnail.setPageFormat(pageFormat);
+            thumbnail.setVisible(true);
+            break;
+         }
+         case PRINTER_LABEL:
+         {
+            // user changed current printer
+            int sel = cbPrinter.getSelectedIndex();
+            PrintService prn = prnServices[sel];
+            if(!prn.equals(printer))
+            {
+               printer = prn;
 
-					// reload available paper sizes and revise current page layout if there's no exact match available.  The 
-					// relevant components on the dialog are also refreshed.
-					reloadPaperSizes();
-				}
-			}
-			else
-			{
-				// page orientation changed. Reload margins because their values are different in the two orientations.
-				boolean isPortrait = portraitBtn.isSelected();
-				pageFormat.setOrientation(isPortrait ? PageFormat.PORTRAIT : PageFormat.LANDSCAPE);
-				tfLeft.setValue(getMargin(LEFT_LABEL));
-				tfRight.setValue(getMargin(RIGHT_LABEL));
-				tfTop.setValue(getMargin(TOP_LABEL));
-				tfBottom.setValue(getMargin(BOTTOM_LABEL));
+               // reload available paper sizes and revise current page layout if there's no exact match available.  The
+               // relevant components on the dialog are also refreshed.
+               reloadPaperSizes();
+            }
+            break;
+         }
+         default:
+            // page orientation changed. Reload margins because their values are different in the two orientations.
+            boolean isPortrait = portraitBtn.isSelected();
+            pageFormat.setOrientation(isPortrait ? PageFormat.PORTRAIT : PageFormat.LANDSCAPE);
+            tfLeft.setValue(getMargin(LEFT_LABEL));
+            tfRight.setValue(getMargin(RIGHT_LABEL));
+            tfTop.setValue(getMargin(TOP_LABEL));
+            tfBottom.setValue(getMargin(BOTTOM_LABEL));
 
-				// refresh thumbnail IAW new paper orientation
-				thumbnail.setVisible(false);
-				setThumbnailSize();
-				thumbnail.setPageFormat(pageFormat);
-				thumbnail.setVisible(true);
-			}
+            // refresh thumbnail IAW new paper orientation
+            thumbnail.setVisible(false);
+            setThumbnailSize();
+            thumbnail.setPageFormat(pageFormat);
+            thumbnail.setVisible(true);
+            break;
+         }
 
 			// if user OK'd or CANCEL'd out of dialog, hide it!
 			if(done) setVisible(false);

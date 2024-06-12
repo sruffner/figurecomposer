@@ -68,7 +68,7 @@ import com.srscicomp.fc.fig.TickSetNode;
  * 
  * <p>Each application preference value is updated on the fly as the user interacts with the various controls on the 
  * dialog; there is no "Cancel" or "OK" button. Use the standard "X" decoration in the title bar to extinguish the 
- * dialog. To use the dialog, simply invoke {@link #editPreferences()}. A singleton <code>PreferencesDlg</code> is 
+ * dialog. To use the dialog, simply invoke {@link #editPreferences(JFrame)}. A singleton <code>PreferencesDlg</code> is
  * created the first time this method is called and is reused thereafter -- invisible when not in use.</p>
  * 
  * <p>Only the screen resolution setting can have an immediate effect on the current state of the application. If the 
@@ -76,7 +76,6 @@ import com.srscicomp.fc.fig.TickSetNode;
  * 
  * @author  sruffner
  */
-@SuppressWarnings("serial")
 public class PreferencesDlg extends JDialog implements ActionListener, PropertyChangeListener, ItemListener
 {
    /** The one and only <i>Preferences</i> dialog in the application. Lazily created. */
@@ -107,7 +106,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
 
    /**
     * Private constructor. To invoke the <code>PreferencesDlg</code>, use the <code>editPreferences()</code> method.
-    * @param f The main application frame window.
+    * @param appFrame The main application frame window.
     * @see PreferencesDlg#editPreferences(JFrame)
     */
    private PreferencesDlg(JFrame appFrame)
@@ -124,10 +123,10 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
    }
 
    /** The user's workspace, which persists all application settings. */
-   private FCWorkspace workspace = null;
+   private final FCWorkspace workspace;
    
    /** Runtinme store for style preferences relevant to a <i>DataNav</i> figure. */
-   private FGNPreferences fgnPrefs = null;
+   private final FGNPreferences fgnPrefs;
    
    //
    // Widgets
@@ -206,11 +205,11 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       fontFamilyBtn = new FontFamilyButton(180);
       fontFamilyBtn.addPropertyChangeListener(FontFamilyButton.FONTFAMILY_PROPERTY, this);
 
-      altFontCombo = new JComboBox<GenericFont>(GenericFont.values());
+      altFontCombo = new JComboBox<>(GenericFont.values());
       altFontCombo.setToolTipText("Alternate font");
       altFontCombo.addActionListener(this);
       
-      psFontCombo = new JComboBox<PSFont>(PSFont.values());
+      psFontCombo = new JComboBox<>(PSFont.values());
       psFontCombo.setToolTipText("Postscript font");
       psFontCombo.addActionListener(this);
       
@@ -218,7 +217,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       fontSizeField.setToolTipText("Font size (pt)");
       fontSizeField.addActionListener(this);
 
-      fontStyleMB = new MultiButton<FontStyle>();
+      fontStyleMB = new MultiButton<>();
       fontStyleMB.addChoice(FontStyle.PLAIN, FCIcons.V4_FSPLAIN_16, "Plain");
       fontStyleMB.addChoice(FontStyle.ITALIC, FCIcons.V4_FSITALIC_16, "Italic");
       fontStyleMB.addChoice(FontStyle.BOLD, FCIcons.V4_FSBOLD_16, "Bold");
@@ -238,14 +237,14 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       strokeWidthEditor.setToolTipText("Stroke Width");
       strokeWidthEditor.addActionListener(this);
 
-      strokeCapMB = new MultiButton<StrokeCap>();
+      strokeCapMB = new MultiButton<>();
       strokeCapMB.addChoice(StrokeCap.BUTT, FCIcons.V4_CAPBUTT_16, "butt");
       strokeCapMB.addChoice(StrokeCap.SQUARE, FCIcons.V4_CAPSQUARE_16, "square");
       strokeCapMB.addChoice(StrokeCap.ROUND, FCIcons.V4_CAPROUND_16, "round");
       strokeCapMB.setToolTipText("Stroke end cap");
       strokeCapMB.addItemListener(this);
       
-      strokeJoinMB = new MultiButton<StrokeJoin>();
+      strokeJoinMB = new MultiButton<>();
       strokeJoinMB.addChoice(StrokeJoin.MITER, FCIcons.V4_JOINMITER_16, "miter");
       strokeJoinMB.addChoice(StrokeJoin.BEVEL, FCIcons.V4_JOINBEVEL_16, "bevel");
       strokeJoinMB.addChoice(StrokeJoin.ROUND, FCIcons.V4_JOINROUND_16, "round");
@@ -253,7 +252,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       strokeJoinMB.addItemListener(this);
 
       // selected properties for a graph axis, tick set, and legend...
-      midPtMB = new MultiButton<Boolean>();
+      midPtMB = new MultiButton<>();
       midPtMB.addChoice(Boolean.TRUE, FCIcons.V4_MIDPT_16, "midpoint");
       midPtMB.addChoice(Boolean.FALSE, FCIcons.V4_ENDPT_16, "endpoints");
       midPtMB.setToolTipText("Location of marker symbol in legend entry");
@@ -283,7 +282,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
          logTickCheckBoxes[i].setActionCommand(LOGTICKCMD);
       }
 
-      tickOriMB = new MultiButton<TickSetNode.Orientation>();
+      tickOriMB = new MultiButton<>();
       tickOriMB.addChoice(TickSetNode.Orientation.OUT, FCIcons.V4_TICKOUT_16, "outward");
       tickOriMB.addChoice(TickSetNode.Orientation.IN, FCIcons.V4_TICKIN_16, "inward");
       tickOriMB.addChoice(TickSetNode.Orientation.THRU, FCIcons.V4_TICKTHRU_16, "bisecting");
@@ -310,7 +309,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       tickGapEditor.addActionListener(this);
 
       // endcap adornment and size for calibration bars, error bars on a data trace...
-      calibCapCombo = new JComboBox<Marker>(Marker.values());
+      calibCapCombo = new JComboBox<>(Marker.values());
       calibCapCombo.setToolTipText("Select endcap shape");
       calibCapCombo.addActionListener(this);
 
@@ -318,7 +317,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       calibCapSizeEditor.setToolTipText("Enter size of endcap's bounding box");
       calibCapSizeEditor.addActionListener(this);
       
-      ebarCapCombo = new JComboBox<Marker>(Marker.values());
+      ebarCapCombo = new JComboBox<>(Marker.values());
       ebarCapCombo.setToolTipText("Select endcap shape");
       ebarCapCombo.addActionListener(this);
 
@@ -329,7 +328,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       enaHMSmoothCB = new JCheckBox("Enable heatmap image smoothing");
       enaHMSmoothCB.addActionListener(this);
       
-      cmapPanel = new ColorMapPanel();
+      cmapPanel =new ColorMapPanel();
    }
 
    /** Helper method that lays out the widgets within the <code>PreferencesDlg</code>. */
@@ -598,7 +597,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       else if(src == psFontCombo)
          fgnPrefs.setPreferredPSFont((PSFont) psFontCombo.getSelectedItem());
       else if(src == fontSizeField)
-         fgnPrefs.setPreferredFontSize(new Integer(fontSizeField.getValue().intValue()));
+         fgnPrefs.setPreferredFontSize(fontSizeField.getValue().intValue());
       else if(src == strokeWidthEditor)
          fgnPrefs.setPreferredStrokeWidth(strokeWidthEditor.getMeasure());
       else if(src == legendSpacerEditor)
@@ -640,7 +639,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       else if(src == ebarCapSizeEditor)
          fgnPrefs.setPreferredEBarCapSize(ebarCapSizeEditor.getMeasure());
       else if(src == enaHMSmoothCB)
-         fgnPrefs.setPreferredHeatMapImageSmoothingEnable(new Boolean(enaHMSmoothCB.isSelected()));
+         fgnPrefs.setPreferredHeatMapImageSmoothingEnable(enaHMSmoothCB.isSelected());
    }
 
    public void propertyChange(PropertyChangeEvent e)
@@ -685,14 +684,14 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
     * custom --, and provides widgets by which the user can generate and add new custom maps, or remove any existing
     * custom color map (built-ins cannot be removed.
     */
-   private class ColorMapPanel extends JPanel implements ActionListener
+   private static class ColorMapPanel extends JPanel implements ActionListener
    {
       ColorMapPanel()
       {
          JPanel p = new JPanel(new SpringLayout());
          SpringLayout layout = (SpringLayout) p.getLayout();
          
-         cmapCombo = new JComboBox<ColorMap>(FGNPreferences.getInstance().getAllAvailableColorMaps());
+         cmapCombo = new JComboBox<>(FGNPreferences.getInstance().getAllAvailableColorMaps());
          ColorMapGradientRenderer renderer = new ColorMapGradientRenderer();
          renderer.setPreferredSize(new Dimension(500, 25));
          cmapCombo.setRenderer(renderer);
@@ -857,7 +856,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
          if(src == cmapCombo)
          {
             currColorMap = (ColorMap) cmapCombo.getSelectedItem();
-            rmvBtn.setEnabled(currColorMap.isCustom());
+            rmvBtn.setEnabled((currColorMap != null) && currColorMap.isCustom());
             refresh();
          }
          else if(src == numFramesField)
@@ -920,7 +919,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       private ColorMap currColorMap = null;
       
       /** Combo box selects a color map from the list of all built-in and custom color maps. */
-      private JComboBox<ColorMap> cmapCombo = null;
+      private final JComboBox<ColorMap> cmapCombo;
       /** Press this button to delete the map selected in the combo box (unless it is a built-in map). */
       private JButton rmvBtn = null;
 
@@ -953,7 +952,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
          {
             Object out = null;
             if(currColorMap != null && r >= 0 && r<getRowCount() && c >= 0 && c < getColumnCount())
-               out = (c==0) ? new Integer(currColorMap.getKeyFrameIndex(r)) : currColorMap.getKeyFrameColor(r); 
+               out = (c==0) ? Integer.valueOf(currColorMap.getKeyFrameIndex(r)) : currColorMap.getKeyFrameColor(r);
             return(out);
          }
          
@@ -979,7 +978,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       }
       
       /** Simple column model intended to fix the width of the "Index" column at 60pix. */
-      private class KeyFramesTCM extends DefaultTableColumnModel
+      private static class KeyFramesTCM extends DefaultTableColumnModel
       {
          @Override public void addColumn(TableColumn column)
          {

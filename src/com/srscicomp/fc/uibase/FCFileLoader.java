@@ -156,7 +156,7 @@ class FCFileLoader extends SwingWorker<Object, Object>
                }
                catch(IOException ioe)
                {
-                  errBuf.append("Unable to load image: " + ioe.getMessage());
+                  errBuf.append("Unable to load image: ").append(ioe.getMessage());
                }
                
                if(bi != null) buildImagePreview();
@@ -242,7 +242,7 @@ class FCFileLoader extends SwingWorker<Object, Object>
    private String dataSetID = null;
    
    /** The listener to be notified once this file loader task is completed. */
-   private ActionListener listener = null;
+   private ActionListener listener;
    
    /** The renderable graphic model of the target object, prepared by this file loader task. Null until done loading. */
    private RenderableModel model = null;

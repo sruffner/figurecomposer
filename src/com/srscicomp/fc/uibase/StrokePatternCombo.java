@@ -38,7 +38,7 @@ import com.srscicomp.fc.fig.StrokePattern;
  * "dashdot", and "o" for "dashdotdot". Otherwise, to enter and validate a new stroke pattern, hit the "Enter" key. If 
  * the entered value is rejected, the previous value is restored.</li>
  * <li>Convenience methods are provided for getting and setting the stroke pattern currently entered in the combo box: 
- * {@link #getSelectedPattern()} and {@link #setSelectedPattern()}.</li>
+ * {@link #getSelectedPattern()} and {@link #setSelectedPattern(StrokePattern)}.</li>
  * </ul>
  * 
  * @author 	sruffner
@@ -74,7 +74,7 @@ public final class StrokePatternCombo extends JComboBox<StrokePattern>
    public StrokePattern getSelectedPattern()
    { 
       StrokePattern p = (StrokePattern) super.getSelectedItem();
-      if(!(p instanceof StrokePattern)) 
+      if(p == null)
          super.setSelectedItem(pattern);
       else
          pattern = p;
@@ -100,53 +100,45 @@ public final class StrokePatternCombo extends JComboBox<StrokePattern>
     */
    private void updateToolTip()
    {
-      Object o = getPrototypeDisplayValue();
-      StrokePattern proto = (o instanceof StrokePattern) ? (StrokePattern)o : PROTOTYPE;
+      StrokePattern proto = getPrototypeDisplayValue();
+      if(proto == null) proto = PROTOTYPE;
+
       if(pattern.toString().length() > proto.toString().length())
          setToolTipText("Stroke Pattern: " + pattern.toString());
       else 
          setToolTipText("Stroke Pattern");
    }
 
-   /**
-    * Overridden to ensure that internal copy of currently selected item is up-to-date.
-    * @see JComboBox#getSelectedItem()
-    */
+   /** Overridden to ensure that internal copy of currently selected item is up-to-date. */
    @Override public Object getSelectedItem() { return(getSelectedPattern()); }
 
-   /**
-    * Overridden to validate selected item as an instance of <code>StrokePattern</code>.
-    * @see
-    */
+   /** Overridden to validate selected item as an instance of <code>StrokePattern</code>. */
    @Override public void setSelectedItem(Object anObject) 
    {  
       if(anObject == null || anObject instanceof StrokePattern) setSelectedPattern((StrokePattern)anObject);
    }
 
-   /** 
-    * Overridden to protecte the combo box editor used.
-    * @see JComboBox#setEditor(ComboBoxEditor)
-    */
+   /** Overridden to protecte the combo box editor used. */
    @Override public void setEditor(ComboBoxEditor cbe) { if(cbe instanceof PatternEditor) super.setEditor(cbe); }
 
 
    /** Handler invoked whenever <strong>Enter</strong> key is pressed in a <code>StrokePatternCombo</code>. */
-   private static Action enterAction;
+   private static final Action enterAction;
 
    /** Action which selects the common pattern <code>StrokePattern.SOLID</code>. */
-   private static Action selectSolid;
+   private static final Action selectSolid;
 
    /** Action which selects the common pattern <code>StrokePattern.DOTTED</code>. */
-   private static Action selectDotted;
+   private static final Action selectDotted;
 
    /** Action which selects the common pattern <code>StrokePattern.DASHED</code>. */
-   private static Action selectDashed;
+   private static final Action selectDashed;
 
    /** Action which selects the common pattern <code>StrokePattern.DASHDOT</code>. */
-   private static Action selectDashDot;
+   private static final Action selectDashDot;
 
    /** Action which selects the common pattern <code>StrokePattern.DASHDOTDOT</code>. */
-   private static Action selectDashDotDot;
+   private static final Action selectDashDotDot;
 
    static
    {
@@ -187,7 +179,7 @@ public final class StrokePatternCombo extends JComboBox<StrokePattern>
          {
             Container c = ((JTextField)src).getParent();
             while(c != null && !(c instanceof StrokePatternCombo)) c = c.getParent();
-            if(c instanceof StrokePatternCombo)
+            if(c != null)
             {
                StrokePatternCombo spc = (StrokePatternCombo) c;
                String cmd = e.getActionCommand();
@@ -218,16 +210,16 @@ public final class StrokePatternCombo extends JComboBox<StrokePattern>
     * </ul>
     * 
     * @author sruffner
-    * @see org.hhmi.phyplot.model.StrokePattern#fromString(String)
+    * @see StrokePattern#fromString(String)
     */
-   private class PatternEditor implements ComboBoxEditor
+   private static class PatternEditor implements ComboBoxEditor
    {
-      private PatternField editor;
+      private final PatternField editor;
       private StrokePattern oldValue;
       
       PatternEditor()
       {
-         editor = new PatternField();
+         editor =new PatternField();
          oldValue = StrokePattern.SOLID;
          editor.setText(oldValue.toString());
          installKeyBindings();
@@ -269,7 +261,7 @@ public final class StrokePatternCombo extends JComboBox<StrokePattern>
          im.put(KeyStroke.getKeyStroke('o'), selectDashDotDot);
       }
 
-      class PatternField extends JTextField
+      static class PatternField extends JTextField
       {
          private static final long serialVersionUID = 1L;
 
@@ -287,7 +279,7 @@ public final class StrokePatternCombo extends JComboBox<StrokePattern>
          // @Override public void setBorder(Border b) {}
       }
 
-      class StrokePatternDocumentFilter extends DocumentFilter
+      static class StrokePatternDocumentFilter extends DocumentFilter
       {
          /** Maximum length of a <code>StrokePattern</code> definition string if it contains 6 2-digit integers. */
          private static final int MAXLEN = 17;

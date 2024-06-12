@@ -12,10 +12,10 @@ import javax.swing.SwingUtilities;
 /**
  * <code>WrapLayout</code> is an extension of {@link FlowLayout} that supports wrapping of components
  * vertically when there is insufficient space horizontally.
- * 
- * <p><b>CREDITS</b>: This implementation is by Rob Camick, and was obtained here: 
- * http://tips4java.wordpress.com/2008/11/06/wrap-layout.</p>
- *    
+ *
+ * <p><b>CREDITS</b>: This implementation is by Rob Camick, and was obtained
+ * <a href="http://tips4java.wordpress.com/2008/11/06/wrap-layout">here</a>.</p>
+ *
  * @author sruffner
  */
 @SuppressWarnings("serial")

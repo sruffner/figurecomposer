@@ -30,10 +30,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -380,13 +377,14 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     * @param saveAs If set, a chooser dialog is raised to let the user specify a different destination file.
     * @param selOnly If set, the chooser dialog is raised merely to let user specify a destination file for the figure
     * <b>without actually saving the figure</b>. This option might be useful if you need to accumulate the destination
-    * files for several figures that are then saved all at once via {@link #saveAllFigures()}. If this flag is set,
-    * then <i>f</i> simply specifies a starting point for the chooser.
+    * files for several figures that are then saved all at once via {@link #saveAllFigures(JComponent, List, List)}. If
+    * this flag is set, then <i>f</i> simply specifies a starting point for the chooser.
     * @return True if successful, false if user cancelled operation or an error occurred during the file save. In the 
     * former case, call {@link #getSelectedFile()} to retrieve the path of the file just saved. In the latter case, 
     * the user will have already been informed of the problem. The method will return false immediately (and silently) 
     * if <b>fig</b> is null or if the chooser is currently in use.
     */
+   @SuppressWarnings("ConstantValue")
    public boolean saveFigure(JComponent c, FGraphicModel fig, File f, boolean saveAs, boolean selOnly)
    {
       if(busy || fig == null) return(false);
@@ -456,7 +454,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     */
    public int saveAllFigures(JComponent c, List<FGraphicModel> figs, List<File> figFiles)
    {
-      if(busy || figs == null || figFiles == null || figs.size() != figFiles.size() || figs.size() == 0)
+      if(busy || figs == null || figFiles == null || figs.size() != figFiles.size() || figs.isEmpty())
          return(0);
       busy = true;
       
@@ -465,7 +463,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       owner = (tla instanceof Window) ? (Window) tla : null;
 
       // prepare the list of jobs to be performed, skipping over any bad entries in the input args
-      List<SaveJob> jobs = new ArrayList<SaveJob>();
+      List<SaveJob> jobs = new ArrayList<>();
       for(int i=0; i<figs.size(); i++) if(figs.get(i) != null)
       {
          File dst = figFiles.get(i);
@@ -493,7 +491,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     * <p><b>NOTE 1: Image file resolution.</b> When exported to either of the two supported image file formats, the
     * figure is rendered to an offscreen bitmap at a fixed resolution of 300dpi before writing it to the file, and the
     * image resolution meta-data is included in the file as well (otherwise, external programs will assume 72dpi). See 
-    * {@link FileTaskWorker#saveOrExportFigure()}.</p>
+    * {@link FileTaskWorker#saveOrExportFigure(SaveJob)}.</p>
     * 
     * <p><b>NOTE 2: Fonts in PDF files.</b> When exported to PDF, any fonts needed to render text elements in the figure
     * will be embedded (as a subsetted font) in the file. This should be sufficient to view -- but not edit -- the PDF
@@ -583,7 +581,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
 
       // prepare the list of export jobs to be performed, fixing file extensions as needed and skipping over any bad
       // entries in the input args
-      List<SaveJob> jobs = new ArrayList<SaveJob>();
+      List<SaveJob> jobs = new ArrayList<>();
       for(int i=0; i<figs.length; i++) if(figs[i] != null)
       {
          File dst = figFiles[i];
@@ -720,7 +718,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    }
    
    /** The current dialog container for the chooser. Recreated each time the chooser is raised. */
-   private JDialog chooserDlg = null;
+   private JDialog chooserDlg;
    
    /** Minimum size for the file chooser dialog container. */
    private final static Dimension MINDLGSZ = new Dimension(600,400);
@@ -729,16 +727,16 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    private Dimension lastDlgSize = new Dimension(MINDLGSZ);
    
    /** Owner window (either a dialog or frame window, or null) for the chooser or progress dialogs. */
-   private Window owner = null;
+   private Window owner;
    
    /** Flag set while the singleton chooser is in use. */
-   private transient boolean busy = false;
+   private transient boolean busy;
    
    /** Current user's <em>Figure Composer</em> workspace. */
-   private FCWorkspace workspace = null;
+   private final FCWorkspace workspace;
    
    /** View of the host's file system. */
-   private FileSystemView fsView = null;
+   private final FileSystemView fsView;
    
    /** The chooser's current directory (or, the directory it was displaying when it was last raised). */
    private File currentDir = null;
@@ -794,7 +792,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     * This simple rendered model is installed in preview canvas while loading the real preview, or to display an error
     * message, or to indicate no selection.
     */
-   private CenteredMessageModel placeHolderPreview = new CenteredMessageModel("");
+   private final CenteredMessageModel placeHolderPreview = new CenteredMessageModel("");
    
    /** Flag set while reloading dialog controls -- so we know to ignore events thrown while doing so. */
    private transient boolean isReloading = false;
@@ -842,14 +840,8 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    
    /** Panel visible only when saving a data set -- for changing the data set ID. */
    private JPanel dsIDPanel = null;
-   
-   /** 
-    * Panel holds a preview of the currently selected content. A figure canvas renders the content -- a figure or a 
-    * single data set.
-    */
-   private JPanel previewPanel = null;
-   
-   /** The canvas on which a figure model or a single dataset is rendered for preview purposes. */
+
+    /** The canvas on which a figure model or a single dataset is rendered for preview purposes. */
    private Graph2DViewer previewer = null;
 
    /** 
@@ -878,7 +870,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     */
    private void createComponents()
    {
-      dirCombo = new JComboBox<File>();
+      dirCombo = new JComboBox<>();
       dirCombo.setRenderer(new DirPathComboRenderer());
       dirCombo.setEditable(false);
       dirCombo.addActionListener(this);
@@ -894,7 +886,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       fileTable.setDefaultRenderer(Date.class, renderer);
       fileTable.addMouseListener(this);
       
-      fileTypeCombo = new JComboBox<FCFileType>();
+      fileTypeCombo = new JComboBox<>();
       fileTypeCombo.setEditable(false);
       fileTypeCombo.addActionListener(this);
 
@@ -914,7 +906,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             "source file, the existing dataset is replaced.</html>");
       replaceChk.addActionListener(this);
       
-      dataSetList = new JList<DataSetInfo>();
+      dataSetList = new JList<>();
       dataSetList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
       dataSetList.setLayoutOrientation(JList.VERTICAL_WRAP);
       dataSetList.setCellRenderer(new DataSetInfoLCR());
@@ -1020,8 +1012,8 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       browsePanel.add(boxPanel, BorderLayout.CENTER);
       browsePanel.add(dataSetPanel, BorderLayout.SOUTH);
       browsePanel.setBorder(BorderFactory.createEmptyBorder(gap*2, gap*2, gap*2, gap*2));
-      
-      previewPanel = new JPanel(new BorderLayout());
+
+      JPanel previewPanel = new JPanel(new BorderLayout());
       previewPanel.add(previewer, BorderLayout.CENTER);
       previewPanel.add(noteScroller, BorderLayout.SOUTH);
       previewPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -1159,7 +1151,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
                   mode.validDNFileTypes[i].hasValidExtension(currentFile))
                iTypeSel = i;
          }
-         fileTypeCombo.setSelectedIndex(iTypeSel >= 0 ? iTypeSel : 0);
+         fileTypeCombo.setSelectedIndex(Math.max(iTypeSel, 0));
          
          // in SELFIGS mode only, multi-selection in the file table is supported. Set the list selection mode before
          // we reload the file table.
@@ -1227,12 +1219,13 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          }
          
          FCFileType currDNFileType = (FCFileType) fileTypeCombo.getSelectedItem();
+         if(currDNFileType == null) currDNFileType = FCFileType.FYP;
          FilesTableModel ftm = (FilesTableModel) fileTable.getModel();
          ftm.init(currentDir, currDNFileType);
 
          // update currently selected file. In a "file save" mode, this need not exist. In a "file open" mode, we try 
          // to select an existing file, but it's possible that the current directory has no files of the required type.
-         File select = null;
+         File select;
          if(!mode.isOpenMode())
          {
             select = new File(currentDir, (currentFile != null) ? currentFile.getName() : "Untitled");
@@ -1272,7 +1265,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          return;
       }
       
-      if((!force) && (currentFile == tgtFile || (currentFile != null && currentFile.equals(tgtFile)))) return;
+      if((!force) && (Objects.equals(currentFile, tgtFile))) return;
       if(tgtFile != null && tgtFile.isFile() && !currentDir.equals(tgtFile.getParentFile())) return;
       
       currentFile = tgtFile;
@@ -1308,15 +1301,16 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             else if(mode == OpMode.OPENDS && requestedDSFmts != null)
             {
                // restrict datasets shown to those matching requested dataset formats
-               List<DataSetInfo> dsinfo = new ArrayList<DataSetInfo>();
+               List<DataSetInfo> dsinfo = new ArrayList<>();
                for(DataSetInfo dsi : existing)
                {
                   Fmt fmt = dsi.getFormat();
-                  for(int i=0; i<requestedDSFmts.length; i++) if(fmt == requestedDSFmts[i])
-                  {
-                     dsinfo.add(dsi);
-                     break;
-                  }
+                  for(Fmt requestedDSFmt : requestedDSFmts)
+                     if(fmt == requestedDSFmt)
+                     {
+                        dsinfo.add(dsi);
+                        break;
+                     }
                }
                if(dsinfo.size() < existing.length)
                {
@@ -1371,7 +1365,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             default : 
                isValid = isValidFilename(currentFile.getName()) && mode.hasValidExtension(currentFile); 
                if(!isValid) errMsg = currentFile.getName() + " is not a valid filename";
-               else if(isValid && mode == OpMode.SAVEDS && dataSource != null)
+               else if(mode == OpMode.SAVEDS && dataSource != null)
                {
                   // if chosen dataset ID is valid but matches that of an existing dataset, then operation is allowed
                   // only if the "replace" checkbox is checked.
@@ -1429,9 +1423,9 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    // Restricting characters in filename
    //
    
-   private static Matcher LEGALFILENAMEMATCHER =
+   private static final Matcher LEGALFILENAMEMATCHER =
       Pattern.compile("[^\\u0000-\\u001f\"\\\\?\\<\\>\\*\\|\\:/]+").matcher("test");
-   private static Matcher ILLEGALBASENAMEMATCHER = 
+   private static final Matcher ILLEGALBASENAMEMATCHER =
       Pattern.compile("com[1-9]{1}|lpt[1-9]{1}|con|nul|prn|clock\\$").matcher("test");
    
    /**
@@ -1453,7 +1447,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    private boolean isValidFilename(String fname)
    {
       
-      boolean isValid = (fname != null) && (fname.length() > 0) && (fname.length() < 255);
+      boolean isValid = (fname != null) && (!fname.isEmpty()) && (fname.length() < 255);
       if(isValid)
          isValid = LEGALFILENAMEMATCHER.reset(fname).matches();
       if(isValid)
@@ -1536,7 +1530,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             if(mode == OpMode.SAVEFIG)
             {
                String note = ((FigureNode) fgm.getRoot()).getNote().trim();
-               figNoteTextArea.setText(note.length()>0 ? note : "No description provided.");
+               figNoteTextArea.setText(!note.isEmpty() ? note : "No description provided.");
             }
          }
          previewer.setModel(model);
@@ -1556,6 +1550,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       try
       {
          FCFileType currDNFileType = (FCFileType) fileTypeCombo.getSelectedItem();
+         assert currDNFileType != null;
          FilesTableModel ftm = (FilesTableModel) fileTable.getModel();
          ftm.init(currentDir, currDNFileType);
          File select = new File(currentDir, (currentFile != null) ? currentFile.getName() : "Untitled");
@@ -1571,6 +1566,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     * and a separate worker thread to perform the save.
     * @param cancelled True if user cancelled out of the chooser dialog.
     */
+   @SuppressWarnings("BusyWait")
    private void extinguish(boolean cancelled)
    {
       if(chooserDlg == null) throw new IllegalStateException("Chooser dialog does not exist!");
@@ -1596,7 +1592,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             long tStart = System.currentTimeMillis();
             do
             {
-               try { Thread.sleep(400); } catch(InterruptedException ie) {}
+               try { Thread.sleep(400); } catch(InterruptedException ignored) {}
             } while((!fileLoader.isDone()) && (System.currentTimeMillis() - tStart < 5000));
             
             gaveUp = !fileLoader.isDone();
@@ -1635,7 +1631,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             if(mode == OpMode.OPENFIG)
             {
                RenderableModel model = workspace.getModelFromCache(currentFile, null);
-               if(model instanceof FGraphicModel) theObject = (FGraphicModel)model;
+               if(model instanceof FGraphicModel) theObject = model;
             }
             else if(mode == OpMode.OPENDS)
             {
@@ -1644,7 +1640,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
                if(model instanceof DataSetPreview)
                   theObject = ((DataSetPreview)model).getDataSet();
             }
-            else if(mode == OpMode.OPENIMG)
+            else
             {
                // in this case, the buffered image is already stored in theObject when the loader finishes. Here we
                // just verify that.
@@ -1746,7 +1742,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             {
                FigureNode figNode = (FigureNode) ((FGraphicModel) rm).getRoot();
                String note = figNode.getNote().trim();
-               figNoteTextArea.setText(note.length()>0 ? note : "No description provided.");
+               figNoteTextArea.setText(!note.isEmpty() ? note : "No description provided.");
             }
          }
          else 
@@ -1806,9 +1802,10 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             // form the current file path. If it lacks a valid extension, tack one on to the end of filename. 
             // Partially completed extensions are completed, eg: name.fy --> name.fyp
             FCFileType type = (FCFileType) fileTypeCombo.getSelectedItem();
+            assert(type != null);
             File select = null;
             String fname = fileNameField.getText();
-            if(fname != null && fname.length() > 0)
+            if(fname != null && !fname.isEmpty())
             {
                fname = type.addValidExtension(fname);
                select = (currentDir == null) ? new File(fname) : new File(currentDir, fname); 
@@ -1845,9 +1842,9 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       SAVEDS( new FCFileType[] {FCFileType.DNB, FCFileType.DNA} );
       
       /** The set of valid file types for this operational mode. */
-      private FCFileType[] validDNFileTypes;
+      private final FCFileType[] validDNFileTypes;
       
-      private OpMode(FCFileType[] types) { validDNFileTypes = types; }
+      OpMode(FCFileType[] types) { validDNFileTypes = types; }
       
       /**
        * Is this one of the chooser's "file open" operational modes?
@@ -1886,7 +1883,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       File fixExtension(File f)
       {
          if(f == null) throw new IllegalArgumentException();
-          return(hasValidExtension(f) ? f : validDNFileTypes[0].fixExtension(f));
+         return(hasValidExtension(f) ? f : validDNFileTypes[0].fixExtension(f));
       }
    }
    
@@ -1895,10 +1892,10 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     * its ID and an icon that roughly reflects the set format.
     * @author sruffner
     */
-   private class DataSetInfoLCR extends DefaultListCellRenderer
+   private static class DataSetInfoLCR extends DefaultListCellRenderer
    {
-      @Override public Component getListCellRendererComponent(JList<? extends Object> list, Object value, int index, 
-            boolean select, boolean focus)
+      @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                              boolean select, boolean focus)
       {
          super.getListCellRendererComponent(list, value, index, select, focus);
          String s = "";
@@ -1933,8 +1930,8 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     */
    private class DirPathComboRenderer extends DefaultListCellRenderer
    {
-      @Override public Component getListCellRendererComponent(JList<? extends Object> list, Object value,
-            int index, boolean select, boolean focus)
+      @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                              int index, boolean select, boolean focus)
       {
          super.getListCellRendererComponent(list, value, index, select, focus);
          String s = "";
@@ -2004,13 +2001,13 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       private static final long serialVersionUID = 1L;
       
       /** The filtered file list, already ordered as described in class header. */
-      private List<File> contents = new ArrayList<File>();
+      private final List<File> contents = new ArrayList<>();
       
       /** 
        * The cached last-modified times for the filtered file list. Certain special file system entities -- drives,
        * floppy drives, and other special folders -- will have <code>null</code> entries here.
        */
-      private List<Long> lastModTimes = new ArrayList<Long>();
+      private final List<Long> lastModTimes = new ArrayList<>();
       
       /** Index position of the first file in the filtered file list. If negative, there are no files (only folders). */
       private int firstFileIndex = -1;
@@ -2047,7 +2044,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          {
             fireTableDataChanged();
             JOptionPane.showMessageDialog(FCChooser.this, 
-                  String.format("FigureComposer was denied or failed to access the file listing for directory:\n   %s", dir.toString()), 
+                  String.format("FigureComposer was denied or failed to access the file listing for directory:\n   %s", dir),
                   "Directory access failure", JOptionPane.ERROR_MESSAGE);
             return;
          }
@@ -2088,30 +2085,31 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
                while(j < contents.size())
                {
                   Long lmt = lastModTimes.get(j);
-                  if(lmt != null && lmt.longValue() < lastModT) break;
+                  if(lmt != null && lmt < lastModT) break;
                   ++j;
                }
                contents.add(j, folder);
-               lastModTimes.add(j, new Long(lastModT));
+               lastModTimes.add(j, lastModT);
             }
          }
          
          // pass 2: All files in descending order by last modified time (most recent first)
          firstFileIndex = -1;
-         for(int i=0; i<files.length; i++) if(files[i] != null && files[i].isFile())
-         {
-            if(firstFileIndex < 0) firstFileIndex = contents.size();
-            
-            long lastModT = files[i].lastModified();
-            int j = firstFileIndex;
-            while(j < contents.size())
+         for(File file : files)
+            if(file != null && file.isFile())
             {
-               if(lastModTimes.get(j).longValue() < lastModT) break;
-               ++j;
+               if(firstFileIndex < 0) firstFileIndex = contents.size();
+
+               long lastModT = file.lastModified();
+               int j = firstFileIndex;
+               while(j < contents.size())
+               {
+                  if(lastModTimes.get(j) < lastModT) break;
+                  ++j;
+               }
+               contents.add(j, file);
+               lastModTimes.add(j, lastModT);
             }
-            contents.add(j, files[i]);
-            lastModTimes.add(j, new Long(lastModT));
-         }
 
          fireTableDataChanged();
       }
@@ -2147,7 +2145,6 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       
       @Override public Class<?> getColumnClass(int c) { return(c == 0 ? File.class : Date.class); }
       @Override public String getColumnName(int c) { return(c == 0 ? NAMECOL : DATECOL); }
-      @Override public boolean isCellEditable(int rowIndex, int columnIndex) { return(false); }
 
 
       public int getColumnCount() { return(2); }
@@ -2157,7 +2154,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       {
          if(c < 0 || c > 1 || r < 0 || r >= contents.size()) return(null);
          Long lastModT = lastModTimes.get(r);
-         return((c==0) ? contents.get(r) : (lastModT != null ? new Date(lastModT.longValue()) : null));
+         return((c==0) ? contents.get(r) : (lastModT != null ? new Date(lastModT) : null));
       }
    }
 
@@ -2172,7 +2169,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    private class FilesTableRenderer extends DefaultTableCellRenderer
    {
       private static final long serialVersionUID = 1L;
-      DateFormat dateFormatter = DateFormat.getDateTimeInstance();
+      final DateFormat dateFormatter = DateFormat.getDateTimeInstance();
 
       @Override
       protected void setValue(Object value)
@@ -2221,15 +2218,15 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       FCFileType type = FCFileType.getFileType(dst);
       if(type == null) return(false);
       
-      SaveJob job = null;
+      SaveJob job;
       if(type == FCFileType.FYP || FCFileType.isFigureExportFileType(type))
-         job = new SaveJob(dst, (FGraphicModel) saveObj);
+         job =new SaveJob(dst, (FGraphicModel) saveObj);
       else 
-         job = new SaveJob(dst, (DataSet) saveObj, replace);
+         job =new SaveJob(dst, (DataSet) saveObj, replace);
       
       FileTaskWorker saver = new FileTaskWorker(job);
       
-      Dlg progressDlg = new Dlg(owner, saver);
+      Dlg progressDlg =new Dlg(owner, saver);
       progressDlg.pack();
       progressDlg.setLocationRelativeTo(owner);
       
@@ -2254,7 +2251,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       
       FileTaskWorker saver = new FileTaskWorker(jobs);
       
-      Dlg progressDlg = new Dlg(owner, saver);
+      Dlg progressDlg =new Dlg(owner, saver);
       progressDlg.pack();
       progressDlg.setLocationRelativeTo(owner);
       
@@ -2275,7 +2272,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     * 
     * @author sruffner
     */
-   private class SaveJob
+   private static class SaveJob
    {
       SaveJob(File dst, FGraphicModel fgm)
       {
@@ -2290,7 +2287,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          this.replace = replace;
       }
       
-      File dst = null;
+      final File dst;
       FGraphicModel fgm = null;
       DataSet ds = null;
       boolean replace = false;
@@ -2304,7 +2301,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
     * message and an "OK" button by which the user can extinguish the dialog after reading the message.
     * @author sruffner
     */
-   private class Dlg extends JDialog implements ActionListener, WindowListener
+   private static class Dlg extends JDialog implements ActionListener, WindowListener
    {
       Dlg(Window owner, FileTaskWorker worker)
       {
@@ -2362,7 +2359,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          else
          {
             String[] lines = errMsg.split("\n");
-            for(int i=0; i<lines.length; i++) msgArea.append(lines[i] + LINEFEED);
+            for(String line : lines) msgArea.append(line + LINEFEED);
             confirmBtn.setEnabled(true);
          }
       }
@@ -2402,7 +2399,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    {
       FileTaskWorker(SaveJob job)
       {
-         jobList = new ArrayList<SaveJob>();
+         jobList = new ArrayList<>();
          jobList.add(job);
       }
       
@@ -2471,7 +2468,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       /** Updates the blocking dialog's progress message. */
       @Override protected void process(List<String> chunks)
       {
-         if(blockingDlg != null && chunks != null && chunks.size() > 0)
+         if(blockingDlg != null && chunks != null && !chunks.isEmpty())
          {
             blockingDlg.progressUpdate(chunks.get(chunks.size()-1));
          }
@@ -2480,7 +2477,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
       @Override protected void done() { if(blockingDlg != null) blockingDlg.workerDone(errMsg); }
 
       /** The file-save task(s) to be completed. */
-      private List<SaveJob> jobList = null;
+      private final List<SaveJob> jobList;
       
       /** The number of tasks successfully completed. */
       private int nJobsDone = 0;
@@ -2519,7 +2516,8 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          String emsg = null;
          if(!ok) 
          {
-            if(!altDst.equals(job.dst)) altDst.delete();
+            if(!altDst.equals(job.dst)) //noinspection ResultOfMethodCallIgnored
+               altDst.delete();
             emsg = source.getLastError();
          }
          else if(!altDst.equals(job.dst))
@@ -2571,17 +2569,13 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
                   psDoc.setBoundingBox(bb);
                   
                   String title = "Figure Composer figure ";
-                  if(fig.getTitle().length() > 0) title += " (" + fig.getTitle() + ")";
+                  if(!fig.getTitle().isEmpty()) title += " (" + fig.getTitle() + ")";
                   String author = FCWorkspace.getApplicationTitle() + " " + FCWorkspace.getApplicationVersion();
                   psDoc.printToFile(tmpDst, title, author);
                }
-               catch(IOException ioe)
+               catch(IOException | UnsupportedOperationException ioe)
                {
                   emsg = "Export failed: " + ioe.getMessage();
-               }
-               catch(UnsupportedOperationException uoe)
-               {
-                  emsg = "Export failed: " + uoe.getMessage();
                }
                break;
             case PDF :
@@ -2600,22 +2594,12 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
                   emsg = "Unable to obtain a graphics context to construct image data";
                   break;
                }
-               BufferedImage bi = FGraphicModel.getOffscreenImage(model, gc, 300.0f); // DNWorkspace.getInstance().getScreenDPI());
+               BufferedImage bi = FGraphicModel.getOffscreenImage(model, gc, 300.0f);
                if(bi == null)
                {
                   emsg = "Unable to render image data";
                   break;
                }
-               /*
-               try
-               {
-                  ImageIO.write(bi, (type == FCFileType.JPEG) ? "jpg" : "png", tmpDst);
-               }
-               catch(IOException ioe) 
-               {
-                  errMsg = "IO error while writing image file: " + ioe.getMessage();
-               }
-               */
                emsg = writeBufferedImageToFile(tmpDst, type, bi, 300);
                break;
             case SVG :
@@ -2626,7 +2610,8 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
                break;
          }
          
-         if(emsg != null) 
+         if(emsg != null)
+            //noinspection ResultOfMethodCallIgnored
             tmpDst.delete();
          else if(!tmpDst.equals(job.dst))
          {
@@ -2666,7 +2651,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          
          // determine dimensions and margins for the SVG output. If a printed page format is specified, use that; else
          // the margins are all zero and the SVG dimensions match the figure's dimensions. In typographical points.
-         float w=0, h=0, left=0, bot=0;
+         float w, h, left=0, bot=0;
          if(pgFmt != null)
          {
             w = (float) pgFmt.getWidth();
@@ -2729,7 +2714,7 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
          finally
          {
             if(svg != null) svg.dispose();
-            try { if(wrt != null) wrt.close(); } catch(IOException ioe) {}
+            try { if(wrt != null) wrt.close(); } catch(IOException ignored) {}
          }
          return(emsg);
       }
@@ -2767,8 +2752,6 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
             {
                ImageWriter writer = iw.next();
                ImageWriteParam writeParam = writer.getDefaultWriteParam();
-               //ImageTypeSpecifier typeSpecifier =
-               //     ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
                ImageTypeSpecifier typeSpecifier =
                     ImageTypeSpecifier.createFromBufferedImageType(bi.getType());
                IIOMetadata metadata = writer.getDefaultImageMetadata(typeSpecifier, writeParam);
@@ -2797,16 +2780,11 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
                IIOMetadataNode root = new IIOMetadataNode("javax_imageio_1.0");
                root.appendChild(dim);
                metadata.mergeTree("javax_imageio_1.0", root);
-               
-               final ImageOutputStream stream = ImageIO.createImageOutputStream(dst);
-               try 
+
+               try(ImageOutputStream stream = ImageIO.createImageOutputStream(dst))
                {
                   writer.setOutput(stream);
                   writer.write(metadata, new IIOImage(bi, null, metadata), writeParam);
-               }
-               finally 
-               {
-                  stream.close();
                }
                break;
             }

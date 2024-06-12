@@ -32,7 +32,8 @@ import com.srscicomp.fc.fig.ColorLUT;
 /**
  * <b>DataSetPreview</b> is a quick-and-dirty preview of the contents of a single <i>Figure Composer</i>-compatible
  * data set, {@link DataSet}. It implements {@link AbstractRenderableModel} so that it may be displayed in a {@link 
- * Graph2DViewer}. The model consists of a single {@link RootRenderable} node, which is the model itself.
+ * com.srscicomp.common.g2dviewer.Graph2DViewer Graph2DViewer}. The model consists of a single {@link RootRenderable}
+ * node, which is the model itself.
  * 
  * <p>The data set is rendered within a nominal 4in-by-4in viewport in a manner appropriate for the dataset's format. X 
  * increases rightward and Y upward in this viewport. All data is clipped to appear within a 3in square the bottom-left 
@@ -73,7 +74,7 @@ public class DataSetPreview extends AbstractRenderableModel implements RootRende
    }
 
    /** The data set currently rendered. */
-   private DataSet ds = null;
+   private DataSet ds;
 
    /**
     * Get the data set rendered in this preview.
@@ -141,28 +142,19 @@ public class DataSetPreview extends AbstractRenderableModel implements RootRende
     * Painter style used in most rendering by within the data set preview: default font, 10-mil solid blue stroke, 
     * black text/fill color. 
     */
-   private static PainterStyle style = 
+   private static final PainterStyle style =
       BasicPainterStyle.createBasicPainterStyle(null, 10, null, Color.BLUE, Color.BLACK);
    
    /** 
     * Painter style for axis lines and error bars: default font, 15-mil solid gray stroke with butt ends and mitered
     * joins, black text/fill color. 
     */
-   private static PainterStyle axisStyle = BasicPainterStyle.createBasicPainterStyle("Arial", GenericFont.SANSERIF, 
-            FontStyle.PLAIN, 8*1000/72, 15, null, null, null, 0x00808080, 0);
+   private static final PainterStyle axisStyle = BasicPainterStyle.createBasicPainterStyle("Arial", GenericFont.SANSERIF,
+            FontStyle.PLAIN, 8.0f*1000/72, 15, null, null, null, 0x00808080, 0);
 
    
-   /** A gray-scale color map for rendering the XYZIMG format (packed ARGB color model, with A in MSByte). */
-   private final static int[] GRAYMAP;
-   static
-   {
-      GRAYMAP = new int[256];
-      for(int i=0; i<GRAYMAP.length; i++)
-         GRAYMAP[i] = 0xFF000000 | ((i<<16) + (i<<8) + i);
-   }
-   
    /** Prepared list of painters that draw all or a portion of the rendered view. */
-   private List<Painter> painters = new ArrayList<Painter>();
+   private final List<Painter> painters = new ArrayList<>();
    
    /** "Heat map" image of an XYZIMG data set, using a gray-scale color map. */
    private BufferedImage heatMapImg = null;
@@ -228,7 +220,7 @@ public class DataSetPreview extends AbstractRenderableModel implements RootRende
       // painter for the axes lines, including ticks at the endpoints
       PolylinePainter pp = new PolylinePainter();
       pp.setStyle(axisStyle);
-      List<Point2D> axesVerts = new ArrayList<Point2D>();
+      List<Point2D> axesVerts = new ArrayList<>();
       axesVerts.add(new Point2D.Float(500, 350));
       axesVerts.add(new Point2D.Float(500, 400));
       axesVerts.add(new Point2D.Float(3500, 400));
@@ -336,7 +328,7 @@ public class DataSetPreview extends AbstractRenderableModel implements RootRende
       int nSkip;
       int which;  // RASTER1D only: 0 for bottom of hash mark, 1 for top, 2 for undefined pt between hash marks!
       boolean insertGap;
-      Point2D pCurrent;
+      final Point2D pCurrent;
 
       public Iterator<Point2D> iterator() { return(new PolylineProducer()); }
 
@@ -466,7 +458,7 @@ public class DataSetPreview extends AbstractRenderableModel implements RootRende
       int which;  // [0..nEBarPts-1]
       int nEBarPts;
       boolean done;
-      Point2D[] pEBarPts;
+      final Point2D[] pEBarPts;
 
       public Iterator<Point2D> iterator() { return(new ErrorBarProducer()); }
 
@@ -598,8 +590,8 @@ public class DataSetPreview extends AbstractRenderableModel implements RootRende
       int which;  // 1 for +1STD polyline, -1 for -1STD
       boolean done;
       boolean insertGap; // flag set to inser undefined point between the two polylines
-      Point2D pCurrent;
-      float[] fbuf = new float[] {0, 0, 0};  // to check for ill-defined coords or std dev
+      final Point2D pCurrent;
+      final float[] fbuf = new float[] {0, 0, 0};  // to check for ill-defined coords or std dev
       
       public Iterator<Point2D> iterator() { return(new ErrorBarProducer()); }
 

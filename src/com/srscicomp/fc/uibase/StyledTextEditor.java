@@ -48,6 +48,7 @@ import com.srscicomp.common.ui.FontStyle;
 import com.srscicomp.common.ui.LocalFontEnvironment;
 import com.srscicomp.common.ui.MultiButton;
 import com.srscicomp.common.ui.RGBColorPicker;
+import com.srscicomp.common.util.Utilities;
 
 /**
  * <b>StyledTextEditor</b> is a custom component for displaying and editing text in which the text color, font style, 
@@ -66,8 +67,7 @@ import com.srscicomp.common.ui.RGBColorPicker;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
-public class StyledTextEditor extends JPanel implements PropertyChangeListener, ItemListener, 
+public class StyledTextEditor extends JPanel implements PropertyChangeListener, ItemListener,
       ActionListener, CaretListener, FocusListener
 {
    /** The default text color. */
@@ -83,14 +83,14 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
     * <p>In addition, the scroll pane height is adjusted so that (roughly) this many text lines are visible without 
     * scrolling.</p>
     */
-   private int nLines = 1;
+   private final int nLines;
    
    /** 
     * If set, registered action listeners are notified of a possible change in the editor's content ONLY when the
     * user explicitly "submits" the change via keyboard shortcut (<b>Enter</b> or <b>Shift-Enter</b>) or the explicit 
     * "enter" button, or if the editor loses the permanent keyboard focus.
     */
-   private boolean notifyOnlyOnEnter = false;
+   private final boolean notifyOnlyOnEnter;
    
    /** The text editing component. */
    private JTextPane textPane = null;
@@ -98,7 +98,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
    private JScrollPane scrollPane = null;
    
    /** Compact custom button widget uses a pop-up panel to edit the text fill color. */
-   private RGBColorPicker textColorPicker = null;
+   private final RGBColorPicker textColorPicker;
    /** A multiple-choice widget to select the current font style. */
    private MultiButton<FontStyle> fontStyleMB = null;
    
@@ -186,7 +186,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
     */
    public StyledTextEditor(int n, boolean showEnterBtn, boolean notifyOnlyOnEnter)
    {
-      nLines = (n < 1) ? 1 : ((n > 10) ? 10 : n);
+      nLines = Utilities.rangeRestrict(1, 10, n);
       this.notifyOnlyOnEnter = notifyOnlyOnEnter;
       
       textColorPicker = new RGBColorPicker();
@@ -195,7 +195,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
       textColorPicker.addPropertyChangeListener(this);
       textColorPicker.setFocusable(false);
 
-      fontStyleMB = new MultiButton<FontStyle>();
+      fontStyleMB = new MultiButton<>();
       fontStyleMB.addChoice(FontStyle.PLAIN, FCIcons.V4_FSPLAIN_16, "Plain");
       fontStyleMB.addChoice(FontStyle.ITALIC, FCIcons.V4_FSITALIC_16, "Italic");
       fontStyleMB.addChoice(FontStyle.BOLD, FCIcons.V4_FSBOLD_16, "Bold");
@@ -211,7 +211,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
       underlineChk.setToolTipText("Underline");
       underlineChk.setFocusable(false);
       
-      superscriptMB = new MultiButton<Integer>();
+      superscriptMB = new MultiButton<>();
       superscriptMB.addChoice(NORMSCRIPT, FCIcons.V4_NORMSCRIPT_16, "Normal");
       superscriptMB.addChoice(TextAttribute.SUPERSCRIPT_SUPER, FCIcons.V4_SUPERSCRIPT_16, "Superscript");
       superscriptMB.addChoice(TextAttribute.SUPERSCRIPT_SUB, FCIcons.V4_SUBSCRIPT_16, "Subscript");
@@ -238,25 +238,90 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
          textPane = new JTextPane() {
             @Override public boolean getScrollableTracksViewportWidth()
             {
-             return (nLines == 1) && (getUI().getPreferredSize(this).width <= getParent().getSize().width);
+             return(getUI().getPreferredSize(this).width <= getParent().getSize().width);
             }
          };
       else
          textPane = new JTextPane();
+
+      Action fireActionPerformed = new AbstractAction()
+      {
+         @Override public void actionPerformed(ActionEvent e) { fireActionEvent(); }
+      };
       textPane.getInputMap().put(
-            KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, (nLines == 1) ? 0 : KeyEvent.SHIFT_DOWN_MASK), 
+            KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, (nLines == 1) ? 0 : KeyEvent.SHIFT_DOWN_MASK),
             fireActionPerformed);
       
       // user can toggle underline, bold and italic styling using the usual hot keys, when focus is on text pane
-      int accMod = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+      int accMod = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+
+      Action toggleUnderline = new AbstractAction()
+      {
+         @Override public void actionPerformed(ActionEvent e) { underlineChk.doClick(); }
+      };
       textPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_U, accMod), toggleUnderline);
+
+      Action toggleBold = new AbstractAction()
+      {
+         @Override public void actionPerformed(ActionEvent e)
+         {
+            FontStyle fs=fontStyleMB.getCurrentChoice();
+            FontStyle updated=FontStyle.getFontStyle(!fs.isBold(), fs.isItalic());
+            fontStyleMB.setCurrentChoice(updated);
+            onFontStyleChanged();
+         }
+      };
       textPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_B, accMod), toggleBold);
+
+      Action toggleItalic = new AbstractAction()
+      {
+         @Override public void actionPerformed(ActionEvent e)
+         {
+            FontStyle fs=fontStyleMB.getCurrentChoice();
+            FontStyle updated=FontStyle.getFontStyle(fs.isBold(), !fs.isItalic());
+            fontStyleMB.setCurrentChoice(updated);
+            onFontStyleChanged();
+         }
+      };
       textPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_I, accMod), toggleItalic);
+
+      Action toggleSuperscript = new AbstractAction()
+      {
+         @Override public void actionPerformed(ActionEvent e)
+         {
+            Integer choice=superscriptMB.getCurrentChoice();
+            if(choice.equals(TextAttribute.SUPERSCRIPT_SUPER)) choice=NORMSCRIPT;
+            else choice=TextAttribute.SUPERSCRIPT_SUPER;
+            superscriptMB.setCurrentChoice(choice);
+            onSuperscriptStateChanged();
+         }
+      };
       textPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, accMod), toggleSuperscript);
+
+      Action toggleSubscript = new AbstractAction()
+      {
+         @Override public void actionPerformed(ActionEvent e)
+         {
+            Integer choice=superscriptMB.getCurrentChoice();
+            if(choice.equals(TextAttribute.SUPERSCRIPT_SUB)) choice=NORMSCRIPT;
+            else choice=TextAttribute.SUPERSCRIPT_SUB;
+            superscriptMB.setCurrentChoice(choice);
+            onSuperscriptStateChanged();
+         }
+      };
       textPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, accMod), toggleSubscript);
+
       if(nLines == 1)
+      {
+         Action toggleWidgets = new AbstractAction()
+         {
+            @Override public void actionPerformed(ActionEvent e)
+            {
+               if(toggleWidgetVisBtn != null) toggleWidgetVisBtn.doClick();
+            }
+         };
          textPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, accMod), toggleWidgets);
-      
+      }
       textPane.setCharacterAttributes(sas, true);
       textPane.addCaretListener(this);
       textPane.addFocusListener(this);
@@ -415,7 +480,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
 
       Dimension d = scrollPane.getSize();
       d.height = (int) (1.3 * sz * nLines);
-      d.height += ((Integer)UIManager.get("ScrollBar.width")).intValue() + 4;  // for horizontal scroll bar.
+      d.height += ((Integer) UIManager.get("ScrollBar.width")) + 4;  // for horizontal scroll bar.
       scrollPane.setSize(d);
       scrollPane.setPreferredSize(d);
       revalidate();
@@ -529,7 +594,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
          value = aci.getAttribute(TextAttribute.SUPERSCRIPT);
          if((value instanceof Integer) && !prevScript.equals(value))
          {
-            Integer script = (Integer) value;
+            int script = (Integer) value;
             StyleConstants.setSuperscript(sas, (script > 0));
             StyleConstants.setSubscript(sas, (script < 0));
             prevScript = script;
@@ -556,7 +621,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
    };
    
    /**
-    * Helper method for {@link #loadContent()}.
+    * Helper method for {@link #loadContent(AttributedString, String, int, Color, FontStyle)}.
     * @param as An attributed string.
     * @return True if argument matches the current contents of this editor.
     */
@@ -580,7 +645,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
          {
             Object currVal = currACI.getAttribute(ta);
             Object value = aci.getAttribute(ta);
-            if(currVal == null || value == null || !currVal.equals(value)) return(false);
+            if(currVal == null || !currVal.equals(value)) return(false);
          }
       }
       return(true);
@@ -838,7 +903,7 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
     */
    public void insertString(String s, boolean notify)
    {
-      if(s != null && (s.length() > 0))
+      if(s != null && (!s.isEmpty()))
       {
          textPane.replaceSelection(s);
          if(notify) fireActionEvent();
@@ -865,29 +930,26 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
    {
       if(e.getSource() == textPane)
       {
-         SwingUtilities.invokeLater(new Runnable() {
-            public void run()
-            {
-               int pos = textPane.getCaretPosition();
-               int start = (textPane.getSelectedText() != null) ? textPane.getSelectionStart() : -1;
-               StyledDocument doc = textPane.getStyledDocument();
-               int len = doc.getLength();
-               pos = (start > -1) ? start : (pos > 0 ? (pos-1) : 0);
-               AttributeSet attrs = 
-                     (len == 0) ? textPane.getInputAttributes() : doc.getCharacterElement(pos).getAttributes();
+         SwingUtilities.invokeLater(() -> {
+            int pos = textPane.getCaretPosition();
+            int start = (textPane.getSelectedText() != null) ? textPane.getSelectionStart() : -1;
+            StyledDocument doc = textPane.getStyledDocument();
+            int len = doc.getLength();
+            pos = (start > -1) ? start : (pos > 0 ? (pos-1) : 0);
+            AttributeSet attrs =
+                  (len == 0) ? textPane.getInputAttributes() : doc.getCharacterElement(pos).getAttributes();
 
-               // font family and size should not vary with the position of the caret, but we do this anyway...
-               textColorPicker.setCurrentColor(StyleConstants.getForeground(attrs), false);
-               boolean bold = StyleConstants.isBold(attrs);
-               boolean italic = StyleConstants.isItalic(attrs);
-               FontStyle fs = bold ? (italic ? FontStyle.BOLDITALIC : FontStyle.BOLD) : 
-                  (italic ? FontStyle.ITALIC : FontStyle.PLAIN);
-               fontStyleMB.setCurrentChoice(fs);
-               Integer sup = StyleConstants.isSuperscript(attrs) ? TextAttribute.SUPERSCRIPT_SUPER :
-                  (StyleConstants.isSubscript(attrs) ? TextAttribute.SUPERSCRIPT_SUB : NORMSCRIPT);
-               superscriptMB.setCurrentChoice(sup);
-               underlineChk.setSelected(StyleConstants.isUnderline(attrs));
-            }
+            // font family and size should not vary with the position of the caret, but we do this anyway...
+            textColorPicker.setCurrentColor(StyleConstants.getForeground(attrs), false);
+            boolean bold = StyleConstants.isBold(attrs);
+            boolean italic = StyleConstants.isItalic(attrs);
+            FontStyle fs = bold ? (italic ? FontStyle.BOLDITALIC : FontStyle.BOLD) :
+               (italic ? FontStyle.ITALIC : FontStyle.PLAIN);
+            fontStyleMB.setCurrentChoice(fs);
+            Integer sup = StyleConstants.isSuperscript(attrs) ? TextAttribute.SUPERSCRIPT_SUPER :
+               (StyleConstants.isSubscript(attrs) ? TextAttribute.SUPERSCRIPT_SUB : NORMSCRIPT);
+            superscriptMB.setCurrentChoice(sup);
+            underlineChk.setSelected(StyleConstants.isUnderline(attrs));
          });
       }
    }
@@ -932,7 +994,6 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
       else if(src == toggleWidgetVisBtn)
       {
          showHideAttributeWidgets(!widgetPanel.isVisible());
-         return;
       }
       else if(src == underlineChk)
       {
@@ -989,59 +1050,8 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
        if(listener != null) listener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, ""));
    }
    
-   private final static Integer NORMSCRIPT = Integer.valueOf(0);
-   private final static Integer UNDERLINE_OFF = Integer.valueOf(-1);
-   
-   private Action fireActionPerformed = new AbstractAction() {
-
-      @Override public void actionPerformed(ActionEvent e) { fireActionEvent(); }
-      
-   };
-   
-   private Action toggleUnderline = new AbstractAction() {
-      @Override public void actionPerformed(ActionEvent e) { underlineChk.doClick(); }
-   };
-   
-   private Action toggleBold = new AbstractAction() {
-      @Override public void actionPerformed(ActionEvent e) { 
-         FontStyle fs = fontStyleMB.getCurrentChoice();
-         FontStyle updated = FontStyle.getFontStyle(!fs.isBold(), fs.isItalic());
-         fontStyleMB.setCurrentChoice(updated);
-         onFontStyleChanged();
-      }
-   };
-   private Action toggleItalic = new AbstractAction() {
-      @Override public void actionPerformed(ActionEvent e) { 
-         FontStyle fs = fontStyleMB.getCurrentChoice();
-         FontStyle updated = FontStyle.getFontStyle(fs.isBold(), !fs.isItalic());
-         fontStyleMB.setCurrentChoice(updated);
-         onFontStyleChanged();
-      }
-   };
-   
-   private Action toggleSuperscript = new AbstractAction() {
-      @Override public void actionPerformed(ActionEvent e) { 
-         Integer choice = superscriptMB.getCurrentChoice();
-         if(choice.equals(TextAttribute.SUPERSCRIPT_SUPER)) choice = NORMSCRIPT;
-         else choice = TextAttribute.SUPERSCRIPT_SUPER;
-         superscriptMB.setCurrentChoice(choice);
-         onSuperscriptStateChanged();
-      }
-   };
-   
-   private Action toggleSubscript = new AbstractAction() {
-      @Override public void actionPerformed(ActionEvent e) { 
-         Integer choice = superscriptMB.getCurrentChoice();
-         if(choice.equals(TextAttribute.SUPERSCRIPT_SUB)) choice = NORMSCRIPT;
-         else choice = TextAttribute.SUPERSCRIPT_SUB;
-         superscriptMB.setCurrentChoice(choice);
-         onSuperscriptStateChanged();
-      }
-   };
-   
-   private Action toggleWidgets = new AbstractAction() {
-      @Override public void actionPerformed(ActionEvent e) { if(toggleWidgetVisBtn!=null) toggleWidgetVisBtn.doClick(); }
-   };
+   private final static Integer NORMSCRIPT = 0;
+   private final static Integer UNDERLINE_OFF = -1;
 
    /**
     * Update character attributes at current position in text pane whenever the current font style changes. If some
@@ -1118,10 +1128,9 @@ public class StyledTextEditor extends JPanel implements PropertyChangeListener, 
          String res = currText.substring(0, ofs) + s + currText.substring(ofs + length);
          
          // prevent edit if the resulting string starts with a whitespace character
-         if(res.length() > 0 && Character.isWhitespace(res.charAt(0)))
+         if((!res.isEmpty()) && Character.isWhitespace(res.charAt(0)))
          {
             Toolkit.getDefaultToolkit().beep();
-            return;
          }
          else
             super.replace(fb, ofs, length, s, attrs);

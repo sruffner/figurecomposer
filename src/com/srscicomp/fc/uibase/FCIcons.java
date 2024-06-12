@@ -158,6 +158,7 @@ public class FCIcons
       BufferedImage sizedTransBim = new BufferedImage(best.width, best.height, BufferedImage.TYPE_INT_ARGB);
       Graphics2D g = sizedTransBim.createGraphics();
       ImageIcon icon = GUIUtilities.createImageIcon(FCIcons.class, RESPATH + "v4_zoomcursor16.png", "");
+      assert(icon != null);
       g.drawImage(icon.getImage(), 0, 0, null);
       V4_ZOOMCURSOR = tk.createCustomCursor(sizedTransBim, new Point(8,5), "zoom"); 
       g.dispose();
@@ -165,6 +166,7 @@ public class FCIcons
       sizedTransBim = new BufferedImage(best.width, best.height, BufferedImage.TYPE_INT_ARGB);
       g = sizedTransBim.createGraphics();
       icon = GUIUtilities.createImageIcon(FCIcons.class, RESPATH + "v4_cropcursor16.png", "");
+      assert(icon != null);
       g.drawImage(icon.getImage(), 0, 0, null);
       V4_CROPCURSOR = tk.createCustomCursor(sizedTransBim, new Point(3,3), "crop"); 
       g.dispose();
@@ -172,6 +174,7 @@ public class FCIcons
       sizedTransBim = new BufferedImage(best.width, best.height, BufferedImage.TYPE_INT_ARGB);
       g = sizedTransBim.createGraphics();
       icon = GUIUtilities.createImageIcon(FCIcons.class, RESPATH + "v4_movecursor16.png", "");
+      assert(icon != null);
       g.drawImage(icon.getImage(), 0, 0, null);
       V4_MOVECURSOR = tk.createCustomCursor(sizedTransBim, new Point(8,8), "move"); 
       g.dispose();
@@ -179,6 +182,7 @@ public class FCIcons
       sizedTransBim = new BufferedImage(best.width, best.height, BufferedImage.TYPE_INT_ARGB);
       g = sizedTransBim.createGraphics();
       icon = GUIUtilities.createImageIcon(FCIcons.class, RESPATH + "v4_resizecursor16.png", "");
+      assert(icon != null);
       g.drawImage(icon.getImage(), 0, 0, null);
       V4_RESIZECURSOR = tk.createCustomCursor(sizedTransBim, new Point(8,8), "resize"); 
       g.dispose();
@@ -186,6 +190,7 @@ public class FCIcons
       sizedTransBim = new BufferedImage(best.width, best.height, BufferedImage.TYPE_INT_ARGB);
       g = sizedTransBim.createGraphics();
       icon = GUIUtilities.createImageIcon(FCIcons.class, RESPATH + "v4_rotcursor_16.png", "");
+      assert(icon != null);
       g.drawImage(icon.getImage(), 0, 0, null);
       V4_ROT3DCURSOR = tk.createCustomCursor(sizedTransBim, new Point(8,8), "rotate"); 
       g.dispose();

@@ -45,7 +45,6 @@ import com.srscicomp.fc.fig.Measure;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class StyledTextEditorApp extends JFrame implements ActionListener
 {
    public static void main(String[] args)
@@ -67,7 +66,7 @@ class StyledTextEditorApp extends JFrame implements ActionListener
    }
 
 
-   private StyledTextEditor atEditor = null;
+   private final StyledTextEditor atEditor;
    private TestModel model = null;
    private Graph2DViewer viewer = null;
 
@@ -82,7 +81,7 @@ class StyledTextEditorApp extends JFrame implements ActionListener
       atEditor.addActionListener(this);
 
       // the test model and the model viewer
-      model = new TestModel();
+      model =new TestModel();
       viewer = new Graph2DViewer();
       viewer.setModel(model);
       JPanel viewerPanel = new JPreferredSizePanel(new BorderLayout());
@@ -108,7 +107,7 @@ class StyledTextEditorApp extends JFrame implements ActionListener
       System.exit(0);
    }
 
-   private class TestModel implements RenderableModel, RootRenderable
+   private static class TestModel implements RenderableModel, RootRenderable
    {
       TestModel()
       {
@@ -116,7 +115,7 @@ class StyledTextEditorApp extends JFrame implements ActionListener
          tbPainter.setStyle(
                BasicPainterStyle.createBasicPainterStyle(LocalFontEnvironment.getSansSerifFont(), 
                      GenericFont.SANSERIF, FontStyle.PLAIN, (float) (18*Measure.PT2IN*1000), 5.0f,
-                     StrokeCap.BUTT, StrokeJoin.MITER, (float[]) null, Color.orange.getRGB(), Color.black.getRGB()));
+                     StrokeCap.BUTT, StrokeJoin.MITER, null, Color.orange.getRGB(), Color.black.getRGB()));
          tbPainter.setBorderStroked(true);
          tbPainter.setClipped(true);
          tbPainter.setAlignment(TextAlign.CENTERED, TextAlign.CENTERED);
@@ -134,7 +133,7 @@ class StyledTextEditorApp extends JFrame implements ActionListener
             if(sz != null)
             {
                double d = Measure.PT2IN * sz.doubleValue() * 1000.0;
-               as.addAttribute(TextAttribute.SIZE, new Integer(Math.round((float)d)));
+               as.addAttribute(TextAttribute.SIZE, Math.round((float) d));
             }
          }
          tbPainter.setText(as);
@@ -171,7 +170,7 @@ class StyledTextEditorApp extends JFrame implements ActionListener
       @Override public Point2D getPrintLocationMI() { return(new Point2D.Double(1000,1000)); }
       @Override public boolean hasTranslucentRegions() { return(false); }
       
-      private TextBoxPainter tbPainter = null;
+      private final TextBoxPainter tbPainter;
       private RenderableModelViewer rmviewer = null;
       private final static double WIDTH = 7500;
       private final static double HEIGHT = 7500;

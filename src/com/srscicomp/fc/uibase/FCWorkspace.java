@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.StandardCopyOption;
@@ -113,7 +114,7 @@ public class FCWorkspace implements DirWatcher.Listener
    private final static String APPINFO_FILE = "/com/srscicomp/fc/resources/appinfo.properties";
 
    /** Application info, loaded from a properties file at class-load time. */
-   private static Properties appInfo = null;
+   private static final Properties appInfo;
 
    static 
    {
@@ -122,14 +123,14 @@ public class FCWorkspace implements DirWatcher.Listener
       { 
          appInfo.load( FCWorkspace.class.getResourceAsStream(APPINFO_FILE) ); 
       }
-      catch( IOException ioe ) {}
+      catch(IOException ignored) {}
    }
 
    /**
     * Returns the official name of the application, as defined in the application information properties file.
     * @return The application title.
     */
-   public final static String getApplicationTitle() { return(appInfo.getProperty("title", "FigureComposer")); }
+   public static String getApplicationTitle() { return(appInfo.getProperty("title", "FigureComposer")); }
 
    /**
     * Returns the current version number for this application as a string in the form "M.m.r", where M, m, and r are 
@@ -137,7 +138,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * are retrieved from the application information properties file (keys "major", "minor" and "revision").
     * @return Current version, as described (fallback default = "5.4.0").
     */
-   public final static String getApplicationVersion()
+   public static String getApplicationVersion()
    {
       String major = appInfo.getProperty("major", "5");
       String minor = appInfo.getProperty("minor", "4");
@@ -151,7 +152,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * are retrieved from the application information properties file (keys "major", "minor" and "revision").
     * @return Current version number, as described (fallback default = 540).
     */
-   public final static int getApplicationVersionAsInteger()
+   public static int getApplicationVersionAsInteger()
    {
       int vnum = 503;
       try
@@ -161,7 +162,7 @@ public class FCWorkspace implements DirWatcher.Listener
          int rev = Integer.parseInt(appInfo.getProperty("revision", "0"));
          vnum = major*100 + minor*10 + rev;
       }
-      catch(NumberFormatException nfe) {}
+      catch(NumberFormatException ignored) {}
       
       return(vnum);
    }
@@ -171,7 +172,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * date is extracted from the application information properties file, via key "versiondate".
     * @return Release date string, as described (fallback default = "release date unknown").
     */
-   public final static String getApplicationVersionReleaseDate()
+   public static String getApplicationVersionReleaseDate()
    {
       return(appInfo.getProperty("versiondate", "release date unknown"));
    }
@@ -181,7 +182,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * the application information properties file.
     * @return Copyright string, as described.
     */
-   public final static String getCopyrightLine()
+   public static String getCopyrightLine()
    {
       return(appInfo.getProperty("copyrightline", "\u00A9 Copyright 2003-2023 HHMI/Lisberger Lab"));
    }
@@ -191,7 +192,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * in the application information properties file.
     * @return Email address, as described.
     */
-   public final static String getEmailAddress()
+   public static String getEmailAddress()
    {
       return(appInfo.getProperty("mailto", "lisberger@neuro.duke.edu"));
    }
@@ -212,12 +213,9 @@ public class FCWorkspace implements DirWatcher.Listener
       {
          workspace = new FCWorkspace();
          if(!workspace.onStartup()) workspace = null;
-         else Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run()
-            {
-               if(workspace != null) workspace.onExit();
-            }
-         });
+         else Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if(workspace != null) workspace.onExit();
+         }));
       }
       return(workspace);
    }
@@ -239,7 +237,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * new FC-specific workspace directory does not exist, FC-specific workspace information is copied from this old
     * workspace directory, if possible.
     */
-   @Deprecated private final static String OLD_DATANAV_WSDIR = ".datanavx";
+   private final static String OLD_DATANAV_WSDIR = ".datanavx";
    
    /** 
     * Load the user's workspace object from files stored in a dedicated workspace directory in the current user's home 
@@ -279,7 +277,8 @@ public class FCWorkspace implements DirWatcher.Listener
       
       // if deprecated style palette file present, remove it (deprecated as of v4.7.1)
       File f = new File(home, PALETTEFILENAME);
-      if(f.isFile()) f.delete();
+      if(f.isFile()) //noinspection ResultOfMethodCallIgnored
+         f.delete();
       
       loadSettings();
       loadPathCache();
@@ -293,12 +292,13 @@ public class FCWorkspace implements DirWatcher.Listener
     * 18jun2015 (for v4.7.1) : Permanently removed support for the style palette, which proved not useful. Kept this
     * filename to ensure the JSON style palette file could be removed from user's workspace.
     */
-   @Deprecated private final static String PALETTEFILENAME = "palette.json";
+   private final static String PALETTEFILENAME = "palette.json";
 
    /**
     * Helper method for {@link #onStartup()}. It removes the obsolete figure thumbnail image cache directory -- the
     * subdirectory "thumbs" within the workspace directory. The thumbnail image cache was eliminated in V4.4.0.
     */
+   @SuppressWarnings("ResultOfMethodCallIgnored")
    private void removeObsoleteThumbCacheDir()
    {
       File thumbDir = new File(home, "thumbs");
@@ -344,7 +344,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * Key for DataNav Builder frame window bounds (int array <i>[xUL yUL W H]</i>, in screen pix). 
     * <p><b>Deprecated as of v5.0.3.</b> The <i>DataNav Builder</i> application is no longer being developed.</p>
     */
-   @Deprecated public final static String KEY_FRAMEBOUNDS_DN = "pb.bounds";
+   public final static String KEY_FRAMEBOUNDS_DN = "pb.bounds";
    
    /** 
     * Key for list of <i>FypML</i> figure model definition files (or Matlab FIG files) that were open when the 
@@ -364,27 +364,27 @@ public class FCWorkspace implements DirWatcher.Listener
     * communications, and the username for the most recent login attempt (this may be an empty string).
     * <p><b>Deprecated as of v5.0.3.</b> The <i>DataNav Builder</i> application is no longer being developed.</p>
     */
-   @Deprecated public final static String KEY_DB_PORTALS = "db.portals";
+   public final static String KEY_DB_PORTALS = "db.portals";
    /**
     * <i>[As of v4.3.2]</i> Key holding identity of the portal connection that was selected in <i>DataNav Builder</i>
     * when the app last shutdown. Value is an integer string that is an index into the list of portal connections 
     * stored under the {@link #KEY_DB_PORTALS} key.
     * <p><b>Deprecated as of v4.5.5</b></p>
     */
-   @Deprecated public final static String KEY_DB_SELPORTAL = "db.selportal";
+   public final static String KEY_DB_SELPORTAL = "db.selportal";
    /** 
     * <i>[As of v4.3.2]</i> Key identifying which perspective was in use when <i>DataNav Builder</i> last shutdown, so
     * so that it can be restored in that perspective on next launch. Its value is set by the <i>Builder</i>'s master 
     * view controller and is not checked by the workspace manager.
     * <p><b>Deprecated as of v4.5.5</b></p>
     */
-   @Deprecated public final static String KEY_DB_PERSPECTIVE = "db.perspective";
+   public final static String KEY_DB_PERSPECTIVE = "db.perspective";
    /** 
     * [07feb2023] This key identified a user setting applicable to some incarnation of the <i>DataNav</i> application 
     * suite that has long been abandoned. It's been carried over in the user settings files for a long time. I've
     * defined it here to ensure the key is removed permanently if it is found in the user settings file.
     */
-   @Deprecated public final static String KEY_VIEW_CONTROLLER = "viewController";
+   public final static String KEY_VIEW_CONTROLLER = "viewController";
    
    /** 
     * <i>[As of v4.1.1]</i> Key containing the full pathname of the figure file selected for editing when application 
@@ -443,15 +443,12 @@ public class FCWorkspace implements DirWatcher.Listener
       
       if(settingsFile.exists())
       {
-         FileInputStream in = null;
-         try
+         try(FileInputStream in = new FileInputStream(settingsFile))
          {
-            in = new FileInputStream(settingsFile);
             currentSettings.load(in);
             FGNPreferences.getInstance().load(currentSettings);
-         } 
-         catch(IOException ioe) {}
-         finally { try{ if(in != null) in.close(); } catch(IOException ioe) {} }
+         }
+         catch(IOException ignored) {}
          
          // make sure deprecated settings have been removed
          currentSettings.remove(KEY_DB_PERSPECTIVE);
@@ -462,7 +459,7 @@ public class FCWorkspace implements DirWatcher.Listener
       }
 
       screenDPI = Toolkit.getDefaultToolkit().getScreenResolution();
-      try {screenDPI = Float.parseFloat(currentSettings.getProperty(KEY_DPI));} catch(NumberFormatException nfe) {}
+      try {screenDPI = Float.parseFloat(currentSettings.getProperty(KEY_DPI));} catch(NumberFormatException ignored) {}
       screenDPI = Math.max(MIN_DPI, Math.min(screenDPI, MAX_DPI));
    }
    
@@ -475,7 +472,7 @@ public class FCWorkspace implements DirWatcher.Listener
    {
       if(settingsFile.exists()) return;
       
-      File oldSettingsFile = null;
+      File oldSettingsFile;
       try
       {
          File oldHome = new File(System.getProperty("user.home"), OLD_DATANAV_WSDIR);
@@ -485,8 +482,7 @@ public class FCWorkspace implements DirWatcher.Listener
             Files.copy(oldSettingsFile.toPath(), settingsFile.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
          }
       }
-      catch(SecurityException se) {}
-      catch(IOException ioe) {}
+      catch(SecurityException | IOException ignored) {}
    }
    
    /** 
@@ -494,6 +490,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * fails silently. The current preference values are first saved to a temporary file to minimize the chance of 
     * corrupting the current settings file.
     */
+   @SuppressWarnings("ResultOfMethodCallIgnored")
    private void saveSettings()
    {
       File tmpFile = new File(settingsFile.getAbsolutePath() + ".tmp");
@@ -511,10 +508,10 @@ public class FCWorkspace implements DirWatcher.Listener
          settingsFile.delete();
          tmpFile.renameTo(settingsFile);
       }
-      catch(IOException ioe) {}
+      catch(IOException ignored) {}
       finally
       {
-         try { if(out != null) out.close(); } catch(IOException ioe) {}
+         try { if(out != null) out.close(); } catch(IOException ignored) {}
       }
    }
    
@@ -543,7 +540,7 @@ public class FCWorkspace implements DirWatcher.Listener
    public void setScreenDPI(float dpi)
    {
       float oldDPI = screenDPI;
-      screenDPI = (dpi<MIN_DPI) ? MIN_DPI : ((dpi>MAX_DPI) ? MAX_DPI : dpi);
+      screenDPI = Utilities.rangeRestrict(MIN_DPI, MAX_DPI, dpi);
       screenDPI = Math.round(10f * screenDPI);
       screenDPI = screenDPI / 10.0f;
       
@@ -574,7 +571,7 @@ public class FCWorkspace implements DirWatcher.Listener
          int h = Integer.parseInt(st.nextToken());
          return(new Rectangle(x, y, w, h));
       }
-      catch(Throwable t) {}
+      catch(Throwable ignored) {}
       
       return(DEFBOUNDS);
    }
@@ -588,7 +585,7 @@ public class FCWorkspace implements DirWatcher.Listener
    {
       if(r==null || r.x < 0 || r.y < 0 || r.width < MIN_BOUNDS_WH || r.height < MIN_BOUNDS_WH)
          return;
-      currentSettings.setProperty(KEY_FRAMEBOUNDS_FC, "" + r.x + " " + r.y + " " + r.width + " " + r.height);
+      currentSettings.setProperty(KEY_FRAMEBOUNDS_FC, r.x + " " + r.y + " " + r.width + " " + r.height);
    }
 
    /**
@@ -598,7 +595,7 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    public List<File> getLastOpenFigures()
    {
-      List<File> files = new ArrayList<File>();
+      List<File> files = new ArrayList<>();
       StringTokenizer tokenizer = new StringTokenizer(currentSettings.getProperty(KEY_OPENFIGS, ""), "\n");
       while(tokenizer.hasMoreTokens())
       {
@@ -614,17 +611,16 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    public void setLastOpenFigures(List<File> figFiles)
    {
-      String paths = "";
-      if(figFiles != null) for(int i=0; i<figFiles.size(); i++)
+      StringBuilder paths = new StringBuilder();
+      if(figFiles != null) for(File f : figFiles)
       {
-         File f = figFiles.get(i);
          if(f != null)
          {
-            if(paths.length() == 0) paths += f.getAbsolutePath();
-            else paths += "\n" + f.getAbsolutePath();
+            if(paths.length() == 0) paths.append(f.getAbsolutePath());
+            else paths.append("\n").append(f.getAbsolutePath());
          }
       }
-      currentSettings.setProperty(KEY_OPENFIGS, paths);
+      currentSettings.setProperty(KEY_OPENFIGS, paths.toString());
    }
    
    /**
@@ -646,10 +642,10 @@ public class FCWorkspace implements DirWatcher.Listener
       /** Sort in descending order by last modified date (most recent first). */ 
       BYDATE_DESCENDING("By date, most recent first");
       
-      private SortOrder(String desc) {this.desc = desc;}
+      SortOrder(String desc) {this.desc = desc;}
       
       /** Description of this file sorting order, for presentation in the user interface. */
-      private String desc;
+      private final String desc;
       
       /** 
        * Get a user-friendly description of this file sorting order preference, for presentation on the user interface.
@@ -669,7 +665,7 @@ public class FCWorkspace implements DirWatcher.Listener
       {
          SortOrder so = SortOrder.NONE;
          try {so = SortOrder.valueOf(SortOrder.class, s); }
-         catch(Exception e) { so = SortOrder.NONE; }
+         catch(Exception ignored) {}
          return(so);
       }
    }
@@ -696,7 +692,7 @@ public class FCWorkspace implements DirWatcher.Listener
          {
             long t1 = o1.lastModified();
             long t2 = o2.lastModified();
-            int res = (t1 < t2) ? -1 : ((t1 > t2) ? 1 : 0);
+            int res = Long.compare(t1, t2);
             return(order == SortOrder.BYDATE_ASCENDING ? res : -res);
          }
       }
@@ -710,7 +706,7 @@ public class FCWorkspace implements DirWatcher.Listener
    
    /** 
     * Set the preferred order in which workspace directories or files are listed in the workspace browser.
-    * @param The preferred file sort order. Rejected silently if null.
+    * @param order The preferred file sort order. Rejected silently if null.
     */
    public void setFileSortOrder(SortOrder order)
    {
@@ -734,8 +730,8 @@ public class FCWorkspace implements DirWatcher.Listener
    /**
     * Set the figure file that was selected for editing in <i>Figure Composer</i> when the user last shutdown the 
     * application.
-    * @param Abstract pathname of the selected figure file. The corresponding property in the workspace settings is set 
-    * to the file's absolute pathname. If null, the property is set to an empty string.
+    * @param f Abstract pathname of the selected figure file. The corresponding property in the workspace settings is
+    * set to the file's absolute pathname. If null, the property is set to an empty string.
     */
    public void setLastSelectedFigure(File f)
    {
@@ -797,7 +793,7 @@ public class FCWorkspace implements DirWatcher.Listener
             locs[0] = Integer.parseInt(strLocs[0]);
             locs[1] = Integer.parseInt(strLocs[1]);
          }
-         catch(NumberFormatException nfe) {}
+         catch(NumberFormatException ignored) {}
       }
       return(locs);
    }
@@ -810,7 +806,7 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    public void setWSFigBrowserDivLocs(int mainDiv, int prvuDiv)
    {
-      String s = "" + mainDiv + "," + prvuDiv;
+      String s = mainDiv + "," + prvuDiv;
       currentSettings.setProperty(KEY_FC_WSFBDIV, s);
    }
    
@@ -843,10 +839,10 @@ public class FCWorkspace implements DirWatcher.Listener
    private final static int MRU_MAXLEN = 20;
    
    /** List of most recently used figure files. Some may be marked as "unavailable". */
-   private List<CacheFileKey> mruFigures = new ArrayList<CacheFileKey>();
+   private final List<CacheFileKey> mruFigures = new ArrayList<>();
    
    /** List of most recently used dataset source files. Some may be marked as "unavailable". */
-   private List<CacheFileKey> mruData = new ArrayList<CacheFileKey>();
+   private final List<CacheFileKey> mruData = new ArrayList<>();
    
    /**
     * Get a list of the most recently used figure files or data set source files. The list returned does NOT include any
@@ -856,7 +852,7 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    public List<File> getRecentFiles(boolean wantData)
    {
-      List<File> copy = new ArrayList<File>();      
+      List<File> copy = new ArrayList<>();
       List<CacheFileKey> mru = (wantData) ? mruData : mruFigures;
 
       int i = 0; 
@@ -889,7 +885,7 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    public List<File> getRecentDirectories(boolean wantData)
    {
-      List<File> copy = new ArrayList<File>();  
+      List<File> copy = new ArrayList<>();
       List<CacheFileKey> mru = (wantData) ? mruData : mruFigures;
 
       int i = 0; 
@@ -1053,7 +1049,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * 
     * @author sruffner
     */
-   private class CacheFileKey
+   private static class CacheFileKey
    {
       CacheFileKey(File path)
       {
@@ -1086,7 +1082,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * <p><i>Thread-safe implementations of the hashmap and the list are used so that the path cache can be accessed
     * and updated on multiple threads.</i></p>
     */
-   private Map<CacheFileKey, List<File>> pathCache = new ConcurrentHashMap<CacheFileKey, List<File>>();
+   private final Map<CacheFileKey, List<File>> pathCache = new ConcurrentHashMap<>();
    
    /** Name of cache file in user's workspace directory that stores path information on <i>FC</i>-related files. */
    private final static String PATHCACHEFILENAME = "paths.txt";
@@ -1135,12 +1131,11 @@ public class FCWorkspace implements DirWatcher.Listener
          String mruFypTag = SrcType.FYP.getPathCacheTag() + ": ";
          String mruMatFigTag = SrcType.MATFIG.getPathCacheTag() + ": ";
          String mruDataTag = SrcType.DATA.getPathCacheTag() + ": ";
-         BufferedReader rdr = null;
          CacheFileKey nextDirKey = null;
-         List<File> entries = new ArrayList<File>();
-         try
+         List<File> entries = new ArrayList<>();
+         try(BufferedReader rdr = new BufferedReader(new InputStreamReader(
+               new FileInputStream(pathCacheFile), StandardCharsets.ISO_8859_1)))
          {
-            rdr = new BufferedReader( new InputStreamReader( new FileInputStream(pathCacheFile), "8859_1" ) );
             boolean isCurrent = false;
             boolean isFirstLine = true;
             boolean done = false;
@@ -1154,23 +1149,22 @@ public class FCWorkspace implements DirWatcher.Listener
                   isCurrent = line.startsWith("version=");
                   if(isCurrent) continue;
                }
-               
+
                if(line == null) done = true;
                else if(line.startsWith(mruFypTag) || line.startsWith(mruMatFigTag) || line.startsWith(mruDataTag))
                {
                   boolean isFig = !line.startsWith(mruDataTag);
                   String tag = isFig ? (line.startsWith(mruFypTag) ? mruFypTag : mruMatFigTag) : mruDataTag;
-                  
+
                   if(!isCurrent)
                   {
                      File f = new File(line.substring(tag.length()));
-                     if(!Files.isDirectory(f.toPath())) 
+                     if(!Files.isDirectory(f.toPath()))
                      {
                         if(isFig) mruFigures.add(new CacheFileKey(f));
                         else mruData.add(new CacheFileKey(f));
                      }
-                  }
-                  else
+                  } else
                   {
                      line = line.substring(tag.length());
                      if(line.startsWith("OK "))
@@ -1181,22 +1175,25 @@ public class FCWorkspace implements DirWatcher.Listener
                            if(isFig) mruFigures.add(new CacheFileKey(f));
                            else mruData.add(new CacheFileKey(f));
                         }
-                     }
-                     else
+                     } else
                      {
-                        // MRU file is marked as "unavailable" in the cache file. Get unavailable time and path. If 
+                        // MRU file is marked as "unavailable" in the cache file. Get unavailable time and path. If
                         // file still does not exist, discard it if it has been unavailable for a week; else keep it.
                         int nextSpace = line.indexOf(' ');
                         if(nextSpace < 0) continue;
                         String tstamp = line.substring(0, nextSpace);
-                        File f = new File(line.substring(nextSpace+1));
+                        File f = new File(line.substring(nextSpace + 1));
                         if(Files.isDirectory(f.toPath())) continue;
                         CacheFileKey key = new CacheFileKey(f);
-                        if(!f.isFile()) 
+                        if(!f.isFile())
                         {
                            long t = -1;
-                           try { t = Long.parseLong(tstamp); }
-                           catch(NumberFormatException nfe) {}
+                           try
+                           {
+                              t = Long.parseLong(tstamp);
+                           } catch(NumberFormatException ignored)
+                           {
+                           }
                            if(t > 0 && (System.currentTimeMillis() - t > 86400000)) continue;
                            if(t > 0) key.tUnavailable = t;
                         }
@@ -1204,52 +1201,52 @@ public class FCWorkspace implements DirWatcher.Listener
                         else mruData.add(key);
                      }
                   }
-               }
-               else if(line.startsWith(": "))
+               } else if(line.startsWith(": "))
                {
-                  if((nextDirKey != null) && !entries.isEmpty()) 
+                  if((nextDirKey != null) && !entries.isEmpty())
                   {
-                     pathCache.put(nextDirKey, new CopyOnWriteArrayList<File>(entries));
-                     entries = new ArrayList<File>();
+                     pathCache.put(nextDirKey, new CopyOnWriteArrayList<>(entries));
+                     entries = new ArrayList<>();
                   }
                   nextDirKey = null;
-                  
+
                   if(!isCurrent)
                   {
                      File dir = new File(line.substring(2));
                      if(!dir.isFile()) nextDirKey = new CacheFileKey(dir);
-                  }
-                  else
+                  } else
                   {
                      line = line.substring(2);
                      if(line.startsWith("OK "))
                      {
                         File f = new File(line.substring(3));
                         if(!f.isFile()) nextDirKey = new CacheFileKey(f);
-                     }
-                     else
+                     } else
                      {
                         // directory is marked as "unavailable" in the cache file. Get unavailable time and path. If it
                         // still does not exist, discard it if it has been unavailable for a week; else keep it.
                         int nextSpace = line.indexOf(' ');
                         if(nextSpace < 0) continue;
                         String tstamp = line.substring(0, nextSpace);
-                        File f = new File(line.substring(nextSpace+1));
+                        File f = new File(line.substring(nextSpace + 1));
                         if(f.isFile()) continue;
                         CacheFileKey key = new CacheFileKey(f);
-                        if(!Files.isDirectory(f.toPath())) 
+                        if(!Files.isDirectory(f.toPath()))
                         {
                            long t = -1;
-                           try { t = Long.parseLong(tstamp); }
-                           catch(NumberFormatException nfe) {}
+                           try
+                           {
+                              t = Long.parseLong(tstamp);
+                           } catch(NumberFormatException ignored)
+                           {
+                           }
                            if(t > 0 && (System.currentTimeMillis() - t > 86400000)) continue;
                            if(t > 0) key.tUnavailable = t;
                         }
                         nextDirKey = key;
                      }
                   }
-               }
-               else if(nextDirKey != null && line.length() > 2)
+               } else if(nextDirKey != null && line.length() > 2)
                {
                   SrcType srcType = SrcType.getSrcTypeByPathCacheTag(line.substring(0, 1));
                   if(srcType != null)
@@ -1261,19 +1258,18 @@ public class FCWorkspace implements DirWatcher.Listener
                }
             }
          }
-         catch(InvalidPathException|IOException e) {}
+         catch(InvalidPathException | IOException ignored) {}
          finally
          {
             if(nextDirKey != null && !entries.isEmpty())
-               pathCache.put(nextDirKey, new CopyOnWriteArrayList<File>(entries));
-            try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+               pathCache.put(nextDirKey, new CopyOnWriteArrayList<>(entries));
          }
       }
       
       // for each directory in the path cache that currently exists, update its path cache entry to reflect the
       // FC-related files it actually holds. If it no longer has any, remove it from path cache. This addresses file
       // system changes that occur while FC is not running.
-      List<File> scanList = new ArrayList<File>();
+      List<File> scanList = new ArrayList<>();
       for(CacheFileKey k : pathCache.keySet()) if(Files.isDirectory(k.path.toPath()))
          scanList.add(k.path);
       for(File dir : scanList)
@@ -1290,7 +1286,7 @@ public class FCWorkspace implements DirWatcher.Listener
    {
       if(pathCacheFile.exists()) return;
       
-      File oldPathCacheFile = null;
+      File oldPathCacheFile;
       try
       {
          File oldHome = new File(System.getProperty("user.home"), OLD_DATANAV_WSDIR);
@@ -1300,8 +1296,7 @@ public class FCWorkspace implements DirWatcher.Listener
             Files.copy(oldPathCacheFile.toPath(), pathCacheFile.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
          }
       }
-      catch(SecurityException se) {}
-      catch(IOException ioe) {}
+      catch(SecurityException | IOException ignored) {}
    }
    
 
@@ -1311,6 +1306,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * chance of corrupting the existing path cache file, the path cache and MRU lists are first saved to a temporary 
     * file before replacing the old file. 
     */
+   @SuppressWarnings("ResultOfMethodCallIgnored")
    private void savePathCache()
    {
       if(pathCache.isEmpty() && mruFigures.isEmpty() && mruData.isEmpty())
@@ -1320,13 +1316,12 @@ public class FCWorkspace implements DirWatcher.Listener
       }
       
       File tmpFile = new File(pathCacheFile.getAbsolutePath() + ".tmp");
-      BufferedWriter writer = null;
-      try
+      try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+            new FileOutputStream(tmpFile), StandardCharsets.ISO_8859_1)))
       {
-         writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tmpFile), "8859_1"));
 
          writer.write("version=" + PATHCACHEFILEVERSION + CRLF);
-         
+
          for(CacheFileKey key : mruFigures)
          {
             SrcType st = null;
@@ -1334,16 +1329,15 @@ public class FCWorkspace implements DirWatcher.Listener
             {
                if(FGModelSchema.isFigureModelXMLFile(key.path)) st = SrcType.FYP;
                else if(MatlabFigureImporter.isMatlabFigFile(key.path)) st = SrcType.MATFIG;
-               
+
                if(st != null)
-                  writer.write(st.getPathCacheTag()+ ": OK " + key.path.getAbsolutePath() + CRLF);
-            }
-            else
+                  writer.write(st.getPathCacheTag() + ": OK " + key.path.getAbsolutePath() + CRLF);
+            } else
             {
                String nameStr = key.path.getName().toLowerCase();
                if(nameStr.endsWith(".fyp")) st = SrcType.FYP;
                else if(nameStr.endsWith(".fig")) st = SrcType.MATFIG;
-               
+
                if(st != null)
                {
                   long tUnavail = key.tUnavailable < 0 ? System.currentTimeMillis() : key.tUnavailable;
@@ -1351,10 +1345,10 @@ public class FCWorkspace implements DirWatcher.Listener
                }
             }
          }
-            
+
          for(CacheFileKey key : mruData)
          {
-            if(key.path.isFile()) 
+            if(key.path.isFile())
                writer.write(SrcType.DATA.getPathCacheTag() + ": OK " + key.path.getAbsolutePath() + CRLF);
             else
             {
@@ -1362,12 +1356,12 @@ public class FCWorkspace implements DirWatcher.Listener
                writer.write(SrcType.DATA.getPathCacheTag() + ": " + tUnavail + " " + key.path.getAbsolutePath() + CRLF);
             }
          }
-         
+
          for(CacheFileKey dir : pathCache.keySet())
          {
             List<File> entries = pathCache.get(dir);
             if(entries.isEmpty()) continue;
-            
+
             boolean dirExists = Files.isDirectory(dir.path.toPath());
             if(dirExists) writer.write(": OK " + dir.path.getAbsolutePath() + CRLF);
             else
@@ -1375,26 +1369,23 @@ public class FCWorkspace implements DirWatcher.Listener
                long tUnavail = dir.tUnavailable < 0 ? System.currentTimeMillis() : dir.tUnavailable;
                writer.write(": " + tUnavail + " " + dir.path.getAbsolutePath() + CRLF);
             }
-            
-            // if workspace directory exists, we discard any files within it that do not exist. However, if directory 
+
+            // if workspace directory exists, we discard any files within it that do not exist. However, if directory
             // does not exist, we do not discard any files -- the directory may only be temporarily unavailable.
-            for(File f : entries) if((!dirExists) || f.isFile())
-            {
-               SrcType st = SrcType.getSrcTypeByExtension(f);
-               if(st != null)
-                  writer.write(st.getPathCacheTag() + " " + f.getName() + CRLF);
-            }
+            for(File f : entries)
+               if((!dirExists) || f.isFile())
+               {
+                  SrcType st = SrcType.getSrcTypeByExtension(f);
+                  if(st != null)
+                     writer.write(st.getPathCacheTag() + " " + f.getName() + CRLF);
+               }
          }
-         
+
          writer.close();
          pathCacheFile.delete();
          tmpFile.renameTo(pathCacheFile);
       }
-      catch(InvalidPathException|IOException ioe) {}
-      finally
-      {
-         try { if(writer != null) writer.close(); } catch(IOException ioe) {}
-      }
+      catch(InvalidPathException | IOException ignored) {}
    }
 
    /** Monitors workspace directories for external changes (on a background daemon thread. */
@@ -1406,8 +1397,11 @@ public class FCWorkspace implements DirWatcher.Listener
       stopPathCacheMonitor();
       pathCacheMonitor = DirWatcher.startWatcher(
             getWorkspaceDirectories(true), true, true, new String[] {"fyp", "fig", "txt", "dna", "dnr", "dnb"});
-      pathCacheMonitor.setPollingTimeout(2);
-      pathCacheMonitor.addListener(this);
+      if(pathCacheMonitor != null)
+      {
+         pathCacheMonitor.setPollingTimeout(2);
+         pathCacheMonitor.addListener(this);
+      }
    }
    
    /** Stop monitoring workspace directories in the background. */
@@ -1432,36 +1426,36 @@ public class FCWorkspace implements DirWatcher.Listener
       Event nextEvt = e;
       while(nextEvt != null)
       {
-         switch(nextEvt.kind) {
-         case CREATE:
-            addToWorkspace(nextEvt.target);
-            break;
-         case MODIFY:
-            break;
-         case DELETE:
-            removeFromPathCache(nextEvt.target);
-            break;
-         case DROPPED:
-            for(CacheFileKey key : pathCache.keySet()) if(key.path.equals(nextEvt.target))
-            {
-               key.tUnavailable = System.currentTimeMillis();
-               notifyListeners(EventID.PATHCACHE, null, null);
+         switch(nextEvt.kind)
+         {
+            case CREATE:
+               addToWorkspace(nextEvt.target);
                break;
-            }
-            break;
-         case RESTORED:
-            for(CacheFileKey key : pathCache.keySet()) if(key.path.equals(nextEvt.target))
-            {
-               addDirectoryToPathCache(nextEvt.target, false);
-               notifyListeners(EventID.PATHCACHE, null, null);
+            case MODIFY:
+            case UNREGISTERED:
+                  break;
+            case DELETE:
+               removeFromPathCache(nextEvt.target);
                break;
-            }
-            break;
-         case UNREGISTERED:
-            break;
-         case CLOSED:
-            startPathCacheMonitor();
-            return;
+            case DROPPED:
+               for(CacheFileKey key : pathCache.keySet()) if(key.path.equals(nextEvt.target))
+               {
+                  key.tUnavailable = System.currentTimeMillis();
+                  notifyListeners(EventID.PATHCACHE, null, null);
+                  break;
+               }
+               break;
+            case RESTORED:
+               for(CacheFileKey key : pathCache.keySet()) if(key.path.equals(nextEvt.target))
+               {
+                  addDirectoryToPathCache(nextEvt.target, false);
+                  notifyListeners(EventID.PATHCACHE, null, null);
+                  break;
+               }
+               break;
+            case CLOSED:
+               startPathCacheMonitor();
+               return;
          }
          
          nextEvt = nextEvt.getNext();
@@ -1557,7 +1551,7 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    private List<File> getWorkspaceDirectories(boolean all)
    {
-      List<File> results = new ArrayList<File>();
+      List<File> results = new ArrayList<>();
       for(CacheFileKey key : pathCache.keySet()) 
       {
          if(Files.isDirectory(key.path.toPath()))
@@ -1582,7 +1576,7 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    public List<File> getWorkspaceDirectories(SrcType st)
    {
-      List<File> results = new ArrayList<File>();
+      List<File> results = new ArrayList<>();
       if(st == null) return(results);
       
       for(CacheFileKey key : pathCache.keySet())
@@ -1616,7 +1610,7 @@ public class FCWorkspace implements DirWatcher.Listener
     */
    public List<File> getWorkspaceFiles(File dir, SrcType st)
    {
-      List<File> results = new ArrayList<File>();
+      List<File> results = new ArrayList<>();
       if((st == null) || (dir == null) || !Files.isDirectory(dir.toPath())) return(results);
       
       List<File> entries = pathCache.get(new CacheFileKey(dir));
@@ -1631,7 +1625,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * Does the specified workspace directory have <i>Figure Composer</i>-specific files of the specified source type?
     * @param dir A workspace directory, i.e., a directory in the workspace cache known to have <i>FC</i> files.
     * @param st A file source type.
-    * @param True if specified directory exists, is stored in the workspace cache, and has at least one known file of
+    * @return True if specified directory exists, is stored in the workspace cache, and has at least one known file of
     * the specified type. 
     */
    public boolean hasContent(File dir, SrcType st)
@@ -1639,7 +1633,7 @@ public class FCWorkspace implements DirWatcher.Listener
       if(dir == null || !Files.isDirectory(dir.toPath())) return(false);
       
       List<File> entries = pathCache.get(new CacheFileKey(dir));
-      if(entries == null || entries.size() == 0) return(false);
+      if(entries == null || entries.isEmpty()) return(false);
       for(File f : entries) if(st == SrcType.getSrcTypeByExtension(f)) return(true);
       return(false);
    }
@@ -1651,7 +1645,7 @@ public class FCWorkspace implements DirWatcher.Listener
    private void addToPathCache(File f, SrcType st)
    {
       File dir = f.getParentFile();
-      CacheFileKey key = new CacheFileKey(dir);
+      CacheFileKey key =new CacheFileKey(dir);
       List<File> entries = pathCache.get(key);
       if(entries == null)
          addDirectoryToPathCache(dir, false);
@@ -1667,7 +1661,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * it's already there, its set of FC-related files is updated. The directory is also registered with the path
     * cache monitor so that future changes within the directory are detected.
     * @param dir Abstract pathname of directory. If directory does not exist, no action is taken.
-    * @param removeEmpties. If the specified directory is already in the cache but no longer contains any FC-related
+    * @param removeEmpties If the specified directory is already in the cache but no longer contains any FC-related
     * files, it will be removed from the cache IF this flag is set.
     */
    private void addDirectoryToPathCache(File dir, boolean removeEmpties)
@@ -1676,7 +1670,7 @@ public class FCWorkspace implements DirWatcher.Listener
       // for changes to files of which we're already aware and adding new files of which we're not.
       File[] files = (dir != null && dir.isDirectory()) ? dir.listFiles() : null;
       if(files == null) return;
-      List<File> relevant = new ArrayList<File>();
+      List<File> relevant = new ArrayList<>();
       for(File f : files)
       {
          if(Files.isDirectory(f.toPath())) continue;
@@ -1684,9 +1678,9 @@ public class FCWorkspace implements DirWatcher.Listener
                || MatlabFigureImporter.isMatlabFigFile(f))
             relevant.add(f);
       }
-      if(relevant.size() > 0)
+      if(!relevant.isEmpty())
       {
-         pathCache.put(new CacheFileKey(dir), new CopyOnWriteArrayList<File>(relevant));
+         pathCache.put(new CacheFileKey(dir), new CopyOnWriteArrayList<>(relevant));
          if(pathCacheMonitor != null) pathCacheMonitor.registerDirectory(dir);
       }
       else if(removeEmpties && (null != pathCache.remove(new CacheFileKey(dir))))
@@ -1706,7 +1700,7 @@ public class FCWorkspace implements DirWatcher.Listener
       if(f.isFile()) return(false);
       
       boolean wasRemoved = false;
-      CacheFileKey key = new CacheFileKey(f.getParentFile());
+      CacheFileKey key =new CacheFileKey(f.getParentFile());
       List<File> entries = pathCache.get(key);
       if(entries != null)
       {
@@ -1733,7 +1727,7 @@ public class FCWorkspace implements DirWatcher.Listener
          return(false);
       
       boolean wasRenamed = false;
-      CacheFileKey key = new CacheFileKey(original.getParentFile());
+      CacheFileKey key =new CacheFileKey(original.getParentFile());
       boolean sameParent = Utilities.filesEqual(original.getParentFile(), renamed.getParentFile());
       List<File> entries = pathCache.get(key);
       if(entries != null)
@@ -1749,7 +1743,7 @@ public class FCWorkspace implements DirWatcher.Listener
             else
             {
                entries.remove(idx);
-               key = new CacheFileKey(renamed.getParentFile());
+               key =new CacheFileKey(renamed.getParentFile());
                entries = pathCache.get(key);
                if(entries == null)
                   addDirectoryToPathCache(renamed.getParentFile(), false);
@@ -1774,7 +1768,7 @@ public class FCWorkspace implements DirWatcher.Listener
     * listeners. All events are delivered on the Swing event dispatch thread.
     * @author sruffner
     */
-   public static enum EventID
+   public enum EventID
    {
       /** The user has changed the screen resolution.*/ SCREENRES, 
       /** The workspace path cache has been updated. */ PATHCACHE, 
@@ -1839,13 +1833,13 @@ public class FCWorkspace implements DirWatcher.Listener
          }
       }
 
-      private EventID id;
-      private File fp1;
-      private File fp2;
+      private final EventID id;
+      private final File fp1;
+      private final File fp2;
    }
 
    /** The set of listeners registered to receive events broadcast by the workspace manager. */
-   private EventListenerList listeners = new EventListenerList();
+   private final EventListenerList listeners = new EventListenerList();
 
    /** 
     * Send specified workspace event to all registered listeners. Ensure it is sent on the Swing event dispatch thread.
@@ -1889,8 +1883,8 @@ public class FCWorkspace implements DirWatcher.Listener
       }
       
       long lastModTime;
-      File source;
-      String dataSetID;
+      final File source;
+      final String dataSetID;
       RenderableModel model;
    }
    
@@ -1898,7 +1892,7 @@ public class FCWorkspace implements DirWatcher.Listener
    private final static int MAXCACHESIZE = 10;
    
    /** The workspace's pre-prepared model cache. */
-   private List<ModelEntry> renderModelCache = new ArrayList<ModelEntry>();
+   private final List<ModelEntry> renderModelCache = new ArrayList<>();
    
    /** 
     * Save a graphic model to the workspace's internal model cache. If the cache is maxed out, the last item in it is 

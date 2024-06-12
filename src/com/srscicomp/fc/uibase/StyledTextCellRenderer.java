@@ -21,7 +21,6 @@ import com.srscicomp.fc.fig.FGraphicNode;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class StyledTextCellRenderer extends DefaultTableCellRenderer
 {
    
@@ -54,7 +53,7 @@ public class StyledTextCellRenderer extends DefaultTableCellRenderer
          g2.setColor(bkgC);
          g2.fillRect(0, 0, w, h);
          g2.scale(1, -1);
-         painter.setLocation(2, -(h/2));
+         painter.setLocation(2, -(h/2.0));
          painter.render(g2, null);
          g2.scale(1, -1);
       }
@@ -64,6 +63,6 @@ public class StyledTextCellRenderer extends DefaultTableCellRenderer
       }
    }
 
-   private SingleStringPainter painter = new SingleStringPainter();
+   private final SingleStringPainter painter = new SingleStringPainter();
 }
 

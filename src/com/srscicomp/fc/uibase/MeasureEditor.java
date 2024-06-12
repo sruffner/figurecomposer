@@ -35,17 +35,16 @@ import com.srscicomp.fc.fig.Measure.Constraints;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class MeasureEditor extends JPreferredSizePanel implements ActionListener, FocusListener
 {
    /** Tool tip installed on units label that lists the keystrokes that select measurement units. */
    private final static String unitsTip = "Unit keystrokes: i=inches, c=cm, m=mm, p=pt, n=%, %, u";
    
    /** The numeric value of the measurement is entered in this customized text field. */
-   private NumericTextField valueField;
+   private final NumericTextField valueField;
 
    /** The units of measurement are reflected in this label. */
-   private JLabel unitLabel;
+   private final JLabel unitLabel;
 
    /** The current measure entered in this editor AND validated. */
    private Measure currentValidMeasure;
@@ -75,7 +74,7 @@ public class MeasureEditor extends JPreferredSizePanel implements ActionListener
    }
 
    /** The constraints enforced on any measurement entered in this <b>MeasureEditor</b>. */
-   private Constraints constraints;
+   private final Constraints constraints;
 
    /**
     * Construct a <b>MeasureEditor</b>. 
@@ -100,13 +99,13 @@ public class MeasureEditor extends JPreferredSizePanel implements ActionListener
          
          int iMin = constraints.nMaxFracDigits + ((min < 0) ? 2 : 1);
          double d = Math.abs(min);
-         iMin += (d <= 1) ? 1 : Utilities.log10(d);
+         iMin += (d <= 1) ? 1 : (int) Utilities.log10(d);
          
          int iMax = constraints.nMaxFracDigits + ((max < 0) ? 2 : 1);
          d = Math.abs(max);
-         iMax += (d <= 1) ? 1 : Utilities.log10(d);
+         iMax += (d <= 1) ? 1 : (int) Utilities.log10(d);
          
-         valueField.setColumns(Math.min((iMin < iMax) ? iMax : iMin, 20));
+         valueField.setColumns(Math.min(Math.max(iMin, iMax), 20));
       }
          
       valueField.setHorizontalAlignment(NumericTextField.RIGHT);
@@ -205,22 +204,22 @@ public class MeasureEditor extends JPreferredSizePanel implements ActionListener
    }
    
    /** Action which changes current units to inches. */
-   private static Action switchToInches;
+   private static final Action switchToInches;
 
    /** Action which changes current units to centimeters. */
-   private static Action switchToCM;
+   private static final Action switchToCM;
 
    /** Action which changes current units to millimeters. */
-   private static Action switchToMM;
+   private static final Action switchToMM;
 
    /** Action which changes current units to typographical points. */
-   private static Action switchToPT;
+   private static final Action switchToPT;
 
    /** Action which changes current units to percentage units. */
-   private static Action switchToPercent;
+   private static final Action switchToPercent;
 
    /** Action which changes current units to user units. */
-   private static Action switchToUserUnits;
+   private static final Action switchToUserUnits;
 
    static
    {
@@ -301,7 +300,7 @@ public class MeasureEditor extends JPreferredSizePanel implements ActionListener
       double d = valueField.getValue().doubleValue();
       if(d == currentValidMeasure.getValue())
       {
-         Measure next = null;
+         Measure next;
          if(!(u.isRelative() || currentValidMeasure.getUnits().isRelative()))
             next = Measure.convertRealMeasure(currentValidMeasure, u, constraints);
          else
