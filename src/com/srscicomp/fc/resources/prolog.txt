@@ -1,0 +1,1130 @@
+ps.prolog.dict=phyplotDict
+ps.prolog.common.title=(PhyplotPS Prolog - Common) 1.0 0
+ps.prolog.common=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Common) 1.0 0 \
+\r\n/phyplotDict 200 dict def                                            % phyplotDict required for EPS \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /BD {bind def} bind def                                           % abbreviations for oft-used combinations \
+\r\n   /XD {exch def} BD \
+\r\n   /ZD {0 def} BD \
+\r\n   /UD {1 def} BD \
+\r\n\
+\r\n   /localA 10 dict def                                               % local variables for prolog procedures.  there \
+\r\n   /localB 10 dict def                                               % are several set to avoid conflicts when one \
+\r\n   /localC 10 dict def                                               % procedure calls another \
+\r\n   /localD 10 dict def \
+\r\n\
+\r\n   localA begin                                                      % initialize all local proc vars to avoid errors \
+\r\n      /A0 ZD /A1 ZD /A2 ZD /A3 ZD /A4 ZD /A5 ZD /A6 ZD /A7 ZD        % when EPS file is included in another file \
+\r\n   end \
+\r\n   localB begin \
+\r\n      /B0 ZD /B1 ZD /B2 ZD /B3 ZD /B4 ZD /B5 ZD /B6 ZD /B7 ZD /B8 ZD /B9 ZD \
+\r\n   end \
+\r\n   localC begin \
+\r\n      /C0 ZD /C1 ZD /C2 ZD /C3 ZD /C4 ZD /C5 ZD /C6 ZD /C7 ZD /C8 ZD /C9 ZD \
+\r\n   end \
+\r\n   localD begin \
+\r\n      /D0 ZD /D1 ZD /D2 ZD /D3 ZD /D4 ZD /D5 ZD /D6 ZD /D7 ZD /D8 ZD /D9 ZD \
+\r\n   end \
+\r\n\
+\r\n   /data0 null def                                                   % generic arrays that are preloaded and passed to \
+\r\n   /data1 null def                                                   % selected prolog procedures \
+\r\n   /data2 null def \
+\r\n\
+\r\n   /fillC [1 0 0 0] def                                              % the current fill color for PhyplotPS graphics \
+\r\n                                                                     % [n r g b], where n=1 for grayscale (r=g=b) or \
+\r\n                                                                     % n=3 for arbitrary rgb color \
+\r\n\
+\r\n   /strkon UD                                                        % is stroking enabled for PhyplotPS graphics? \
+\r\n\
+\r\n   /enaStroke {                                                      % N enaStroke -- : Enable(N!=0), disable(0) stroking. \
+\r\n      0 ne {/strkon UD} {/strkon ZD} ifelse \
+\r\n   } BD \
+\r\n\
+\r\n   /strokeEx {                                                       % -- strokeEx -- : Calls stroke operator if stroking \
+\r\n      strkon 0 ne {stroke} {newpath} ifelse                          % enabled; else clears the current path \
+\r\n   } BD \
+\r\n\
+\r\n   /setFillColor {                                                   % gray 1 setFillColor -- : Set grayscale fillC \
+\r\n      dup fillC 0 3 -1 roll put                                      % OR r g b 3 setFillColor -- : Set RGB fillC \
+\r\n      1 eq {dup dup} if \
+\r\n      3 -1 1 {fillC 3 1 roll exch put} for \
+\r\n   } BD \
+\r\n\
+\r\n   /useFillColor {                                                   % -- useFillColor -- : Make PhyplotPS global fillC \
+\r\n      fillC 0 get 1 eq {                                             % the current color in the graphics state. \
+\r\n         fillC 1 get setgray \
+\r\n      } { \
+\r\n         fillC 1 get fillC 2 get fillC 3 get setrgbcolor \
+\r\n      } ifelse \
+\r\n   } BD \
+\r\n\
+\r\n   /unpackrgb {                                                      % packedRGB unpackrgb r g b : Split integer \
+\r\n      dup -16 bitshift 255 and 255.0 div exch dup                    %   0x00RRGGBB into the 3 color components, \
+\r\n      -8 bitshift 255 and 255.0 div exch 255 and 255.0 div           %   where r,g,b lie in [0..1]. \
+\r\n   } BD \
+\r\n\
+\r\n   /setGradFill {                                                    % type coords c0 c1 setGradFill -- Set an \
+\r\n      localA begin                                                   % axial or radial gradient pattern as the \
+\r\n         /A0 XD /A1 XD /A2 XD /A3 XD                                 % current color in the graphics state. \
+\r\n         << \
+\r\n            /PatternType 2 \
+\r\n            /Shading << \
+\r\n               /ShadingType A3 \
+\r\n               /ColorSpace /DeviceRGB /AntiAlias true \
+\r\n               /Coords A2 \
+\r\n               /Function << /FunctionType 2 /Domain [0 1] /N 1 /C0 A1 /C1 A0 >> \
+\r\n            >> \
+\r\n         >> [1 0 0 1 0 0] makepattern setpattern \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /makeCompositeFont {                                              % /fontC /fontISO /font makeCompositeFont -- \
+\r\n      localA begin                                                   % From base font, derives a composite fontC that \
+\r\n         /A0 XD /A1 XD /A2 XD                                        %     handles all chars supported by PhyplotPS. \
+\r\n         A1 A0 findfont dup length dict copy                         % make a copy of base font that uses ISOLatin1 \
+\r\n         dup /Encoding ISOLatin1Encoding put                         % instead of StandardEncoding; register it under \
+\r\n         definefont pop                                              % the specified name (/fontISO) \
+\r\n         A2 <<                                                       % now define the composite font... \
+\r\n            /FontType     0 \
+\r\n            /FontMatrix   [1 0 0 1 0 0] \
+\r\n            /FDepVector   [A0 findfont A1 findfont /Symbol findfont] % slot0=base, slot1=ISO, slot2=Symbol \
+\r\n            /Encoding     [0 1 2] \
+\r\n            /FMapType     3 \
+\r\n            /EscChar      127 \
+\r\n         >> definefont pop \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /catStr {                                                         % (a) (b) catStr (ab) : Concat two strings \
+\r\n      exch dup length \
+\r\n      2 index length add string \
+\r\n      dup dup 4 2 roll copy length \
+\r\n      4 -1 roll putinterval \
+\r\n   } BD \
+\r\n\
+\r\n   /showStr {                                                        % useFill? (string) hAlign x y showStr -- \
+\r\n      localA begin \
+\r\n         newpath /A1 XD /A0 XD /A2 XD                                % A0=x, A1=y, A2=hAlign \
+\r\n         A2 0 le {                                                   % adjust x for center or right align \
+\r\n            dup stringwidth pop \
+\r\n            A2 0 eq {2 div} if \
+\r\n            A0 exch sub /A0 XD \
+\r\n         } if \
+\r\n         A0 A1 moveto                                                % in PhyplotPS, text is painted using \
+\r\n         gsave exch 0 ne {useFillColor} if show grestore             % fillC, unless useFill? is 0 \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /ulshow {                                                         % (string) ulshow -- (uses current point) \
+\r\n      localA begin \
+\r\n         /A2 XD \
+\r\n         currentfont /FontMatrix get 0 get /A3 XD \
+\r\n         currentfont /FDepVector get 0 get /FontInfo get /UnderlinePosition get A3 mul /A1 XD \
+\r\n         gsave 0 A1 rmoveto A2 stringwidth pop 0 rlineto A1 setlinewidth stroke grestore \
+\r\n         A2 show \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /showStrEx {                                                      % (string) ul ss textRGB showStrEx -- \
+\r\n      localB begin                                                   % (uses current point) \
+\r\n         gsave \
+\r\n         unpackrgb setrgbcolor /B2 XD \
+\r\n         /B3 ZD \
+\r\n         B2 0 ne { \
+\r\n            currentfont /FontMatrix get 0 get /B3 XD \
+\r\n            B2 0 gt {0.40} {-0.33} ifelse B3 mul /B3 XD \
+\r\n            currentfont 0.58 scalefont setfont \
+\r\n            0 B3 rmoveto \
+\r\n         } if \
+\r\n         0 ne { ulshow } { show } ifelse 0 B3 neg rmoveto currentpoint /B1 XD /B0 XD \
+\r\n         grestore \
+\r\n         B0 B1 moveto \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /runWidth {                                                       % (str) font fontsz sup runWidth W \
+\r\n      0 ne {0.58}{1} ifelse mul selectfont stringwidth pop \
+\r\n   } BD \
+\r\n\
+\r\n   /widthTextRuns {                                                  % fontsz AR widthTextRuns W \
+\r\n      localA begin                                                   % (text runs stored in array AR) \
+\r\n         /A0 XD /A1 XD /A2 ZD                                        % A0=AR, A1=fontsz, A2=W=0 \
+\r\n         0 5 A0 length 1 sub {                                       % accumulate run widths in W \
+\r\n            /A3 XD \
+\r\n            A0 A3 4 add get A0 A3 get A1 A0 A3 2 add get runWidth A2 add /A2 XD \
+\r\n         } for A2                                                    % push total W onto op stack \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /showTextRuns {                                                   % x y hAlign fontsz AR showTextRuns -- \
+\r\n      localC begin                                                   % (text runs stored in array AR) \
+\r\n         newpath /C4 XD /C3 XD /C2 XD /C1 XD /C0 XD                  % C0=x, C1=y, C2=hAlign, C3=fontsz C4=AR \
+\r\n         C2 0 le {                                                   % if not left-aligned: \
+\r\n            C3 C4 widthTextRuns /C5 XD                               %   W = total width across text runs \
+\r\n            C0 C5 C2 0 eq { 2 div } if sub /C0 XD                    %   x = x - W (right) or x - W/2 (centered) \
+\r\n         } if \
+\r\n         C0 C1 moveto \
+\r\n         0 5 C4 length 1 sub {                                       % render each text run \
+\r\n            /C6 XD \
+\r\n            C4 C6 get C3 selectfont                                  %   set the font for text run \
+\r\n            C4 C6 4 add get C4 C6 1 add get \
+\r\n            C4 C6 2 add get C4 C6 3 add get showStrEx                %   then render it to right of prev run \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /ascent {                                                         % R ascent A : Estimate current font ascent \
+\r\n      gsave neg rotate                                               % (R is current rotation WRT device space) \
+\r\n      (gX\\177\\001\\316) 0 0 moveto true charpath \
+\r\n      flattenpath pathbbox 4 1 roll pop pop pop grestore \
+\r\n      1.15 mul                                                       % fudge factor! \
+\r\n   } BD \
+\r\n\
+\r\n   /descent {                                                        % R descent A : Estimate current font descent \
+\r\n      gsave neg rotate                                               % (R is current rotation WRT device space) \
+\r\n      (gX\\177\\001\\316) 0 0 moveto true charpath \
+\r\n      flattenpath pathbbox pop pop exch pop grestore neg             % flip sign, cuz we want it as a distance. \
+\r\n      1.15 mul                                                       % fudge factor! \
+\r\n   } BD \
+\r\n\
+\r\n   /append {                                                         % [a1 a2 .. aN] x append [a1 a2 .. aN x] \
+\r\n      localA begin \
+\r\n         /A0 XD aload length 1 add A0 exch array astore \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /concatAry {                                                      % [a1..aN] [b1..bM] concatAry [a1..aN b1..bM] \
+\r\n      localA begin \
+\r\n         /A1 XD /A0 XD A0 length A1 length add /A2 XD \
+\r\n         A0 aload pop A1 aload pop A2 array astore \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /splitAry {                                                       % A n splitAry [A0 .. A(n-1)] [An ...] \
+\r\n      localA begin \
+\r\n         /A0 XD /A1 XD \
+\r\n         A0 0 gt A1 length A0 gt and { \
+\r\n            A1 aload length A0 sub array astore /A3 XD A0 array astore A3 \
+\r\n         }{ \
+\r\n            A1 0 array \
+\r\n         } ifelse \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /trimSpace {                                                      % R trimSpace R' \
+\r\n      localB begin                                                   % R=text run sequence (5N array) \
+\r\n      /B0 XD                                                         % B0=R \
+\r\n      B0 length 10 ge {                                              % if R contains at least two text runs: \
+\r\n         B0 B0 length 1 sub get /B1 XD                               %   B1=string for last text run \
+\r\n         B1 length 1 eq B1 0 get 32 eq and {                         %   if B1=( ): \
+\r\n            B0 B0 length 5 sub splitAry pop /B0 XD                   %      R' = R - the last text run in R \
+\r\n         } if \
+\r\n      } if \
+\r\n      B0                                                             % put R' on stack \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /splitTextRun {                                                   % R fontsz w splitTextRun R1 R2 \
+\r\n      localB begin                                                   % R=[font UL SS rgb (string)] \
+\r\n      /B0 XD /B1 XD dup /B2 XD 4 get /B3 XD                          % B0=w, B1=fontsz, B2=R, B3=(string) \
+\r\n      B2 aload pop 5 array astore /B4 XD B4 4 () put                 % B4=R2 initially is a run with empty string \
+\r\n      B3 length 1 gt {                                               % can split run only if len(string) > 1 \
+\r\n         1 /B5 XD                                                    %   find largest index B5 in [1..len(S)-1] \
+\r\n         {                                                           %   such that width of substring [0..B5] <= w \
+\r\n            B5 1 add B3 length eq {exit} if \
+\r\n            B4 4 B3 0 B5 1 add getinterval put \
+\r\n            B1 B4 widthTextRuns B0 gt {exit} if \
+\r\n            B5 1 add /B5 XD \
+\r\n         } loop \
+\r\n         B2 4 B3 0 B5 getinterval put                                %   B2 now has R1 \
+\r\n         B4 4 B3 B5 B3 length B5 sub getinterval put                 %   and B4 holds R2 \
+\r\n      } if \
+\r\n      B2 B4                                                          % put R1 R2 on stack \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /wrapTextRuns {                                                   % fontsz w T wrapTextRuns L \
+\r\n      localC begin \
+\r\n         /C0 XD /C1 XD /C2 XD                                        % C0=T=[[run1] [run2] ...], C1=w, C2=fontsz \
+\r\n         C1 (WW) stringwidth pop gt {                                % if wrap width w is too small, forget it \
+\r\n            /C3 ZD 0 array /C5 XD 0 array /C6 XD                     % C3=curr lineW, C5=curr line, C6=lines array L \
+\r\n            C0 {                                                     % for all run subsequences in T: \
+\r\n               /C7 XD                                                %   C7=the next run subsequence in T \
+\r\n               C7 null eq {                                          %   if C7 is null, append current line to L \
+\r\n                  C6 C5 append /C6 XD 0 array /C5 XD /C3 ZD          %      (even if empty) and start new line \
+\r\n               }{                                                    %   else: \
+\r\n                  C2 C7 widthTextRuns /C8 XD                         %      C8=width of next run subsequence \
+\r\n                  C1 C8 gt {                                         %      if it is shorter than wrap width: \
+\r\n                     C1 C8 C3 add gt {                               %          add it to curr line... \
+\r\n                        C8 C3 add /C3 XD C5 C7 concatAry /C5 XD \
+\r\n                     }{                                              %          ... or start a new line with it \
+\r\n                        C6 C5 append /C6 XD C8 /C3 XD C7 /C5 XD \
+\r\n                     } ifelse \
+\r\n                  }{                                                 %      else it is longer than wrap width, so \
+\r\n                     {                                               %      LOOP until subsequence is used up: \
+\r\n                        C7 5 splitAry /C7 XD /C4 XD                  %         split off next run in subseq \
+\r\n                        C2 C4 widthTextRuns /C9 XD                   %         C9 = its width \
+\r\n                        C1 C9 gt {                                   %         it is shorter than wrap width: \
+\r\n                           C1 C9 C3 add gt {                         %            append to current line... \
+\r\n                              C9 C3 add /C3 XD C5 C4 concatAry /C5 XD \
+\r\n                           }{                                        %            ... or start a new line with it \
+\r\n                              C6 C5 append /C6 XD C9 /C3 XD C4 /C5 XD \
+\r\n                           } ifelse \
+\r\n                        }{                                           %         it is longer than wrap width, so \
+\r\n                           C4 C2 C1 C3 sub splitTextRun              %         split into one run that just fills \
+\r\n                           /C9 XD /C4 XD                             %         rest of line and put remnant back \
+\r\n                           C9 4 get length 0 gt {                    %         into subseq in C7 \
+\r\n                              C9 C7 concatAry /C7 XD \
+\r\n                           } if \
+\r\n                           C5 C4 concatAry /C5 XD \
+\r\n                           C6 C5 append /C6 XD 0 array /C5 XD /C3 ZD \
+\r\n                        } ifelse \
+\r\n                        C7 length 0 eq {exit} if                     %         exit loop when subseq is empty \
+\r\n                     } loop \
+\r\n                  } ifelse \
+\r\n               } ifelse \
+\r\n            } forall \
+\r\n            C3 0 gt {C6 C5 append /C6 XD} if                         % if last line is not empty, append it to L. \
+\r\n         } if \
+\r\n         C6                                                          % push L onto op stack \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /showTextRunsInBox {                                              % F T R HA VA L W H showTextRunsInBox -- \
+\r\n      localD begin                                                   % T=[[run1] [run2] ...] \
+\r\n         /D0 XD /D1 XD /D2 XD /D3 XD /D4 XD /D5 XD /D6 XD /D7 XD     % D0=H,D1=W,D2=L,D3=VA,D4=HA,D5=R,D6=T,D7=F \
+\r\n         D7 D1 D6 wrapTextRuns /D6 XD                                % wrap runs in T into array of lines T' \
+\r\n         D6 length 0 gt {                                            % if there are any lines to draw: \
+\r\n            D5 ascent /D8 XD                                         %   D8 = ascent in current font = A \
+\r\n            D3 0 gt {                                                %   compute initial Y offset, Yo: \
+\r\n               D0 D8 sub                                             %     top align: Yo = H - A \
+\r\n            }{ \
+\r\n               D6 length 1 sub D2 mul D8 add D5 descent add /D9 XD   %     D9= blockHt = (N-1)*L + A + descent \
+\r\n               D3 0 eq { D0 D9 add 2 div D8 sub }                    %     center align: Yo = 0.5(H + BH) - A \
+\r\n               { D9 D8 sub } ifelse                                  %     bot align: Yo = BH - A \
+\r\n            } ifelse /D9 XD                                          %   put Yo in D9 \
+\r\n            D4 0 gt {0} {D1} ifelse D4 0 eq {2 div} if /D8 XD        % compute D8=Xo based on horiz alignment HA \
+\r\n            D6 {                                                     % draw the attributed text lines \
+\r\n               trimSpace /D5 XD \                                    %   discard trailing space from curr line \
+\r\n               D8 D9 D4 D7 D5 showTextRuns \
+\r\n               D9 D2 sub /D9 XD \
+\r\n            } forall \
+\r\n         } if \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /doLine {newpath moveto lineto strokeEx} BD                       % x1 y1 x0 y0 doLine -- \
+\r\n\
+\r\n   /doRect {                                                         % h w xBotLeft yBotLeft doRect -- \
+\r\n      newpath moveto dup 0 rlineto \
+\r\n      exch 0 exch rlineto neg 0 rlineto closepath \
+\r\n   } BD \
+\r\n\
+\r\n   /setViewport {                                                    % h w clip? rot xBotLeft yBotLeft setViewport -- \
+\r\n      translate rotate \
+\r\n      {0 0 doRect clip newpath} {pop pop} ifelse \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn1.title=(PhyplotPS Prolog - Adornments #1) 1.0 0
+ps.prolog.adorn1=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #1) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.circle {                                                       % s xCtr yCtr A.circle -- \
+\r\n      localA begin                                                   % NOTE: Drawn CCW. B/c PhyplotPS inverts y-axis \
+\r\n         /A1 XD /A0 XD 2 div /A2 XD                                  % 'arcn' is CCW rather than CW!! \
+\r\n         A0 A2 add A1 moveto \
+\r\n         A0 A1 A2 360 0 arcn closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.oval12 {                                                       % s xCtr yCtr A.oval12 -- \
+\r\n      localA begin                                                   % Depends on A.circle, which also uses localA dict. \
+\r\n         /A6 XD /A5 XD /A7 XD                                        % Make sure that local vars do not overlap!!!! \
+\r\n         A5 A6 translate 0.5 1 scale \
+\r\n         A7 0 0 A.circle \
+\r\n         2 1 scale A5 neg A6 neg translate \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.oval21 {                                                       % s xCtr yCtr A.oval21 -- \
+\r\n      localA begin                                                   % Depends on A.circle, which also uses localA dict. \
+\r\n         /A6 XD /A5 XD /A7 XD                                        % Make sure that local vars do not overlap!!!! \
+\r\n         A5 A6 translate 1 0.5 scale \
+\r\n         A7 0 0 A.circle \
+\r\n         1 2 scale A5 neg A6 neg translate \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.tee {                                                          % s xCtr yCtr A.tee -- \
+\r\n      moveto dup -2 div 0 rmoveto \
+\r\n      dup 0 rlineto \
+\r\n      dup -2 div dup rmoveto \
+\r\n      0 exch rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.xhair {                                                        % s xCtr yCtr A.xhair -- \
+\r\n      moveto dup -2 div dup rmoveto \
+\r\n      dup dup rlineto \
+\r\n      dup neg 0 rmoveto \
+\r\n      dup neg rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.star {3 copy A.tee A.xhair} BD                                 % s xCtr yCtr A.star -- \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn2.title=(PhyplotPS Prolog - Adornments #2) 1.0 0
+ps.prolog.adorn2=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #2) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.box {                                                          % s xCtr yCtr A.box -- \
+\r\n      moveto dup -2 div dup rmoveto dup 0 exch rlineto \
+\r\n      dup 0 rlineto \
+\r\n      neg 0 exch rlineto closepath \
+\r\n   } BD \
+\r\n\
+\r\n   /A.rect12 {                                                       % s xCtr yCtr A.rect12 -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 2 div /A1 XD                               % A0=s, A1=0.5s \
+\r\n         A1 -2 div A1 neg rmoveto \
+\r\n         0 A0 rlineto A1 0 rlineto 0 A0 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.rect21 {                                                       % s xCtr yCtr A.rect21 -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 2 div /A1 XD                               % A0=s, A1=0.5s \
+\r\n         A1 neg dup 2 div rmoveto \
+\r\n         0 A1 rlineto A0 0 rlineto 0 A1 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn3.title=(PhyplotPS Prolog - Adornments #3) 1.0 0
+ps.prolog.adorn3=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #3) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.diamond {                                                      % s xCtr yCtr A.diamond -- \
+\r\n      moveto 2 div dup 0 rmoveto \
+\r\n      dup neg dup rlineto \
+\r\n      dup dup neg exch rlineto \
+\r\n      dup rlineto closepath \
+\r\n   } BD \
+\r\n\
+\r\n   /A.diamond12 {                                                    % s xCtr yCtr A.diamond12 -- \
+\r\n      localA begin \
+\r\n         moveto 2 div /A0 XD A0 2 div /A1 XD                         % A0=0.5s, A1=0.25s \
+\r\n         0 A0 neg rmoveto \
+\r\n         A1 neg A0 rlineto A1 A0 rlineto A1 A0 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.diamond21 {                                                    % s xCtr yCtr A.diamond21 -- \
+\r\n      localA begin \
+\r\n         moveto 2 div /A0 XD A0 2 div /A1 XD                         % A0=0.5s, A1=0.25s \
+\r\n         0 A1 neg rmoveto \
+\r\n         A0 neg A1 rlineto A0 A1 rlineto A0 A1 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn4.title=(PhyplotPS Prolog - Adornments #4) 1.0 0
+ps.prolog.adorn4=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #4) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.downtriangle {                                                 % s xCtr yCtr A.downtriangle -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 2 div 3 sqrt mul /A1 XD             % A0=0.5s A1=0.5*sqrt(3)*s \
+\r\n         A0 A1 2 div rmoveto A0 neg A1 neg rlineto A0 neg A1 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.uptriangle {                                                   % s xCtr yCtr A.uptriangle -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 2 div 3 sqrt mul /A1 XD             % A0=0.5s A1=0.5*sqrt(3)*s \
+\r\n         A0 neg A1 -2 div rmoveto A0 A1 rlineto A0 A1 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.lefttriangle {                                                 % s xCtr yCtr A.lefttriangle -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 2 div 3 sqrt mul /A1 XD             % A0=0.5s A1=0.5*sqrt(3)*s \
+\r\n         A1 2 div A0 neg rmoveto A1 neg A0 rlineto A1 A0 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.righttriangle {                                                % s xCtr yCtr A.righttriangle -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 2 div 3 sqrt mul /A1 XD             % A0=0.5s A1=0.5*sqrt(3)*s \
+\r\n         A1 -2 div A0 rmoveto A1 A0 neg rlineto A1 neg A0 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn5.title=(PhyplotPS Prolog - Adornments #5) 1.0 0
+ps.prolog.adorn5=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #5) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.downisotriangle {                                              % s xCtr yCtr A.downisotriangle -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 2 div /A1 XD                               % A0=s, A1=0.5s \
+\r\n         0 A1 neg rmoveto \
+\r\n         A1 -2 div A0 rlineto A1 0 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.upisotriangle {                                                % s xCtr yCtr A.upisotriangle -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 2 div /A1 XD                               % A0=s, A1=0.5s \
+\r\n         0 A1 rmoveto \
+\r\n         A1 2 div A0 neg rlineto A1 neg 0 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.leftisotriangle {                                              % s xCtr yCtr A.leftisotriangle -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 2 div /A1 XD                               % A0=s, A1=0.5s \
+\r\n         A1 neg 0 rmoveto \
+\r\n         A0 A1 2 div rlineto 0 A1 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.rightisotriangle {                                             % s xCtr yCtr A.rightisotriangle -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 2 div /A1 XD                               % A0=s, A1=0.5s \
+\r\n         A1 0 rmoveto \
+\r\n         A0 neg A1 -2 div rlineto 0 A1 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn6.title=(PhyplotPS Prolog - Adornments #6) 1.0 0
+ps.prolog.adorn6=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #6) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.downdart {                                                     % s xCtr yCtr A.downdart -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 3 div /A1 XD                               % A0=s, A1=s/3 \
+\r\n         A1 neg A0 2 div rmoveto \
+\r\n         A1 dup neg rlineto A1 dup rlineto A1 neg A0 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.updart {                                                       % s xCtr yCtr A.updart -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 3 div /A1 XD                               % A0=s, A1=s/3 \
+\r\n         A1 A0 -2 div rmoveto \
+\r\n         A1 dup neg exch rlineto A1 neg dup rlineto A1 A0 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.leftdart {                                                     % s xCtr yCtr A.leftdart -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 3 div /A1 XD                               % A0=s, A1=s/3 \
+\r\n         A0 2 div A1 rmoveto \
+\r\n         A1 neg dup rlineto A1 dup neg rlineto A0 neg A1 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.rightdart {                                                    % s xCtr yCtr A.rightdart -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 3 div /A1 XD                               % A0=s, A1=s/3 \
+\r\n         A0 -2 div A1 neg rmoveto \
+\r\n         A1 dup rlineto A1 dup neg exch rlineto A0 A1 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn7.title=(PhyplotPS Prolog - Adornments #7) 1.0 0
+ps.prolog.adorn7=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #7) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.downarrow {                                                    % s xCtr yCtr A.downarrow -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 3 div /A1 XD                        % A0=s/2, A1=s/3 \
+\r\n         0 A0 neg rmoveto A0 neg A0 rlineto A1 0 rlineto 0 A0 rlineto \
+\r\n         A1 0 rlineto 0 A0 neg rlineto A1 0 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.uparrow {                                                      % s xCtr yCtr A.uparrow -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 3 div /A1 XD                        % A0=s/2, A1=s/3 \
+\r\n         0 A0 rmoveto A0 dup neg rlineto A1 neg 0 rlineto 0 A0 neg rlineto \
+\r\n         A1 neg 0 rlineto 0 A0 rlineto A1 neg 0 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.leftarrow {                                                    % s xCtr yCtr A.leftarrow -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 3 div /A1 XD                        % A0=s/2, A1=s/3 \
+\r\n         A0 neg 0 rmoveto A0 dup rlineto 0 A1 neg rlineto A0 0 rlineto \
+\r\n         0 A1 neg rlineto A0 neg 0 rlineto 0 A1 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.rightarrow {                                                   % s xCtr yCtr A.rightarrow -- \
+\r\n      localA begin \
+\r\n         moveto dup 2 div /A0 XD 3 div /A1 XD                        % A0=s/2, A1=s/3 \
+\r\n         A0 0 rmoveto A0 neg dup rlineto 0 A1 rlineto A0 neg 0 rlineto \
+\r\n         0 A1 rlineto A0 0 rlineto 0 A1 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn8.title=(PhyplotPS Prolog - Adornments #8) 1.0 0
+ps.prolog.adorn8=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #8) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.linethru {                                                     % s xCtr yCtr A.linethru -- \
+\r\n      moveto dup -2 div 0 exch rmoveto \
+\r\n      0 exch rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.hlinethru { moveto dup -2 div 0 rmoveto 0 rlineto } BD         % s xCtr yCtr A.hlinethru -- \
+\r\n\
+\r\n   /A.linedown { moveto -2 div 0 exch rlineto } BD                   % s xCtr yCtr A.linedown -- \
+\r\n\
+\r\n   /A.lineup { moveto 2 div 0 exch rlineto } BD                      % s xCtr yCtr A.lineup -- \
+\r\n\
+\r\n   /A.bracket {                                                      % s xCtr yCtr A.bracket -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD /A1 A0 5 div def \
+\r\n         A1 neg A0 2 div neg rmoveto A1 0 rlineto \
+\r\n         0 A0 rlineto A1 neg 0 rlineto \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn9.title=(PhyplotPS Prolog - Adornments #9) 1.0 0
+ps.prolog.adorn9=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #9) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.arrow {                                                        % s xCtr yCtr A.arrow -- \
+\r\n      moveto 2 div dup neg dup rmoveto \
+\r\n      dup dup rlineto \
+\r\n      dup neg exch rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.reversearrow {                                                 % s xCtr yCtr A.reversearrow -- \
+\r\n      moveto 2 div dup dup neg rmoveto \
+\r\n      dup dup neg exch rlineto \
+\r\n      dup rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.fillarrow {A.arrow closepath} BD                               % s xCtr yCtr A.fillarrow -- \
+\r\n   /A.reversefillarrow {A.reversearrow closepath} BD                 % s xCtr yCtr A.reversefillarrow -- \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn10.title=(PhyplotPS Prolog - Adornments #10) 1.0 0
+ps.prolog.adorn10=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #10) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.thinarrow {                                                    % s xCtr yCtr A.thinarrow -- \
+\r\n      moveto 2 div dup neg dup 2 div rmoveto \
+\r\n      dup dup 2 div rlineto \
+\r\n      dup neg exch 2 div rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.reversethinarrow {                                             % s xCtr yCtr A.reversethinarrow -- \
+\r\n      moveto 2 div dup dup -2 div rmoveto \
+\r\n      dup neg dup -2 div rlineto \
+\r\n      dup 2 div rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.fillthinarrow {A.thinarrow closepath} BD                       % s xCtr yCtr A.fillthinarrow -- \
+\r\n   /A.reversefillthinarrow {A.reversethinarrow closepath} BD         % s xCtr yCtr A.reversefillthinarrow -- \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn11.title=(PhyplotPS Prolog - Adornments #11) 1.0 0
+ps.prolog.adorn11=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #11) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.widearrow {                                                    % s xCtr yCtr A.widearrow -- \
+\r\n      moveto 2 div dup neg dup 2 div exch rmoveto \
+\r\n      dup dup 2 div exch rlineto \
+\r\n      dup neg 2 div exch rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.reversewidearrow {                                             % s xCtr yCtr A.reversewidearrow -- \
+\r\n      moveto 2 div dup neg dup -2 div exch rmoveto \
+\r\n      dup dup -2 div exch rlineto \
+\r\n      dup 2 div exch rlineto \
+\r\n   } BD \
+\r\n\
+\r\n   /A.fillwidearrow {A.widearrow closepath} BD                       % s xCtr yCtr A.fillwidearrow -- \
+\r\n   /A.reversefillwidearrow {A.reversewidearrow closepath} BD         % s xCtr yCtr A.reversefillwidearrow -- \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn12.title=(PhyplotPS Prolog - Adornments #12) 1.0 0
+ps.prolog.adorn12=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #12) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.dart {                                                         % s xCtr yCtr A.dart -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 6 div /A1 XD                               % A0=s, A1=s/6 \
+\r\n         A0 -2 div A1 neg rlineto \
+\r\n         A1 dup rlineto A1 dup neg exch rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.reversedart {                                                  % s xCtr yCtr A.reversedart -- \
+\r\n      localA begin \
+\r\n         moveto /A0 XD A0 6 div /A1 XD                               % A0=s, A1=s/6 \
+\r\n         A0 2 div A1 rlineto \
+\r\n         A1 neg dup rlineto A1 dup neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.kite {                                                         % s xCtr yCtr A.kite -- \
+\r\n      localA begin \
+\r\n         moveto dup 6 div /A0 XD 0.2 mul /A1 XD                      % A0=s/6, A1=0.2*s \
+\r\n         A0 -2 mul A1 neg rlineto \
+\r\n         A0 neg A1 rlineto A0 A1 rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.reversekite {                                                  % s xCtr yCtr A.reversekite -- \
+\r\n      localA begin \
+\r\n         moveto dup 6 div /A0 XD 0.2 mul /A1 XD                      % A0=s/6, A1=0.2*s \
+\r\n         A0 2 mul A1 rlineto \
+\r\n         A0 A1 neg rlineto A0 neg A1 neg rlineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adorn13.title=(PhyplotPS Prolog - Adornments #13) 1.0 0
+ps.prolog.adorn13=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adornments #13) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /A.parallelogram {                                                % s xCtr yCtr A.parallelogram -- \
+\r\n      localA begin \
+\r\n         /A1 XD /A0 XD dup 2 div /A2 XD 3 mul 8 div /A3 XD           % A0=xCtr, A1=yCtr, A2=s/2, A3=3*s/8 \
+\r\n         A0 A2 sub A1 A2 sub moveto A0 A3 sub A1 A2 add lineto \
+\r\n         A0 A2 add A1 A2 add lineto A0 A3 add A1 A2 sub lineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.pentagram {                                                    % s xCtr yCtr A.pentagram -- \
+\r\n      localA begin \
+\r\n         /A1 XD /A0 XD 2 div /A2 XD                                  % A0=xCtr, A1=yCtr, A2=s/2 \
+\r\n         A2 18 cos mul /A3 XD A2 18 sin mul /A4 XD                   % A3=(s/2)cos(18), A4=(s/2)sin(18) \
+\r\n         A2 54 cos mul /A5 XD A2 54 sin mul /A6 XD                   % A5=(s/2)cos(54), A6=(s/2)sin(54) \
+\r\n         A0 A1 A2 add moveto A0 A5 add A1 A6 sub lineto \
+\r\n         A0 A3 sub A1 A4 add lineto A0 A3 add A1 A4 add lineto \
+\r\n         A0 A5 sub A1 A6 sub lineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.hexagram {                                                     % s xCtr yCtr A.hexagram -- \
+\r\n      localA begin \
+\r\n         /A1 XD /A0 XD dup 2 div /A2 XD                              % A0=xCtr, A1=yCtr, A2=s/2, \
+\r\n         dup 4 div /A3 XD 0.433 mul /A4 XD                           % A3=s/4, A4=0.433*s \
+\r\n         A0 A2 sub A1 moveto A0 A3 add A1 A4 add lineto \
+\r\n         A0 A3 add A1 A4 sub lineto closepath A0 A2 add A1 moveto \
+\r\n         A0 A3 sub A1 A4 sub lineto A0 A3 sub A1 A4 add lineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.pentagon {                                                     % s xCtr yCtr A.pentagon -- \
+\r\n      localA begin \
+\r\n         /A1 XD /A0 XD 2 div /A2 XD                                  % A0=xCtr, A1=yCtr, A2=s/2 \
+\r\n         A2 18 cos mul /A3 XD A2 18 sin mul /A4 XD                   % A3=(s/2)cos(18), A4=(s/2)sin(18) \
+\r\n         A2 54 cos mul /A5 XD A2 54 sin mul /A6 XD                   % A5=(s/2)cos(54), A6=(s/2)sin(54) \
+\r\n         A0 A1 A2 add moveto A0 A3 add A1 A4 add lineto \
+\r\n         A0 A5 add A1 A6 sub lineto A0 A5 sub A1 A6 sub lineto \
+\r\n         A0 A3 sub A1 A4 add lineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.hexagon {                                                      % s xCtr yCtr A.hexagon -- \
+\r\n      localA begin \
+\r\n         /A1 XD /A0 XD dup 2 div /A2 XD                              % A0=xCtr, A1=yCtr, A2=s/2, \
+\r\n         dup 4 div /A3 XD 0.433 mul /A4 XD                           % A3=s/4, A4=0.433*s \
+\r\n         A0 A2 sub A1 moveto A0 A3 sub A1 A4 add lineto \
+\r\n         A0 A3 add A1 A4 add lineto A0 A2 add A1 lineto \
+\r\n         A0 A3 add A1 A4 sub lineto A0 A3 sub A1 A4 sub lineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /A.octagon {                                                      % s xCtr yCtr A.octagon -- \
+\r\n      localA begin \
+\r\n         /A1 XD /A0 XD dup 2 div /A2 XD 0.2071 mul /A3 XD            % A0=xCtr, A1=yCtr, A2=s/2, A3=0.2071*s \
+\r\n         A0 A2 sub A1 A3 add moveto A0 A3 sub A1 A2 add lineto \
+\r\n         A0 A3 add A1 A2 add lineto A0 A2 add A1 A3 add lineto \
+\r\n         A0 A2 add A1 A3 sub lineto A0 A3 add A1 A2 sub lineto \
+\r\n         A0 A3 sub A1 A2 sub lineto A0 A2 sub A1 A3 sub lineto closepath \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.adornpaths.title=(PhyplotPS Prolog - Adorned Paths) 1.0 0
+ps.prolog.adornpaths=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Adorned Paths) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /adorn {                                                          % (str) vAdj fillC size /proc x y rot adorn -- \
+\r\n      localB begin \
+\r\n         newpath /B0 XD /B2 XD /B1 XD                                % B0=rot, B1=x, B2=y \
+\r\n         B0 0 ne {gsave B1 B2 translate B0 rotate /B1 ZD /B2 ZD} if  % if nec, translate and rotate; now x=y=0 \
+\r\n         B1 B2 3 -1 roll cvx exec                                    % render the adornment path \
+\r\n         0 ne {gsave useFillColor fill grestore} if strokeEx         % fill it if requested, then stroke it \
+\r\n         /B3 XD /B4 XD                                               % B3=vAdj, B4=(str) \
+\r\n         B4 length 0 ne {0 B4 0 B1 B2 B3 add showStr} if             % if nec, draw (str) ctr'd at (x,y+vAdj) \
+\r\n         B0 0 ne {grestore} if                                       % if rot != 0, restore GS to original state \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /adornEx {                                                        % (str) vAdj F /proc w h x y rot adornEx -- \
+\r\n      localB begin \
+\r\n         newpath /B0 XD /B2 XD /B1 XD                                % B0=rot, B1=x, B2=y \
+\r\n         B1 B2 translate B0 rotate                                   % translate to and rotate about shape ctr pt \
+\r\n         /B7 XD /B6 XD                                               % if w!=h, scale by (1 h/w) and use w as \
+\r\n         B6 B7 ne {1 B7 B6 div scale} if                             % the size of the adornment path \
+\r\n         B6 exch 0 0 3 -1 roll cvx exec                              % render the adornment path \
+\r\n         B6 B7 ne {1 B6 B7 div scale} if                             % restore after differential scale \
+\r\n         B1 neg B2 neg translate                                     % origin back at BL corner so gradient works \
+\r\n         /B5 XD                                                      % B5 = F, fill spec: [code ...] \
+\r\n         B5 0 get 0 ne {                                             % if fill code non-zero, fill path: \
+\r\n            gsave                                                    %   save path and stroke color \
+\r\n            B5 0 get 1 eq { B5 1 get B5 2 get B5 3 get setrgbcolor } %   fill code = 1 -- solid RGB color \
+\r\n            { B5 0 get B5 1 get B5 2 get B5 3 get setGradFill }      %   fill code = 2,3 -- gradient fill \
+\r\n            ifelse fill grestore                                     %   do the fill, then restore state \
+\r\n         } if \
+\r\n         strokeEx                                                    % stroke path IAW current graphics state \
+\r\n         /B3 XD /B4 XD                                               % B3=vAdj, B4=(str) \
+\r\n         B4 length 0 ne {                                            % if nec, draw (str) ctr'd at (x,y+vAdj) \
+\r\n            gsave useFillColor 0 B4 0 B1 B2 B3 add showStr grestore  % using fill color in graphics state \
+\r\n         } if \
+\r\n         B0 neg rotate                                               % undo rotation \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyAdorn {                                                      % (str) vAdj fill n size /proc polyAdorn -- \
+\r\n      localC begin                                                   % (ctrPts preloaded in global 'data0') \
+\r\n         /C0 XD /C1 XD /C2 XD /C3 XD /C4 XD /C5 XD                   % C0=/proc,C1=sz,C2=n,C3=fill,C4=vAdj,C5=(str) \
+\r\n         0 1 C2 1 sub {                                              % for i=0; i<=n-1; i++ : \
+\r\n            data0 exch get /C6 XD                                    %  C6=points[i] \
+\r\n            C6 null ne {                                             %  if pt well-defined, \
+\r\n               C5 C4 C3 C1 C0 C6 0 get C6 1 get 0 adorn              %    render adornment there \
+\r\n            } if \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n\  /polyStemAdorn {                                                  % stemProc s bf size n /proc polyStemAdorn -- \
+\r\n      localC begin                                                   % (ctrPts preloaded in global 'data0') \
+\r\n         /C0 XD /C1 XD /C2 XD /C3 XD /C4 XD /C5 XD                   % C0=/proc,C1=n,C2=size,C3=bf,C4=s,C5=stemProc \
+\r\n         0 1 C1 1 sub {                                              % for i=0; i<=n-1; i++ : \
+\r\n            /C9 XD                                                   %  C9=i \
+\r\n            C4 0 ne {                                                %  if stems drawn: \
+\r\n               2 C9 mul dup data0 exch get /C6 XD                    %   C6=data0[2*i] = adorn ctrPt \
+\r\n               1 add data0 exch get /C7 XD                           %   C7=data0[2*i+1] = stem endPt \
+\r\n            }{                                                       %  else \
+\r\n               data0 C9 get /C6 XD                                   %   C6=data0[i] = adorn ctrPt \
+\r\n            } ifelse \
+\r\n            C6 null ne {                                             %  if pt well-defined, \
+\r\n               C4 0 ne C7 null ne and {                              %   draw stem if indicated: \
+\r\n                  newpath C6 0 get C6 1 get moveto \
+\r\n                  C7 0 get C7 1 get lineto \
+\r\n                  C5 0 get cvx exec strokeEx C5 1 get cvx exec newpath \
+\r\n               } if \
+\r\n               C2 0 lt {data1 C9 get /C7 XD}{C2 /C7 XD} ifelse       %   C7 = adorn size, C8 = fillSpec \
+\r\n               C3 length 0 eq {data2 C9 get /C8 XD}{C3 /C8 XD} ifelse \
+\r\n               C7 0 gt {                                             %   if adorn size nonzero, draw it: \
+\r\n                  gsave C7 2 div /C9 XD                              %    translate to BL corner of next adornment \
+\r\n                  C6 0 get C9 sub C6 1 get C9 sub translate          %    (reqd for gradients to work correctly) \
+\r\n                  () 0 C8 C0 C7 C7 C9 C9 0 adornEx                   %    render adornment about center pt \
+\r\n                  grestore                                           %    undo translation \
+\r\n               } if \
+\r\n            } if \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyRotAdorn {                                                   % (str) vAdj fill n size /proc polyRotAdorn -- \
+\r\n      localC begin                                                   % (ctrPts in global 'data0', rotAngles in 'data1') \
+\r\n         /C0 XD /C1 XD /C2 XD /C3 XD /C4 XD /C5 XD                   % C0=/proc,C1=size,C2=n,C3=fill,C4=vAdj,C5=(str) \
+\r\n         0 1 C2 1 sub {                                              % for i=0; i<=n-1; i++ : \
+\r\n            dup data0 exch get /C6 XD data1 exch get /C7 XD          %  C6=points[i], C7=rot[i] \
+\r\n            C6 null ne {                                             %  if pt well-defined, render adornment there \
+\r\n               C5 C4 C3 C1 C0 C6 0 get C6 1 get C7 adorn \
+\r\n            } if \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polySizeAdorn {                                                  % fill n /proc polySizeAdorn -- \
+\r\n      localC begin                                                   % (use globals 'data0', 'data1') \
+\r\n         /C0 XD /C1 XD /C2 XD                                        % C0=/proc,C1=n,C2=fill \
+\r\n         0 1 C1 1 sub {                                              % for i=0; i<=n-1; i++ : \
+\r\n            dup data0 exch get /C6 XD data1 exch get /C7 XD          %  C6=points[i], C7=size[i] \
+\r\n            C6 null ne {                                             %  if pt well-defined, render adornment there \
+\r\n               () 0 C2 C7 C0 C6 0 get C6 1 get 0 adorn               %  no text string assoc. with it \
+\r\n            } if \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyFillAdorn {                                                  % n size /proc polyFillAdorn -- \
+\r\n      localC begin                                                   % (use globals 'data0', 'data2') \
+\r\n         /C0 XD /C1 XD /C2 XD                                        % C0=/proc,C1=size,C2=n \
+\r\n         0 1 C2 1 sub {                                              % for i=0; i<=n-1; i++ : \
+\r\n            dup data0 exch get /C6 XD data2 exch get /C7 XD          %  C6=points[i], C7=fillC[i] \
+\r\n            C6 null ne {                                             %  if pt well-defined, render adornment there \
+\r\n               C7 0 get C7 1 get C7 2 get 3 setFillColor \
+\r\n               () 0 1 C1 C0 C6 0 get C6 1 get 0 adorn \
+\r\n            } if \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polySizeFillAdorn {                                              % n /proc polySizeFillAdorn -- \
+\r\n      localC begin                                                   % (use globals 'data0', 'data1', 'data2') \
+\r\n         /C0 XD /C1 XD                                               % C0=/proc,C1=n \
+\r\n         0 1 C1 1 sub {                                              % for i=0; i<=n-1; i++ : \
+\r\n            dup data0 exch get /C6 XD                                %  C6=location[i] \
+\r\n            dup data1 exch get /C7 XD                                %  C7=size[i] \
+\r\n            data2 exch get /C5 XD                                    %  C5=fillC[i] \
+\r\n            C6 null ne {                                             %  if pt well-defined, render adornment there \
+\r\n               C5 0 get C5 1 get C5 2 get 3 setFillColor \
+\r\n               () 0 1 C7 C0 C6 0 get C6 1 get 0 adorn \
+\r\n            } if \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.polypaths1.title=(PhyplotPS Prolog - PolyPaths #1) 1.0 0
+ps.prolog.polypaths1=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - PolyPaths #1) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /polyLine {                                                       % n polyLine -- \
+\r\n      localA begin                                                   %   (pts preloaded in global 'data0') \
+\r\n         newpath /A0 ZD                                              % A0==0 -> moveto (A0==1 -> lineto) \
+\r\n         1 sub 0 1 3 -1 roll {                                       % for i=0; i<=n-1; i++ : \
+\r\n            data0 exch get /A1 XD                                    %  A1=points[i] \
+\r\n            A1 null eq {                                             %  if points[i] is NOT well-defined then: \
+\r\n               /A0 ZD                                                %     skip it, and moveto next pt \
+\r\n            } {                                                      %  else: \
+\r\n               A1 0 get A1 1 get                                     %     moveto or lineto points[i] \
+\r\n               A0 0 eq {moveto} {lineto} ifelse \
+\r\n               /A0 1 def                                             %     and set A0 so we lineto next pt \
+\r\n            } ifelse \
+\r\n         } for \
+\r\n         strokeEx \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyFill {                                                       % strk? fill? n polyFill -- (polyline points \
+\r\n      localB begin                                                   %     preloaded into global 'data0') \
+\r\n         /B0 XD                                                      % B0=n \
+\r\n         0 ne {                                                      % if fill? != 0, fill closed polyline path:\
+\r\n            newpath /B1 ZD                                           %   B1 is set to 1 after initial moveto \
+\r\n            B0 1 sub 0 1 3 -1 roll {                                 %   for i=0; i<=n-1; i++ : \
+\r\n               data0 exch get dup null eq {                          %     if line0[i] is NOT well-defined, then \
+\r\n                  pop                                                %     skip it \
+\r\n               } {                                                   %     else: lineto it (but moveto the very \
+\r\n                  dup 0 get exch 1 get                               %     first well-defined pt) \
+\r\n                  B1 0 eq {moveto /B1 1 def} {lineto} ifelse \
+\r\n               } ifelse \
+\r\n            } for \
+\r\n            closepath                                                %   close and fill with curr fill color \
+\r\n            gsave useFillColor fill grestore \
+\r\n         } if \
+\r\n         0 ne {                                                      % if strk? != 0, stroke path w/polyLine \
+\r\n            B0 polyLine \
+\r\n         } if \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyFillEx {                                                     % strkRGB fillRGB close? n polyFillEx -- \
+\r\n      localB begin                                                   %     (polyline points in global 'data0') \
+\r\n         /B0 XD /B1 XD /B2 XD /B3 XD                                 % B0=n B1=close? B2=fillRGB B3=strkRGB \
+\r\n         newpath /B4 ZD                                              % construct path. B4=0 for initial moveto \
+\r\n         B0 1 sub 0 1 3 -1 roll {                                    %   for i=0; i<=n-1; i++ : \
+\r\n            data0 exch get dup null eq {                             %     if data0[i] is NOT well-defined, then \
+\r\n               pop                                                   %     skip it \
+\r\n            }{                                                       %     else: lineto it, except for initial \
+\r\n               dup 0 get exch 1 get                                  %     moveto the first point. \
+\r\n               B4 0 eq {moveto /B4 1 def} {lineto} ifelse \
+\r\n            } ifelse \
+\r\n         } for \
+\r\n         B1 0 ne { closepath } if                                    % if close? != 0, close the path \
+\r\n         B2 -1 ne {                                                  % if fillRGB != -1, fill with current fill \
+\r\n            gsave                                                    %    color, or packed RGB color in fillRGB \
+\r\n            B2 0 lt { useFillColor } { B2 unpackrgb setrgbcolor} ifelse \
+\r\n            fill grestore \
+\r\n         } if \
+\r\n         B3 -1 ne {                                                  % if strkRGB != -1, stroke with current color \
+\r\n            gsave                                                    %    or packed RGB color in strkRGB \
+\r\n            B3 0 ge { B3 unpackrgb setrgbcolor } if \
+\r\n            strokeEx grestore \
+\r\n         } if \
+\r\n         newpath                                                     % ensure current path is empty \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyArcs {                                                       % n x0 y0 a0 a1 polyArcs -- (arc radii preloaded \
+\r\n      localA begin                                                   %     into 'data0') \
+\r\n         newpath /A3 XD /A2 XD /A1 XD /A0 XD                         %  A0=x0, A1=y0, A2=a0, A3=a1 \
+\r\n         1 sub 0 1 3 -1 roll {                                       % for i=0:1:n-1 : \
+\r\n            data0 exch get /A4 XD                                    %  A4=arcRadii[i] \
+\r\n            A4 0 gt {                                                %  if arc radius nonzero: \
+\r\n               A2 cos A4 mul A0 add A2 sin A4 mul A1 add moveto      %     moveto first endpt of arc \
+\r\n               A0 A1 A4 A2 A3 arc                                    %     execute the arc \
+\r\n            } if \
+\r\n         } for \
+\r\n         strokeEx \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyCircles {                                                    % radii[] x0 y0 polyCircles -- \
+\r\n      localB begin \
+\r\n         gsave newpath /B1 XD /B0 XD {2 mul B0 B1 A.circle} forall \
+\r\n         strokeEx grestore \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.polypaths2.title=(PhyplotPS Prolog - PolyPaths #2) 1.0 0
+ps.prolog.polypaths2=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - PolyPaths #2) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /polygons {                                                       % fillCode n polygons -- (vertices preloaded into \
+\r\n      localA begin                                                   %     global 'data0') \
+\r\n         newpath /A0 ZD                                              % A0==0 -> moveto, else lineto \
+\r\n         1 sub 0 1 3 -1 roll {                                       % for i=0:1:n-1 : \
+\r\n            data0 exch get dup null eq {                             %  if next vertex is null, then \
+\r\n               pop closepath /A0 ZD                                  %     start new subpath \
+\r\n            } {                                                      %  else: \
+\r\n               dup 0 get exch 1 get                                  %     moveto/lineto next vertex \
+\r\n               A0 0 eq {moveto /A0 1 def} {lineto} ifelse \
+\r\n            } ifelse \
+\r\n         } for \
+\r\n         0 ne {gsave useFillColor fill grestore} if                  % fill it if requested \
+\r\n         strokeEx \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /polyWedges {                                                     % fillCode n x0 y0 polyWedges -- (vertices are \
+\r\n      localA begin                                                   %     preloaded into global 'data0') \
+\r\n         newpath /A1 XD /A0 XD /A2 ZD                                % A0 = x0, A1 = y0, A2 = index of wedge vertex \
+\r\n         1 sub 0 1 3 -1 roll {                                       % for i=0:1:n-1 : \
+\r\n            data0 exch get dup null eq {                             %  if next vertex is null, then \
+\r\n               pop A2 2 eq {A0 A1 lineto} if                         %     if pie slice, lineto origin \
+\r\n               closepath /A2 ZD                                      %     get ready for next wedge \
+\r\n            } {                                                      %  else: \
+\r\n               dup 0 get /A3 XD 1 get /A4 XD                         %     A3 = radius, A4 = theta of next vertex \
+\r\n               A2 2 mod 0 eq {                                       %     if first arc endpoint: \
+\r\n                  A4 cos A3 mul A0 add                               %        compute its x,y coords WRT origin \
+\r\n                  A4 sin A3 mul A1 add \
+\r\n                  A2 0 eq {moveto} {lineto} ifelse                   %        and moveto or lineto that pt \
+\r\n                  /A5 A4 def                                         %        rem theta for subsequent arc op \
+\r\n               } {                                                   %     else: draw the arc to 2nd endpt \
+\r\n                  A0 A1 A3 A5 A4 A2 1 eq {arc} {arcn} ifelse         %     ASSUMES 1st arc is inner arc, traced CCW \
+\r\n               } ifelse \
+\r\n               /A2 A2 1 add def                                      %     incr index of wedge vertex \
+\r\n            } ifelse \
+\r\n         } for \
+\r\n         0 ne {gsave useFillColor fill grestore} if                  % fill it if requested \
+\r\n         strokeEx \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /mesh {                                                           % keyF keyC fc n mesh -- \
+\r\n      localB begin                                                   %   Polygons in data0, fill info in data1 \
+\r\n         /B0 XD /B1 XD /B2 XD /B3 XD                                 % B0=n, B1=fc, B2=keyC B3=keyF \
+\r\n         /B4 ZD                                                      % B4=0 (index into data1 array) \
+\r\n         B0 1 sub 0 1 3 -1 roll {                                    % for i=0:1:n-1 \
+\r\n            4 mul /B5 XD                                             %   B5=4*i \
+\r\n            newpath                                                  %   draw next mesh polygon (4 vertices) \
+\r\n            data0 B5 get dup 0 get exch 1 get moveto \
+\r\n            data0 B5 1 add get dup 0 get exch 1 get lineto \
+\r\n            data0 B5 2 add get dup 0 get exch 1 get lineto \
+\r\n            data0 B5 3 add get dup 0 get exch 1 get lineto \
+\r\n            closepath \
+\r\n            B1 0 ne {                                                %   fill polygon if fillCode fc!=0: \
+\r\n               gsave \
+\r\n               B1 3 eq {                                             %   fc=3: colormapped gradient fill \
+\r\n                  data1 B4 get null eq {                             %   if data1[B4] null, then solid fill color \
+\r\n                     data1 B4 1 add get unpackrgb setrgbcolor fill   %   is in data1[B4+1] as packedRGB integer; \
+\r\n                     B4 2 add /B4 XD                                 %   else linear grad fill with endpoints in \
+\r\n                  }{                                                 %   data1[B4..(B4+3)]. \
+\r\n                     data1 B4 4 getinterval B3 B2 cmapFill \
+\r\n                     B4 4 add /B4 XD \
+\r\n                  } ifelse \
+\r\n               }{                                                    % fc=1..2: solid color fills \
+\r\n                  B1 2 eq {data1 B4 get unpackrgb setrgbcolor fill} if \
+\r\n                  B1 1 eq {useFillColor fill} if \
+\r\n                  B4 1 add /B4 XD \
+\r\n               } ifelse \
+\r\n              grestore \
+\r\n            } if \
+\r\n            strokeEx \
+\r\n         } for \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource 
+
+ps.prolog.colormap.title=(PhyplotPS Prolog - Colormap) 1.0 0
+ps.prolog.colormap=\
+\r\n%%BeginResource: procset (PhyplotPS Prolog - Colormap) 1.0 0 \
+\r\nphyplotDict begin                                                    % begin phyplotDict \
+\r\n   /cmapFill {                                                       % coords keyF keyC cmapFill -- \
+\r\n      localA begin \
+\r\n         /A0 XD /A1 XD /A2 XD                                        % A0=keyC, A1=keyF, A2=coords [x0 y0 x1 y1] \
+\r\n         A0 length 1 sub array /A3 XD                                % A3=shading function \
+\r\n         A3 length 2 mul array /A4 XD                                % A4=Encode array for shading \
+\r\n         A3 length 1 sub 0 1 3 -1 roll {                             % for i=0:1:len(A3)-1 \
+\r\n            /A5 XD                                                   %   A5=i \
+\r\n            A3 A5 << /FunctionType 2 /Domain [0 1] /N 1 /C0 A0 A5 get /C1 A0 A5 1 add get >> put \
+\r\n            A4 A5 2 mul 0 put A4 A5 2 mul 1 add 1 put                %  Encode array = [0 1 0 1 ... ] \
+\r\n         } for \
+\r\n         A1 1 A1 length 2 sub getinterval /A1 XD                     % remove first (0) and last (1) key frames \
+\r\n         << /PatternType 2 \
+\r\n            /Shading <<  /ShadingType 2 \
+\r\n               /ColorSpace /DeviceRGB /AntiAlias true /Extend [true true] /Coords A2 \
+\r\n               /Function << /FunctionType 3 /Functions A3 /Domain [0 1] /Bounds A1 /Encode A4 >> \
+\r\n            >> \
+\r\n         >> [1 0 0 1 0 0] makepattern setpattern fill \
+\r\n      end \
+\r\n   } BD \
+\r\n\
+\r\n   /cmapLUT {                                                        % N rgb0 keyF keyC cmapLUT r g b \
+\r\n      localA begin \
+\r\n         /A0 XD /A1 XD /A2 XD /A3 XD                                 % A0=keyC, A1=keyF, A2=rgb0, A3=N \
+\r\n         A3 255 eq {A0 A0 length 1 sub get aload pop} if             % push r g b cmpts of last key color \
+\r\n         A3 0 eq {A2 null eq {A0 0 get aload}{A2 aload} ifelse pop} if  % push cmpts of rgb0 or first key color \
+\r\n         A3 0 gt A3 255 lt and {                                     % otherwise, calculate: \
+\r\n            1 /A4 XD A3 256 div /A3 XD                               % find idx st keyF[idx] > N/256 \
+\r\n            1 1 A1 length 1 sub {/A4 XD A3 A1 A4 get lt {exit} if} for \
+\r\n            A1 A4 1 sub get /A5 XD A1 A4 get A5 sub /A6 XD           % A5=frame0, A6=frame1-frame0 \
+\r\n            A0 A4 1 sub get /A7 XD A0 A4 get /A8 XD                  % A7=[r0 g0 b0], A8=[r1 g1 b1] \
+\r\n            0 1 2 {                                                  % calc and push r, g, and b onto opstack \
+\r\n               /A9 XD                                                % r0 + (N/256 - f0)*(r1-r0)/(f1-f0) \
+\r\n               A7 A9 get A3 A5 sub A8 A9 get A7 A9 get sub mul A6 div add A7 A9 3 -1 roll put \
+\r\n            } for \
+\r\n            A7 aload pop \
+\r\n         } if \
+\r\n      end \
+\r\n   } BD \
+\r\nend                                                                  % end phyplotDict \
+\r\n%%EndResource
