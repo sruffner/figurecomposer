@@ -85,7 +85,7 @@ public final class DataSrcFactory
     * </ol>
     * 
     * @param f The data set source file. Cannot be null.
-    * @param textonly. If the file does not exist and this flag is set, the annotated plain text (US-ASCII) format is
+    * @param textonly If the file does not exist and this flag is set, the annotated plain text (US-ASCII) format is
     * selected. If the flag is not set, the (much more efficient!) binary format is chosen. If the file already exists,
     * the format is already set and this argument is ignored.
     * @return If the source file already exists, this method returns the data set source implementation to which the
@@ -121,7 +121,7 @@ public final class DataSrcFactory
     * @param f The data source file. Cannot be null.
     * @param requestedFmts List of data formats in order of preference, to resolve ambiguities in the "numbers-only"
     * plain-text file format.
-    * @param textonly. If the file does not exist and this flag is set, the annotated plain text (US-ASCII) format is
+    * @param textonly If the file does not exist and this flag is set, the annotated plain text (US-ASCII) format is
     * selected. If the flag is not set, the (much more efficient!) binary format is chosen. If the file already exists,
     * the format is already set and this argument is ignored.
     * @return If the source file already exists, this method returns the data set source implementation to which the
@@ -181,7 +181,7 @@ public final class DataSrcFactory
     * of available command.
     * @param args Command-line arguments are ignored.
     */
-   public static void main(String args[])
+   public static void main(String[] args)
    {
       DataSrcFactory factory = DataSrcFactory.getInstance();
       IDataSrc source = null;
@@ -258,8 +258,7 @@ public final class DataSrcFactory
                else
                {
                   System.out.println("   OK. Source contains " + info.length + " datasets.");
-                  for(int i=0; i<info.length; i++)
-                     System.out.println("      " + info[i].getShortDescription());
+                  for(DataSetInfo dataSetInfo : info) System.out.println("      " + dataSetInfo.getShortDescription());
                }
             }
          }

@@ -117,8 +117,7 @@ import com.srscicomp.fc.ui.FigComposer;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
-public class WSFigBrowser extends JPanel 
+public class WSFigBrowser extends JPanel
       implements MouseListener, ActionListener, ListSelectionListener, FCWorkspace.Listener, FocusListener
 {
    /** Construct the workspace figures browser. */
@@ -789,7 +788,7 @@ public class WSFigBrowser extends JPanel
          {
             // get base name and extension for filename. Then construct a filename for the copied file that does not
             // exist in the parent directory
-            String[] nameAndExt = f.getName().split("\\.(?=[^\\.]+$)");
+            String[] nameAndExt = f.getName().split("\\.(?=[^.]+$)");
             int i = 1;
             File dst = new File(dir, nameAndExt[0] + "_Copy" + i + "." + nameAndExt[1]);
             while(dst.isFile()) { ++i; dst = new File(dir, nameAndExt[0] + "_Copy" + i + "." + nameAndExt[1]); }

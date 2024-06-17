@@ -79,12 +79,12 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * <p>As the current figure is modified within {@link FigComposer}, the rendered node tree is updated as needed. The
  * currently selected node is highlighted by a steel blue translucent overlay rectangle. The user can select a different
- * node simply by clicking on its entry in the node tree. The method {@link #shiftFocus()} will move the selection up or 
- * down in the tree; it could be invoked by up/down arrow key presses.</p>
+ * node simply by clicking on its entry in the node tree. The focus node can also be moved up/down in the tree via
+ * the appropriate arrow key press.</p>
  * 
  * <p>NOTE that the node tree canvas does NOT expose the component nodes (three axes, legend, and grid line nodes) of
  * the 2D and 3D graph containers, even though most of them can be selected in the adjacent figure canvas within {@link 
- * FigCompsoer}. Thus, when a graph axis or legend is selected on the figure canvas, the parent graph container is 
+ * FigComposer}. Thus, when a graph axis or legend is selected on the figure canvas, the parent graph container is
  * highlighted in the node tree canvas.</p>
  * 
  * <p>Support for multiple-node selection was introduced in app version 4.5.0 -- allowing the author to delete, copy, 
@@ -144,7 +144,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class FigNodeTree extends JPanel implements MouseListener, MouseMotionListener, FGModelListener, FocusListener
 {
    /** Construct the view of a <i>DataNav</i> figure's graphic node tree. */
@@ -326,12 +325,12 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          int start = -1;
          if(anchor != null) for(Integer idx : currSelection) if(anchor == reachableNodes.get(idx).fgn)
          {
-            start = idx.intValue();
+            start = idx;
             break;
          }
          if(start == -1)
          {
-            start = currSelection.get(0).intValue();
+            start = currSelection.get(0);
             anchor = reachableNodes.get(start).fgn;
          }
          
@@ -340,11 +339,11 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          int end = -1;
          for(Integer idx : currSelection)
          {
-            int d = Math.abs(idx.intValue() - start);
+            int d = Math.abs(idx - start);
             if(d > diff)
             {
                diff = d;
-               end = idx.intValue();
+               end = idx;
             }
          }
          end += next ? 1 : -1;
@@ -389,7 +388,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
 
          currSelection.clear();
          for(int i=0; i<reachableNodes.size(); i++) if(selectedNodes.contains(reachableNodes.get(i).fgn))
-            currSelection.add(new Integer(i));
+            currSelection.add(i);
          if(!selectedNodes.contains(anchor))
             anchor = currSelection.isEmpty() ? null : reachableNodes.get(currSelection.get(0)).fgn;
          
@@ -457,14 +456,14 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       if(idxClick < 0) return;
       FGraphicNode clickNode = reachableNodes.get(idxClick).fgn;
       
-      int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+      int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
       
       if(e.getClickCount() == 1)
       {
          boolean isTog = canvas.isExpandToggleIconUnder(e.getPoint());
          if(isTog) 
             toggleExpandedState(idxClick);
-         else if((e.getModifiers() & ctrlCmdMask) == ctrlCmdMask)
+         else if((e.getModifiersEx() & ctrlCmdMask) == ctrlCmdMask)
          {
             // toggle the select state of the node clicked
             if(!fig.isSelectedNode(clickNode))
@@ -493,7 +492,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       {
          // allow user to edit title of any node in node tree using a compact "pop-up" tool, but not if multiple nodes
          // are selected.
-         if((e.getModifiers() & ctrlCmdMask) == 0 && (e.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) == 0 &&
+         if((e.getModifiersEx() & ctrlCmdMask) == 0 && (e.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) == 0 &&
                e.getButton() == MouseEvent.BUTTON1 && !fig.isMultiNodeSelection())
          {
             TitlePopupDlg.raiseEditTitlePopup(clickNode, this);
@@ -518,7 +517,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       int idxAnchor = -1;
       if(anchor == null)
       {
-         idxAnchor = currSelection.get(0).intValue();
+         idxAnchor = currSelection.get(0);
          anchor = reachableNodes.get(idxAnchor).fgn;
       }
       else for(int i=0; i<reachableNodes.size(); i++) if(reachableNodes.get(i).fgn == anchor)
@@ -529,11 +528,11 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       
       // replace current selection with range of nodes between anchor and the node clicked. Keep that portion of the
       // current selection that is in the range identified.
-      List<FGraphicNode> addSel = new ArrayList<FGraphicNode>();
-      List<FGraphicNode> rmvSel = new ArrayList<FGraphicNode>();
+      List<FGraphicNode> addSel = new ArrayList<>();
+      List<FGraphicNode> rmvSel = new ArrayList<>();
       
-      int start = (idxAnchor <= idx) ? idxAnchor : idx;
-      int end = (idxAnchor <= idx) ? idx : idxAnchor;
+      int start = Math.min(idxAnchor, idx);
+      int end = Math.max(idxAnchor, idx);
       for(int i=start; i<=end; i++) addSel.add(reachableNodes.get(i).fgn);
       for(Integer sel : currSelection) if(sel < start || sel > end) rmvSel.add(reachableNodes.get(sel).fgn);
       
@@ -582,11 +581,11 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          {
             if(iFirst > iLast) {int tmp = iFirst; iFirst = iLast; iLast = tmp; }
             
-            List<FGraphicNode> select = new ArrayList<FGraphicNode>();
+            List<FGraphicNode> select = new ArrayList<>();
             for(int i=iFirst; i<=iLast; i++) select.add(reachableNodes.get(i).fgn);
             
-            int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-            boolean replaceSel = ((e.getModifiers() & ctrlCmdMask) != ctrlCmdMask);
+            int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+            boolean replaceSel = ((e.getModifiersEx() & ctrlCmdMask) != ctrlCmdMask);
             fig.reviseSelection(select, replaceSel ? fig.getSelectedNodes(null) : null);
          }
       }
@@ -665,19 +664,19 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
     * the selection. It is highlighted with a blue outline in addition to the translucent steel blue fill applied to
     * the other nodes in the selection list.
     */
-   private List<FGraphicNode> selectedNodes = new ArrayList<FGraphicNode>();
+   private final List<FGraphicNode> selectedNodes = new ArrayList<>();
    
    /** The root of the figure node tree. When non-null, it corresponds to the current figure's root node. */
    private NodeEntry treeRoot = null;
 
    /** The list of reachable nodes in the figure node tree. A node is "reachable" if its ancestors are expanded. */
-   private List<NodeEntry> reachableNodes = new ArrayList<NodeEntry>();
+   private final List<NodeEntry> reachableNodes = new ArrayList<>();
    
    /** 
     * Indices identifying the location of all currently selected nodes in the reachable nodes array. If a node is 
     * selected, it MUST be reachable. This should always contain at least one element, unless no figure is loaded. 
     */
-   private List<Integer> currSelection = new ArrayList<Integer>();
+   private final List<Integer> currSelection = new ArrayList<>();
    
    /** 
     * The anchor node for selecting a range of consecutive reachable nodes in response to a mouse click with the Shift
@@ -691,12 +690,12 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
    /** Mouse location for the last mouse-dragged event on node tree canvas. Null when not in use. */
    private Point lastDragPt = null;
    /** The rectangular area selected by a drag-to-select gesture in progress on node tree canvas. */
-   private Rectangle dragSelectR = new Rectangle();
+   private final Rectangle dragSelectR = new Rectangle();
    /** Dirty area needing repaint during an animated drag-to-select gesture on node tree canvas. */
-   private Rectangle dirtyRect = new Rectangle();
+   private final Rectangle dirtyRect = new Rectangle();
    
    /** The custom-painted component on which the node tree is rendered. */
-   private NodeTreeCanvas canvas = null;
+   private final NodeTreeCanvas canvas;
    
    /** The scroll pane container for the rendered node tree. */
    private JScrollPane scroller = null;
@@ -731,7 +730,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       for(FGraphicNode n : selectedNodes) treeRoot.ensureNodeIsReachable(n);
       treeRoot.getReachableEntries(reachableNodes);
       for(int i=0; i<reachableNodes.size(); i++) if(selectedNodes.contains(reachableNodes.get(i).fgn))
-         currSelection.add(new Integer(i));
+         currSelection.add(i);
       
       canvas.layoutCanvas();
       canvas.repaint();
@@ -803,7 +802,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       }
       
       for(int i=0; i<reachableNodes.size(); i++) if(selectedNodes.contains(reachableNodes.get(i).fgn))
-         currSelection.add(new Integer(i));
+         currSelection.add(i);
       
       canvas.repaint();
       
@@ -834,7 +833,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       // node is selected.
       if(entry.expanded)
       {
-         List<FGraphicNode> rmvSel = new ArrayList<FGraphicNode>();
+         List<FGraphicNode> rmvSel = new ArrayList<>();
          for(Integer sel : currSelection) if(reachableNodes.get(sel).fgn.isDescendantOf(entry.fgn))
             rmvSel.add(reachableNodes.get(sel).fgn);
          if(!rmvSel.isEmpty())
@@ -842,7 +841,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
             List<FGraphicNode> addSel = null;
             if(!fig.isSelectedNode(entry.fgn))
             {
-               addSel = new ArrayList<FGraphicNode>();
+               addSel = new ArrayList<>();
                addSel.add(entry.fgn);
             }
             fig.reviseSelection(addSel, rmvSel);
@@ -859,7 +858,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       for(FGraphicNode n : selectedNodes) treeRoot.ensureNodeIsReachable(n);
       treeRoot.getReachableEntries(reachableNodes);
       for(int i=0; i<reachableNodes.size(); i++) if(selectedNodes.contains(reachableNodes.get(i).fgn))
-         currSelection.add(new Integer(i));
+         currSelection.add(i);
 
       canvas.layoutCanvas();
       canvas.repaint();
@@ -899,14 +898,13 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          
          if(!fgn.isLeaf())
          {
-            kids = new ArrayList<NodeEntry>();
+            kids = new ArrayList<>();
             for(int i=0; i<fgn.getChildCount(); i++)
                kids.add(new NodeEntry(fgn.getChildAt(i), indentLevel+1));
          }
-         expanded = false;
-         
+
          // the root figure node is ALWAYS expanded (even if it is empty)
-         if(fgn.getNodeType() == FGNodeType.FIGURE) expanded = true; 
+         expanded = fgn.getNodeType() == FGNodeType.FIGURE;
       }
       
       /** 
@@ -915,7 +913,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
        */
       Image getIconImage()
       {
-         ImageIcon icon = null;
+         ImageIcon icon;
          switch(fgn.getNodeType())
          {
          case FIGURE :   icon = FCIcons.V4_FIGURE_22; break; 
@@ -941,7 +939,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          case SURFACE:   icon = FCIcons.V4_SURFACE_22; break;
          default:        icon = FCIcons.V4_BROKEN; break;
          }
-         return(icon.getImage());
+         return(icon != null ? icon.getImage() : null);
       }
       
       /** 
@@ -983,7 +981,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          reachable.add(this);
          if(expanded && kids != null && !kids.isEmpty())
          {
-            for(int i=0; i<kids.size(); i++) kids.get(i).getReachableEntries(reachable);
+            for(NodeEntry kid : kids) kid.getReachableEntries(reachable);
          }
       }
       
@@ -999,8 +997,9 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       boolean isNodeReachable(FGraphicNode fgnTgt)
       {
          if(!(expanded && fgnTgt.isDescendantOf(fgn))) return(false);
-         for(int i=0; i<kids.size(); i++) if(kids.get(i).fgn == fgnTgt || kids.get(i).isNodeReachable(fgnTgt))
-            return(true);
+         for(NodeEntry kid : kids)
+            if(kid.fgn == fgnTgt || kid.isNodeReachable(fgnTgt))
+               return (true);
          return(false);
       }
       
@@ -1016,8 +1015,9 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       {
          if(!fgnTgt.isDescendantOf(fgn)) return(false);
          expanded = true;
-         for(int i=0; i<kids.size(); i++) if(kids.get(i).fgn == fgnTgt || kids.get(i).ensureNodeIsReachable(fgnTgt))
-            break;
+         for(NodeEntry kid : kids)
+            if(kid.fgn == fgnTgt || kid.ensureNodeIsReachable(fgnTgt))
+               break;
          return(true);
       }
       
@@ -1035,7 +1035,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          {
             if(fgn.isLeaf()) return;   // just in case, but this should never happen
             
-            List<NodeEntry> updatedKids = new ArrayList<NodeEntry>();
+            List<NodeEntry> updatedKids = new ArrayList<>();
             for(int i=0; i<fgn.getChildCount(); i++)
                updatedKids.add(new NodeEntry(fgn.getChildAt(i), indentLevel+1));
 
@@ -1062,8 +1062,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          }
          else if(kids != null)
          {
-            for(int i=0; i<kids.size(); i++)
-               kids.get(i).updateChildEntriesFor(parent);
+            for(NodeEntry kid : kids) kid.updateChildEntriesFor(parent);
          }
       }
 
@@ -1082,19 +1081,19 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       }
       
       /** The figure graphic node represented by this entry. */
-      private FGraphicNode fgn = null;
+      private final FGraphicNode fgn;
       /** 
        * List of node entries corresponding to the children of the graphic node represented by this entry. Will be null
        * if the graphic node is a leaf (no child nodes permitted)
        */
       private List<NodeEntry> kids = null;
       /** The indent level for this entry. */
-      private int indentLevel = -1;
+      private final int indentLevel;
       /** 
        * True if node is currently expanded, so that all of its children are displayed underneath it in the rendering
        * of the node tree. False if node's child list is empty, or if node is a leaf (no child nodes permitted).
        */
-      private boolean expanded = false;
+      private boolean expanded;
    }
 
    
@@ -1128,14 +1127,14 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          int vgap = (ROWHT-EXPTOGICONW) / 2;
          rightArrow = new GeneralPath();
          rightArrow.moveTo(hgap, vgap);
-         rightArrow.lineTo(hgap+EXPTOGICONW, ROWHT/2);
+         rightArrow.lineTo(hgap+EXPTOGICONW, ROWHT/2f);
          rightArrow.lineTo(hgap, ROWHT-vgap);
          rightArrow.closePath();
          
          downArrow = new GeneralPath();
          downArrow.moveTo(hgap, vgap);
          downArrow.lineTo(hgap+EXPTOGICONW, vgap);
-         downArrow.lineTo(EXPTOGRECTW/2, ROWHT-vgap);
+         downArrow.lineTo(EXPTOGRECTW/2f, ROWHT-vgap);
          downArrow.closePath();
       }
 
@@ -1204,14 +1203,14 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
                indent += EXPTOGRECTW;
             }
             g2.drawImage(entry.getIconImage(), indent, 2, null);
-            labelPainter.setTextAndLocation(entry.getLabel(), indent+ROWHT, -ROWHT/2);
+            labelPainter.setTextAndLocation(entry.getLabel(), indent+ROWHT, -ROWHT/2.0);
             g2.scale(1, -1);
             labelPainter.render(g2, null);
             g2.scale(1, -1);
            
             // render translucent rectangle over the icon and title of any node that is in the model's current selection
             // list. The rectangle is bluish if node tree canvas currently has the keyboard focus, else it is grayish.
-            if(currSelection.contains(new Integer(i)))
+            if(currSelection.contains(i))
             {
                boolean hasFocus = isFocusOwner();
                
@@ -1249,7 +1248,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       }
 
       /** Repaint each row corresponding to a node in the figure's current list of selected node. */
-      void repaintCurrentSelection() { for(Integer row : currSelection) repaintRow(row.intValue()); }
+      void repaintCurrentSelection() { for(Integer row : currSelection) repaintRow(row); }
 
       /**
        * Adjust the current scroll position, if necessary, to bring into view the row corresponding to the focus node in
@@ -1272,7 +1271,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          int yTop = focusRow * ROWHT;
          if(yTop >= visR.y && yTop + ROWHT < visR.y + visR.height) return;
          
-         int vScroll = 0;
+         int vScroll;
          if(yTop < visR.y) vScroll = yTop;
          else
          {
@@ -1320,7 +1319,6 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       /**
        * Is a collapse/expand toggle icon under the specified point in the tree canvas? 
        * @param p A point in canvas coordinates.
-       * @param row Index of an entry in the list of currently visible nodes.
        * @return True iff the point lies over the bounding rectangle for the collapse/expand toggle icon for a valid 
        * row in the current list of reachable tree nodes. Note that we don't render the icon for the permanently 
        * expanded root figure node, nor for a leaf node or a child-less node, so the method returns false in those 
@@ -1389,40 +1387,40 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       private int renderedH = 0;
       
       /** Clip rectangle during painting (so we don't re-allocate on every paint cycle). */
-      private Rectangle clipR = new Rectangle(0,0,0,0);
+      private final Rectangle clipR = new Rectangle(0,0,0,0);
       /** Rectangle used to retrieve bounds of individual node titles from string painter. */
-      private Rectangle2D titleBounds = new Rectangle2D.Double(0, 0, 0, 0);
+      private final Rectangle2D titleBounds = new Rectangle2D.Double(0, 0, 0, 0);
       
       /** The canvas background color. */
-      Color BKGCOLOR = Color.WHITE;
+      final Color BKGCOLOR = Color.WHITE;
       
       /** Translucent rounded rectangle marking the highlighted node in node tree. */
-      private RoundRectangle2D hiliteRR = null;
+      private final RoundRectangle2D hiliteRR;
       /** Fill color for rectangular highlight (= translucent steel blue). */
-      private Color hiliteColor = new Color(70, 130, 180, 80);
+      private final Color hiliteColor = new Color(70, 130, 180, 80);
       /** Fill color for rectangular highlight when component does not have keyboard focus (= translucent gray). */
-      private Color hiliteColor_NoFocus = new Color(128, 128, 128, 80);
+      private final Color hiliteColor_NoFocus = new Color(128, 128, 128, 80);
       /** Stroke color for rectangular highlight when item is the focus for a multi-node selection (= blue). */
-      private Color focusColor = Color.BLUE;
+      private final Color focusColor = Color.BLUE;
       /** Stroke color for focus item highlight when component does not have keyboard focus (= translucent black). */
-      private Color focusColor_NoFocus = new Color(0, 0, 0, 80);
+      private final Color focusColor_NoFocus = new Color(0, 0, 0, 80);
       /** Stroke style used to draw the outline around the focus node for a multi-node selection. */
-      private BasicStroke focusStroke = new BasicStroke(2);
+      private final BasicStroke focusStroke = new BasicStroke(2);
       /** String painter used to render the label for each node in the rendered node tree traversal list. */
-      private SingleStringPainter labelPainter = null;
+      private final SingleStringPainter labelPainter;
       /** Stroke style used to draw the animated drag-to-select rectangle. */
-      private BasicStroke dragSelectStroke = new BasicStroke(3);
+      private final BasicStroke dragSelectStroke = new BasicStroke(3);
       
       /** 
        * Rightward-pointing arrow shape used to indicate that node has children but is in the collapsed state. Vertices
        * are specified WRT top-left corner of the rectangle in which the collapse/expand indicator is drawn.
        */
-      private GeneralPath rightArrow = null;
+      private final GeneralPath rightArrow;
       /** 
        * Downward-pointing arrow shape used to indicate that node is in the expanded state. Vertices are specified WRT 
        * top-left corner of the rectangle in which the collapse/expand indicator is drawn.
        */
-      private GeneralPath downArrow = null;
+      private final GeneralPath downArrow;
       
       /** The fixed height of each row representing a reachable node in the current state of the node tree. */
       private final static int ROWHT = 26;
@@ -1463,7 +1461,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       /** Construct the node properties editor panel. The embedded character mapper tool is hidden initially. */
       NodeEditor()
       {
-         editorsByType = new HashMap<FGNodeType, FGNEditor>();
+         editorsByType = new HashMap<>();
          
          // this editor is used for the graph node and ALL of its component nodes (including tick sets of an axis)
          FGNGraphEditor graphEditor = new FGNGraphEditor();
@@ -1739,7 +1737,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          // paint "title bar" along bottom edge: icon plus label
          ImageIcon icon = (currentEditor != null) ? currentEditor.getRepresentativeIcon() : FCIcons.V4_BROKEN;
          String title = ((currentEditor != null) ? currentEditor.getRepresentativeTitle() : "Node Properties");
-         g2.drawImage(icon.getImage(), 5, h-37, null);
+         g2.drawImage((icon != null) ? icon.getImage() : null, 5, h-37, null);
          titlePainter.setTextAndLocation(title, 0, 0);
          titlePainter.invalidateBounds();
          titlePainter.updateFontRenderContext(g2);
@@ -1755,13 +1753,13 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       /** The node-specific editor currently installed in the node properties editor panel. */
       private FGNEditor currentEditor = null;
       /** The node-specific editors, mapped by node type. */
-      private HashMap<FGNodeType, FGNEditor> editorsByType = null;      
+      private final HashMap<FGNodeType, FGNEditor> editorsByType;
       
       /** 
        * Character mapper tool for inserting special characters into select string-valued properties of the
        * currently edited node. Usually hidden, but visibility is toggled by user action.
        */
-      JUnicodeCharacterMap mapper = null;
+      final JUnicodeCharacterMap mapper;
 
       /** Fixed width of node properties editor accounts for width of widest node-specific editor. */
       private int fixedWidth = -1;

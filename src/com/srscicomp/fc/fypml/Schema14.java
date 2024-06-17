@@ -45,11 +45,11 @@ class Schema14 extends Schema13
 	 * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
 	 * is new to this schema or has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap14 = null;
+	private static final Map<String, SchemaElementInfo> elementMap14;
 
 	static
 	{
-		elementMap14 = new HashMap<String, SchemaElementInfo>();
+		elementMap14 = new HashMap<>();
 		
       // (04jun2013) Added boolean attribute "legend" to the "raster" element. Optional. Default value is "true".
       elementMap14.put( EL_RASTER, new SchemaElementInfo( false, 
@@ -73,7 +73,7 @@ class Schema14 extends Schema13
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap14.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap14.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -82,7 +82,7 @@ class Schema14 extends Schema13
 	 */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap14.get(elTag);
+		SchemaElementInfo info = elementMap14.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -121,7 +121,7 @@ class Schema14 extends Schema13
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

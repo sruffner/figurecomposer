@@ -62,7 +62,7 @@ class FGNContourEditor extends FGNEditor implements ActionListener, FocusListene
       zRangeLabel = new JLabel("Observed Range...");
       add(zRangeLabel);
       
-      modeCombo = new JComboBox<ContourNode.DisplayMode>(ContourNode.DisplayMode.values());
+      modeCombo = new JComboBox<>(ContourNode.DisplayMode.values());
       modeCombo.addActionListener(this);
       modeCombo.setToolTipText("Select display mode");
       add(modeCombo);
@@ -180,7 +180,7 @@ class FGNContourEditor extends FGNEditor implements ActionListener, FocusListene
    {
       if(e.isTemporary()) return;
       Object src = e.getSource();
-      if(src == titleField) titleField.selectAll();;
+      if(src == titleField) titleField.selectAll();
    }
    @Override public void focusLost(FocusEvent e)
    {
@@ -218,7 +218,7 @@ class FGNContourEditor extends FGNEditor implements ActionListener, FocusListene
    private ContourNode getContourNode() { return((ContourNode) getEditedNode()); }
    
    /** Text field in which contour node's descriptive title is edited. */
-   private JTextField titleField = null;
+   private final JTextField titleField;
 
    /** Self-contained editor handles editing/loading of the data set assigned to the contour node. */
    private FGNPlottableDSCard dsEditor = null;

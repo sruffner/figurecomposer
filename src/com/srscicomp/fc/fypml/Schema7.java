@@ -183,11 +183,11 @@ class Schema7 extends Schema6
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
     * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap7 = null;
+	private static final Map<String, SchemaElementInfo> elementMap7;
 
 	static
 	{
-		elementMap7 = new HashMap<String, SchemaElementInfo>();
+		elementMap7 = new HashMap<>();
 
       // Document-level default attributes were scrapped. Changed some attribute names.
       // Added "strokePat" as a generally inheritable attribute.
@@ -329,7 +329,7 @@ class Schema7 extends Schema6
    @Override
    public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap7.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap7.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -340,7 +340,7 @@ class Schema7 extends Schema6
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap7.get(elTag);
+		SchemaElementInfo info = elementMap7.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -387,7 +387,7 @@ class Schema7 extends Schema6
       String elTag = e.getTag();
       if(EL_GRAPH.equals(elTag))
       {
-         SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+         SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
          if(!eInfo.isChildAllowed(childTag)) return(false);
          if(EL_AXIS.equals(childTag)) return(index == 0 || index == 1);
          else if(EL_GRIDLINE.equals(childTag)) return(index == 2 || index == 3);
@@ -435,7 +435,7 @@ class Schema7 extends Schema6
 	{
       String elTag = e.getTag();
       if(A_FONT.equals(attr))
-         return(value != null && value.length() > 0);
+         return(value != null && !value.isEmpty());
       else if(A_FONTSIZE.equals(attr))
          return(isValidIntegerAttributeValue(value, MINFONTSIZE, MAXFONTSIZE));
       else if(A_PSFONT_V7.equals(attr))
@@ -531,13 +531,13 @@ class Schema7 extends Schema6
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // the document-level default attribute values from the old "figure" node
-      HashMap<String, String> docDefaults = new HashMap<String, String>();
+      HashMap<String, String> docDefaults = new HashMap<>();
       
       // use this to set new attribute values or to set the values of attributes that have changed
-      HashMap<String, String> attrUpdates = new HashMap<String, String>();
+      HashMap<String, String> attrUpdates = new HashMap<>();
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {
@@ -691,7 +691,7 @@ class Schema7 extends Schema6
                else if(EL_LABEL.equals(childTag) && !hasAutoTitle)
                {
                   String axisLabel = child.getAttributeValueByName(A_TITLE);
-                  if(axisLabel != null && axisLabel.length() > 0)
+                  if(axisLabel != null && !axisLabel.isEmpty())
                   {
                      e.setAttributeValueByName(A_TITLE, axisLabel);
                      hasAutoTitle = true;
@@ -873,7 +873,7 @@ class Schema7 extends Schema6
     * Helper method takes a "fontSize" attribute from <code>Schema6</code> -- a measurement with numerical value and 
     * physical units ("in", "cm", "mm", or "pt") -- and converts it to the <code>Schema7</code> form -- an integer 
     * representing the font size in typographical points (= 1/72 in), restricted to the range [1..99].
-    * 
+    * <p>
     * 27apr2011: Discovered and fixed a bug in the calculation that converts font size in cm or mm to pt. This bug was
     * probably never found because the old "fontSize" attribute was never expressed as a measure in cm or mm!
     * 
@@ -912,7 +912,7 @@ class Schema7 extends Schema6
    {
       if(lineWidthMI <= 0) return(LINETYPE_SOLID);
       
-      int[] dashgapseq = null;
+      int[] dashgapseq;
       if(LINETYPE_HIDDEN.equals(lineType)) throw new IllegalArgumentException("Bad lineType attr value!");
       else if(LINETYPE_SOLID.equals(lineType)) dashgapseq = new int[] {10};
       else if(LINETYPE_DOTTED.equals(lineType)) dashgapseq = new int[] {10, 30};
@@ -939,7 +939,7 @@ class Schema7 extends Schema6
          for(int i=0; i<dashgapseq.length; i++)
          {
             int w = (int) Math.round((dashgapseq[i] / lineWidthMI) * 10.0);
-            dashgapseq[i] = (w<MINSTRKPATDASHLEN) ? MINSTRKPATDASHLEN : ((w>MAXSTRKPATDASHLEN) ? MAXSTRKPATDASHLEN : w);
+            dashgapseq[i] = Utilities.rangeRestrict(MINSTRKPATDASHLEN, MAXSTRKPATDASHLEN, w);
          }
          return(Utilities.toString(dashgapseq));
       }

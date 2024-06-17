@@ -13,6 +13,7 @@ import javax.swing.SpringLayout;
 import com.srscicomp.common.g2dutil.Marker;
 import com.srscicomp.fc.fig.FGNodeType;
 import com.srscicomp.fc.fig.FGraphicNode;
+import com.srscicomp.fc.fig.ScatterLineStyleNode;
 import com.srscicomp.fc.fig.ScatterPlotNode;
 import com.srscicomp.fc.uibase.StyledTextEditor;
 import com.srscicomp.fc.uibase.FCIcons;
@@ -34,7 +35,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNScatterPlotEditor extends FGNEditor implements ActionListener
 {
    /** Construct the scatter plot node properties editor. */
@@ -58,7 +58,7 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
       JLabel dispLabel = new JLabel("Display: ");
       add(dispLabel);
       
-      modeCombo = new JComboBox<ScatterPlotNode.DisplayMode>(ScatterPlotNode.DisplayMode.values());
+      modeCombo = new JComboBox<>(ScatterPlotNode.DisplayMode.values());
       modeCombo.addActionListener(this);
       modeCombo.setToolTipText("Select scatter plot display mode");
       add(modeCombo);
@@ -66,7 +66,7 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
       JLabel symbolLabel = new JLabel("Symbols: ");
       add(symbolLabel);
 
-      typeCombo = new JComboBox<Marker>(Marker.values());
+      typeCombo = new JComboBox<>(Marker.values());
       typeCombo.setToolTipText("Select marker symbol shape");
       typeCombo.addActionListener(this);
       add(typeCombo);
@@ -200,7 +200,7 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
    private ScatterPlotNode getScatterPlotNode() { return((ScatterPlotNode) getEditedNode()); }
    
    /** When checked, an entry for the scatter plot is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** The custom widget within which the scatter plot node's title (which may contain attributed text) is edited.  */
    private StyledTextEditor titleEditor = null;

@@ -18,14 +18,13 @@ import com.srscicomp.fc.uibase.MeasureEditor;
 /**
  * <b>FGNEBarCard</b> displays/edits all properties of the component {@link ErrorBarNode} of selected data presentation 
  * nodes in the <i>FypML</i> graphic model. <i>It is intended only for use inside the node property editor for the 
- * parent {@link FGNPlottable} node.</i>
+ * parent plottable node.</i>
  * 
  * <p>The editor includes widgets to display and edit the {@link ErrorBarNode}'s properties -- the "hide all" flag, 
  * end cap symbol shape and size, and draw styles.</p>
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNEBarCard extends JPanel implements ActionListener
 {
    /** Construct the error bar node properties editor. */
@@ -39,7 +38,7 @@ class FGNEBarCard extends JPanel implements ActionListener
       hideChk.addActionListener(this);
       add(hideChk);
 
-      typeCombo = new JComboBox<Marker>(Marker.values());
+      typeCombo = new JComboBox<>(Marker.values());
       typeCombo.setToolTipText("Select endcap shape");
       typeCombo.addActionListener(this);
       add(typeCombo);
@@ -125,7 +124,7 @@ class FGNEBarCard extends JPanel implements ActionListener
    private MeasureEditor sizeEditor = null;
 
    /** Check box sets/clears the hide flag. */
-   private JCheckBox hideChk = null;
+   private final JCheckBox hideChk;
       
    /** Self-contained editor handles the node's draw style properties. */
    private DrawStyleEditor drawStyleEditor = null;

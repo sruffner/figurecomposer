@@ -74,11 +74,11 @@ class Schema2 extends Schema1
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
 	 * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap2 = null;
+	private static final Map<String, SchemaElementInfo> elementMap2;
 
 	static
 	{
-		elementMap2 = new HashMap<String, SchemaElementInfo>();
+		elementMap2 = new HashMap<>();
 
 		// new element class: the 'gridline' element
 		elementMap2.put( EL_GRIDLINE, 
@@ -129,7 +129,7 @@ class Schema2 extends Schema1
    @Override
 	public boolean isSupportedElementTag(String elTag)
 	{
-      return(elementMap2.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap2.containsKey(elTag) || super.isSupportedElementTag(elTag));
 	}
 
 	/**
@@ -140,7 +140,7 @@ class Schema2 extends Schema1
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap2.get(elTag);
+		SchemaElementInfo info = elementMap2.get(elTag);
 		return((info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -157,7 +157,7 @@ class Schema2 extends Schema1
 		String elTag = e.getTag();
 		List children = e.getElementContent();
 		if(EL_POINTSET.equals(elTag) || EL_SERIES.equals(elTag))
-			return(children.size() > 0 && EL_EBAR.equals(((BasicSchemaElement) children.get(0)).getTag()));
+			return((!children.isEmpty()) && EL_EBAR.equals(((BasicSchemaElement) children.get(0)).getTag()));
 		else if(EL_GRAPH.equals(elTag))
 		{
 			// graph element must have at least four children, the first two must be axis elements, and the next two must be 
@@ -195,7 +195,7 @@ class Schema2 extends Schema1
 			return(EL_EBAR.equals(childTag) && index == 0);
 		else if(EL_GRAPH.equals(elTag))
 		{
-			SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+			SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
 			if(!eInfo.isChildAllowed(childTag)) return(false);
 			List existingChildren = e.getElementContent();
 			if(EL_AXIS.equals(childTag))
@@ -248,7 +248,7 @@ class Schema2 extends Schema1
 	 */
 	boolean isValidIntegerAttributeValue(String value, int minVal, int maxVal)
 	{
-		boolean ok = true;
+		boolean ok;
 		try 
 		{
 			int i = Integer.parseInt(value);
@@ -282,7 +282,7 @@ class Schema2 extends Schema1
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
 		// update the content of the old schema in place...
-		Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+		Stack<BasicSchemaElement> elementStack = new Stack<>();
 		elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
 		while(!elementStack.isEmpty())
 		{

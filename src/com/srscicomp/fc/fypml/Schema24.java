@@ -53,7 +53,7 @@ class Schema24 extends Schema23
    {
       int n = ADORN9_CHOICES.length;
       ADORN24_CHOICES = new String[n+7];
-      for(int i=0; i<n; i++) ADORN24_CHOICES[i] = ADORN9_CHOICES[i];
+      System.arraycopy(ADORN9_CHOICES, 0, ADORN24_CHOICES, 0, n);
       ADORN24_CHOICES[n] = ADORN_PARALLELOGRAM;
       ADORN24_CHOICES[n+1] = ADORN_PENTAGRAM;
       ADORN24_CHOICES[n+2] = ADORN_HEXAGRAM;
@@ -173,7 +173,7 @@ class Schema24 extends Schema23
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

@@ -15,6 +15,7 @@ import javax.swing.text.Document;
 
 import com.srscicomp.common.g2dutil.Marker;
 import com.srscicomp.common.ui.MaxLengthDocumentFilter;
+import com.srscicomp.fc.fig.FGNPlottable;
 import com.srscicomp.fc.fig.FGNodeType;
 import com.srscicomp.fc.fig.FGraphicModel;
 import com.srscicomp.fc.fig.SymbolNode;
@@ -32,7 +33,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNSymbolCard extends JPanel implements ActionListener, FocusListener
 {
    /** Construct the symbol properties editor such that it exposes all properties of a {@link SymbolNode}. */
@@ -48,7 +48,7 @@ class FGNSymbolCard extends JPanel implements ActionListener, FocusListener
       super();
       setOpaque(false);
       
-      typeCombo = new JComboBox<Marker>(Marker.values());
+      typeCombo = new JComboBox<>(Marker.values());
       typeCombo.setToolTipText("Select marker symbol shape");
       typeCombo.addActionListener(this);
       add(typeCombo);
@@ -169,7 +169,7 @@ class FGNSymbolCard extends JPanel implements ActionListener, FocusListener
    private SymbolNode symbol = null;
    
    /** Combo box for selecting the symbol marker shape. */
-   private JComboBox<Marker> typeCombo = null;
+   private final JComboBox<Marker> typeCombo;
 
    /** Customized component for editing the symbol marker's size. */
    private MeasureEditor sizeEditor = null;

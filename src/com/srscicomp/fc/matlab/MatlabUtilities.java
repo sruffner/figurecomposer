@@ -65,20 +65,21 @@ import com.srscicomp.fc.fig.TraceNode.DisplayMode;
  * FypML counterpoart. It is used both in Matlab -- particularly by the M-function MATFIG2FYP.M -- and in Figure 
  * Composer itself, to open Matlab .FIG files and convert them to a FypML graphic directly in FC.
  * 
- * <p>The most important public method, {@link #matFigToFyp()}, converts a Matlab figure into a FypML figure model -- to
+ * <p>The most important public method, {@link #matFigToFyp}, converts a Matlab figure into a FypML figure model -- to
  * the extent possible. The Matlab figure is represented by a tree of {@link HGObject}s. There are two avenues by which 
  * this Java representation of a Matlab figure is prepared:
  * <ul>
  * <li>The Matlab M-function MATFIG2FYP.M, which processes an open figure in the Matlab environment and relies on 
- * {@link #matFigToFyp()} to generate the "equivalent" FypML figure.</li>
- * <li>Figure Composer calls the method {@link MatlabFigureImporter#importMatlabFigureFromFile()} to open a Matlab FIG 
- * file and parse its content to rebuild the figure's Handle Graphics tree, which is passed to {@link #matFigToFyp()} to
+ * {@link #matFigToFyp} to generate the "equivalent" FypML figure.</li>
+ * <li>Figure Composer calls the method {@link MatlabFigureImporter#importMatlabFigureFromFile} to open a Matlab FIG
+ * file and parse its content to rebuild the figure's Handle Graphics tree, which is passed to {@link #matFigToFyp} to
  * complete the import.</li>
  * For additional details on the current capabilities and limitations of the Matlab-to-FypML figure conversion process,
  * see the help documentation for MATFIG2FYP.M.</p>
  * 
  * @author sruffner
  */
+@SuppressWarnings("DataFlowIssue")
 public class MatlabUtilities
 {
    /**
@@ -98,7 +99,7 @@ public class MatlabUtilities
    {
       if(fgm == null) return(false);
       
-      String s = null;
+      String s;
       if(oText == null)
          s = "";
       else if(oText.getClass().equals(Character.class) || oText.getClass().equals(String.class) ) 
@@ -241,20 +242,21 @@ public class MatlabUtilities
             if(unitsProp != null && unitsProp.getClass().equals(String.class))
             {
                String units = (String) unitsProp;
-               if(units.equals("normalized"))
+               switch(units)
                {
+               case "normalized":
                   pos[0] = Utilities.limitFracDigits(pos[0] * 8.5, 3);
                   pos[1] = Utilities.limitFracDigits(pos[1] * 11, 3);
                   pos[2] = Utilities.limitFracDigits(pos[2] * 8.5, 3);
                   pos[3] = Utilities.limitFracDigits(pos[3] * 11, 3);
-               }
-               else if(units.equals("centimeters"))
-               {
-                  for(int i=0; i<pos.length; i++) pos[i] = Utilities.limitFracDigits(pos[i]*Measure.MM2IN*10.0, 3);
-               }
-               else if(units.equals("points"))
-               {
-                  for(int i=0; i<pos.length; i++) pos[i] = Utilities.limitFracDigits(pos[i]*Measure.PT2IN, 3);
+                  break;
+               case "centimeters":
+                  for(int i = 0; i < pos.length; i++)
+                     pos[i] = Utilities.limitFracDigits(pos[i] * Measure.MM2IN * 10.0, 3);
+                  break;
+               case "points":
+                  for(int i = 0; i < pos.length; i++) pos[i] = Utilities.limitFracDigits(pos[i] * Measure.PT2IN, 3);
+                  break;
                }
             }
             
@@ -264,7 +266,7 @@ public class MatlabUtilities
             fig.setHeight(new Measure(pos[3], Measure.Unit.IN));
          }
          
-         double[][] matCMap = null;
+         double[][] matCMap;
          ColorMap cMap = ColorMap.BuiltIn.gray.cm;
          Object cmProp = hgFig.getProperty("Colormap");
          if(cmProp != null && cmProp.getClass().equals(double[][].class))
@@ -317,11 +319,8 @@ public class MatlabUtilities
             }
          }
       }
-      catch(Throwable t) 
-      {
-      }
-      
-      srcFig = null;
+      catch(Throwable ignored) {}
+
       return(null);
    }
    
@@ -383,9 +382,9 @@ public class MatlabUtilities
             buf.append(String.format("%nException class: %s%n", t.getClass().getCanonicalName()));
             StackTraceElement[] trace = t.getStackTrace();
             buf.append(String.format("STACK TRACE%n"));
-            for(int i=0; i<trace.length; i++)
+            for(StackTraceElement stackTraceElement : trace)
             {
-               buf.append(String.format("%s%n", trace[i].toString()));
+               buf.append(String.format("%s%n", stackTraceElement.toString()));
             }
          }
       }
@@ -397,7 +396,7 @@ public class MatlabUtilities
    }
    
    /**
-    * Helper method for {@link #matFigToFyp()} that reads in user's preferred default values for various <i>FypML</i>
+    * Helper method for {@link #matFigToFyp} that reads in user's preferred default values for various <i>FypML</i>
     * graphic node properties directly from the settings file in the user's <i>DataNav</i> workspace WITHOUT going
     * through the workspace object.
     * 
@@ -409,7 +408,7 @@ public class MatlabUtilities
    private static void loadFGNPreferences()
    {
       // prepare settings file path. Note we may not be able to access property that specifies user's home directory.
-      File home = null;
+      File home;
       try
       {
          home = new File(System.getProperty("user.home"), ".datanavx");
@@ -434,8 +433,8 @@ public class MatlabUtilities
          settings.load(in);
          ok = true;
       } 
-      catch(IOException ioe) {}
-      finally { try{ if(in != null) in.close(); } catch(IOException ioe) {} }
+      catch(IOException ignored) {}
+      finally { try{ if(in != null) in.close(); } catch(IOException ignored) {} }
       if(!ok) return;
       
       // finally, load the FypML graphic node defaults from settings object
@@ -444,39 +443,39 @@ public class MatlabUtilities
 
    private static void dumpMatlabFigureTree(HGObject hgFig, StringBuffer buf)
    {
-      Stack<HGObject> hgStack = new Stack<HGObject>();
+      Stack<HGObject> hgStack = new Stack<>();
       hgStack.push(hgFig);
-      String indent = "";
+      StringBuilder indent = new StringBuilder();
       while(!hgStack.isEmpty())
       {
          HGObject hgObj = hgStack.pop();
          if(hgObj == null)
          {
             // marks the end of a child list
-            indent = indent.substring(5);
+            indent = new StringBuilder(indent.substring(5));
             continue;
          }
          
-         buf.append(indent + String.format("HGObject=%s; handle=%.4f%n", hgObj.getType(), hgObj.getHandle()));
+         buf.append(indent).append(String.format("HGObject=%s; handle=%.4f%n", hgObj.getType(), hgObj.getHandle()));
          if(hgObj.getType().equals("axes") || hgObj.getType().equals("scribe.colorbar"))
          {
-            buf.append(indent + String.format(" Title handle=%.4f%n", hgObj.getTitleHandle()));
-            buf.append(indent + String.format(" X-Label handle=%.4f%n", hgObj.getXLabelHandle()));
-            buf.append(indent + String.format(" Y-Label handle=%.4f%n", hgObj.getYLabelHandle()));
+            buf.append(indent).append(String.format(" Title handle=%.4f%n", hgObj.getTitleHandle()));
+            buf.append(indent).append(String.format(" X-Label handle=%.4f%n", hgObj.getXLabelHandle()));
+            buf.append(indent).append(String.format(" Y-Label handle=%.4f%n", hgObj.getYLabelHandle()));
          }
-         buf.append(indent + String.format(" PROPERTIES:%n"));
+         buf.append(indent).append(String.format(" PROPERTIES:%n"));
          List<String> props = hgObj.getExplicitProperties();
          for(String name : props)
          {
             Object val = hgObj.getProperty(name);
             if(val == null)
-               buf.append(indent + String.format("  %s=null%n", name));
+               buf.append(indent).append(String.format("  %s=null%n", name));
             else
             {
                if(val.getClass().equals(double[].class))
                {
                   double[] dblAr = (double[]) val;
-                  buf.append(indent + String.format("  %s=[", name));
+                  buf.append(indent).append(String.format("  %s=[", name));
                   int idx = 0;
                   while(idx < dblAr.length && idx < 4)
                   {
@@ -486,14 +485,14 @@ public class MatlabUtilities
                   buf.append(String.format("%s%n", (idx<dblAr.length) ? "... ]" : "]"));
                }
                else
-                  buf.append(indent + 
-                        String.format("  %s=(%s) %s%n", name, val.getClass().getCanonicalName(), val.toString()));
+                  buf.append(indent).append(
+                        String.format("  %s=(%s) %s%n", name, val.getClass().getCanonicalName(), val));
             }
          }
          
          if(hgObj.getChildCount() > 0)
          {
-            indent += "     ";
+            indent.append("     ");
             // push children onto stack in reverse order so they come out in correct order and use a null to mark end
             hgStack.push(null);
             for(int i=hgObj.getChildCount()-1; i>= 0; i--) hgStack.push(hgObj.getChildAt(i));
@@ -512,15 +511,15 @@ public class MatlabUtilities
     * <p><i>Matlab 2014b considerations</i>. This Matlab release introduced major graphics changes. Among them was a new
     * color map, "parula", that is now an implicit default. Thus, an HG figure object in a FIG file saved by Matlab
     * 2014b may no longer have the 'Colormap' property explicitly set; prior to that release, it always was set. To
-    * handle this change, the figure color map is set to a similar <i>FypML</i> color map, {@link ColorMap#TROPIC}, if
-    * the 'Colormap' property is implicit. In addition, Matlab 2014b lets you assign different color maps to different
-    * axes within a figure (just like <i>FypML</i>). Unfortunately, there's no documented way to ascertain when the
-    * color map for an 'axes' is different from that for its parent figure -- an 'axes' does not have a 'Colormap' 
-    * property. So, for now, we ASSUME all axes use the figure color map!</p>
+    * handle this change, the figure color map is set to a similar <i>FypML</i> color map, {@link
+    * ColorMap.BuiltIn#tropic}, if  the 'Colormap' property is implicit. In addition, Matlab 2014b lets you assign
+    * different color maps to different axes within a figure (just like <i>FypML</i>). Unfortunately, there's no
+    * documented way to ascertain when the color map for an 'axes' is different from that for its parent figure -- an
+    * 'axes' does not have a 'Colormap' property. So, for now, we ASSUME all axes use the figure color map!</p>
     * 
     * <p><i>Matlab 2016b considerations</i>. A new HG object was introduced to represent a real polar plot, with type
     * name "matlab.graphics.axis.PolarAxes". Its properties are quite different from the standard "axes" object, and
-    * its conversion is handled by {@link #addPolarAxesToFigure_r2016()}.</p>
+    * its conversion is handled by {@link #addPolarAxesToFigure_r2016}.</p>
     * 
     * @param hgFig The handle graphics object representing a Matlab figure.
     * @param fig The root graphics node of the FypML figure.
@@ -553,20 +552,20 @@ public class MatlabUtilities
          if(unitsProp != null && unitsProp.getClass().equals(String.class))
          {
             String units = (String) unitsProp;
-            if(units.equals("normalized"))
+            switch(units)
             {
+            case "normalized":
                pos[0] = Utilities.limitFracDigits(pos[0] * 8.5, 3);
                pos[1] = Utilities.limitFracDigits(pos[1] * 11, 3);
                pos[2] = Utilities.limitFracDigits(pos[2] * 8.5, 3);
                pos[3] = Utilities.limitFracDigits(pos[3] * 11, 3);
-            }
-            else if(units.equals("centimeters"))
-            {
-               for(int i=0; i<pos.length; i++) pos[i] = Utilities.limitFracDigits(pos[i]*Measure.MM2IN*10.0, 3);
-            }
-            else if(units.equals("points"))
-            {
-               for(int i=0; i<pos.length; i++) pos[i] = Utilities.limitFracDigits(pos[i]*Measure.PT2IN, 3);
+               break;
+            case "centimeters":
+               for(int i = 0; i < pos.length; i++) pos[i] = Utilities.limitFracDigits(pos[i] * Measure.MM2IN * 10.0, 3);
+               break;
+            case "points":
+               for(int i = 0; i < pos.length; i++) pos[i] = Utilities.limitFracDigits(pos[i] * Measure.PT2IN, 3);
+               break;
             }
          }
          
@@ -579,7 +578,7 @@ public class MatlabUtilities
       // analyze Matlab figure's color map and choose the best-match DataNav-supported colormap. As of Matlab 2014b,
       // the 'Colormap' property may be implicit, in which case it is set to TROPIC (Matlab's 'parula'). If it is not 
       // double-valued matrix, then it defaults to grayscale.
-      double[][] matCMap = null;
+      double[][] matCMap;
       ColorMap cMap = ColorMap.BuiltIn.gray.cm;
       Object cmProp = hgFig.getProperty("Colormap");
       if(cmProp != null && cmProp.getClass().equals(double[][].class))
@@ -634,7 +633,7 @@ public class MatlabUtilities
     * graph node's legend and configure it accordingly; similarly, if there's an attached "scribe.colorbar", turn on
     * the graph's colorbar and configure it accordingly.
     * 
-    * <p>Do NOT use this to translate a Matlab "axes" configured as a polar plot; use {@link #addPolarPlotToFigure()}
+    * <p>Do NOT use this to translate a Matlab "axes" configured as a polar plot; use {@link #addPolarPlotToFigure}
     * instead.</p>
     * 
     * <p>[Added FC v5.1.2] 'Color' property is the background color of the graph's data window. If this is white and
@@ -656,11 +655,11 @@ public class MatlabUtilities
          throw new NeverOccursException("Failed to insert new graph into FypML figure.");
       
       GraphNode graph = (GraphNode) fig.getChildAt(fig.getChildCount()-1);
-      AxisNode xAxis = (AxisNode) graph.getPrimaryAxis();
-      AxisNode yAxis = (AxisNode) graph.getSecondaryAxis();
-      ColorBarNode colorBar = (ColorBarNode) graph.getColorBar();
-      GridLineNode xGrid = (GridLineNode) graph.getPrimaryGridLines();
-      GridLineNode yGrid = (GridLineNode) graph.getSecondaryGridLines();
+      AxisNode xAxis = graph.getPrimaryAxis();
+      AxisNode yAxis = graph.getSecondaryAxis();
+      ColorBarNode colorBar = graph.getColorBar();
+      GridLineNode xGrid = graph.getPrimaryGridLines();
+      GridLineNode yGrid = graph.getSecondaryGridLines();
       
       // assign the figure's colormap to the graph's color axis
       colorBar.setColorMap(cm);
@@ -699,13 +698,21 @@ public class MatlabUtilities
       if(unitsProp != null && unitsProp.getClass().equals(String.class))
       {
          String units = (String) unitsProp;
-         if(units.equals("normalized")) scaleFac = 0;
-         else if(units.equals("inches")) scaleFac = 1.0;
-         else if(units.equals("centimeters")) scaleFac = Measure.MM2IN * 10.0;
-         else
+         switch(units)
          {
+         case "normalized":
+            scaleFac = 0;
+            break;
+         case "inches":
+            scaleFac = 1.0;
+            break;
+         case "centimeters":
+            scaleFac = Measure.MM2IN * 10.0;
+            break;
+         default:
             // "pixels" and "characters" are not supported and map arbitrarily to "points"
             scaleFac = Measure.PT2IN;
+            break;
          }
       }
       if(scaleFac == 0)
@@ -761,10 +768,10 @@ public class MatlabUtilities
       boolean xOnBottom = true;
       boolean yOnLeft = true;
       Object axisLocProp = hgAxes.getProperty("XAxisLocation");
-      if(axisLocProp != null && axisLocProp.getClass().equals(String.class) && "top".equals((String) axisLocProp))
+      if(axisLocProp != null && axisLocProp.getClass().equals(String.class) && "top".equals(axisLocProp))
          xOnBottom = false;
       axisLocProp = hgAxes.getProperty("YAxisLocation");
-      if(axisLocProp != null && axisLocProp.getClass().equals(String.class) && "right".equals((String) axisLocProp))
+      if(axisLocProp != null && axisLocProp.getClass().equals(String.class) && "right".equals(axisLocProp))
          yOnLeft = false;
       GraphNode.Layout layout = GraphNode.Layout.QUAD1;
       if(!xOnBottom) layout = yOnLeft ? GraphNode.Layout.QUAD4 : GraphNode.Layout.QUAD3;
@@ -774,10 +781,10 @@ public class MatlabUtilities
       // HG "XScale" and "YScale" determine coordinate system type. 
       Object scaleProp = hgAxes.getProperty("XScale");
       boolean xLinear = (scaleProp == null) || (!scaleProp.getClass().equals(String.class)) || 
-            "linear".equals((String) scaleProp); 
+            "linear".equals(scaleProp);
       scaleProp = hgAxes.getProperty("YScale");
       boolean yLinear = (scaleProp == null) || (!scaleProp.getClass().equals(String.class)) || 
-            "linear".equals((String) scaleProp); 
+            "linear".equals(scaleProp);
       GraphNode.CoordSys sys = GraphNode.CoordSys.CARTESIAN;
       if(!xLinear) sys = yLinear ? GraphNode.CoordSys.SEMILOGX : GraphNode.CoordSys.LOGLOG;
       else if(!yLinear) sys = GraphNode.CoordSys.SEMILOGY;
@@ -786,7 +793,7 @@ public class MatlabUtilities
       // HG "Visible" property: If off, both axes are hidden.
       Object visProp = hgAxes.getProperty("Visible");
       boolean axesHidden = (visProp != null) && visProp.getClass().equals(String.class) && 
-            "off".equals((String)visProp);
+            "off".equals(visProp);
       if(axesHidden)
       {
          xAxis.setHide(true);
@@ -795,10 +802,10 @@ public class MatlabUtilities
       
       // HG "GridLineStyle, XGrid, YGrid" properties affect the graph's grid-line nodes
       Object gridProp = hgAxes.getProperty("XGrid");
-      if(gridProp != null && gridProp.getClass().equals(String.class) && "on".equals((String)gridProp))
+      if(gridProp != null && gridProp.getClass().equals(String.class) && "on".equals(gridProp))
          xGrid.setHide(false);
       gridProp = hgAxes.getProperty("YGrid");
-      if(gridProp != null && gridProp.getClass().equals(String.class) && "on".equals((String)gridProp))
+      if(gridProp != null && gridProp.getClass().equals(String.class) && "on".equals(gridProp))
          yGrid.setHide(false);
       StrokePattern patn = processLineStyle(hgAxes);
       if(patn == null)
@@ -847,7 +854,7 @@ public class MatlabUtilities
          {
             autoX = false;
             Object dir = hgAxes.getProperty("XDir");
-            boolean reverse = (dir != null) && dir.getClass().equals(String.class) && "reverse".equals((String)dir);
+            boolean reverse = (dir != null) && dir.getClass().equals(String.class) && "reverse".equals(dir);
             xAxis.setStart(Utilities.limitSignificantDigits(reverse ? range[1] : range[0], 6));
             xAxis.setEnd(Utilities.limitSignificantDigits(reverse ? range[0] : range[1], 6));
          }
@@ -860,7 +867,7 @@ public class MatlabUtilities
          {
             autoY = false;
             Object dir = hgAxes.getProperty("YDir");
-            boolean reverse = (dir != null) && dir.getClass().equals(String.class) && "reverse".equals((String)dir);
+            boolean reverse = (dir != null) && dir.getClass().equals(String.class) && "reverse".equals(dir);
             yAxis.setStart(Utilities.limitSignificantDigits(reverse ? range[1] : range[0], 6));
             yAxis.setEnd(Utilities.limitSignificantDigits(reverse ? range[0] : range[1], 6));
          }
@@ -886,7 +893,7 @@ public class MatlabUtilities
       Object tdProp = hgAxes.getProperty("TickDir");
       Orientation ori = Orientation.IN;
       if(tdProp != null && tdProp.getClass().equals(String.class))
-         ori = ((String)tdProp).equals("out") ? Orientation.OUT : Orientation.IN;
+         ori = tdProp.equals("out") ? Orientation.OUT : Orientation.IN;
       ticks = (TickSetNode) xAxis.getChildAt(0);
       ticks.setTickOrientation(ori);
       ticks = (TickSetNode) yAxis.getChildAt(0);
@@ -1029,7 +1036,7 @@ public class MatlabUtilities
                for(int i=0; i<tLabels.length; i++) tLabels[i] = processSpecialCharacters(tLabels[i]);
                ticks.setCustomTickLabels(tLabels);
             }
-            else if(prop != null && prop.getClass().equals(String.class) && ((String)prop).length() > 0)
+            else if(prop != null && prop.getClass().equals(String.class) && !((String) prop).isEmpty())
             {
                String labelChars = (String) prop;
                String[] labels = new String[labelChars.length()];
@@ -1118,7 +1125,7 @@ public class MatlabUtilities
                for(int i=0; i<tLabels.length; i++) tLabels[i] = processSpecialCharacters(tLabels[i]);
                ticks.setCustomTickLabels(tLabels);
             }
-            else if(prop != null && prop.getClass().equals(String.class) && ((String)prop).length() > 0)
+            else if(prop != null && prop.getClass().equals(String.class) && !((String) prop).isEmpty())
             {
                String labelChars = (String) prop;
                String[] labels = new String[labelChars.length()];
@@ -1231,7 +1238,7 @@ public class MatlabUtilities
    }
 
    /**
-    * Helper method for {@link #addGraphToFigure()}. It decides on a tick mark interval for a logarithmic axis covering
+    * Helper method for {@link #addGraphToFigure}. It decides on a tick mark interval for a logarithmic axis covering
     * the specified range. If it encounters an unreasonable scenario (such as the axis range crossing zero, which does
     * not make much sense for a log axis!), it returns 10. The interval is always a positive integer power of 10, since
     * that's all that <i>Figure Composer</i> supports.
@@ -1240,7 +1247,7 @@ public class MatlabUtilities
     * @param n Suggested number of tick mark intervals to be displayed in the given range.
     * @return The chosen tick mark interval, which will be a positive integral power of 10.
     */
-   private final static double chooseLogTickInterval(double start, double end, int n)
+   private static double chooseLogTickInterval(double start, double end, int n)
    {
       if(start == 0 && end == 0) return(10);
       if(start <= 0 && end > 0) start = Math.min(end/10, 0.001);
@@ -1259,13 +1266,13 @@ public class MatlabUtilities
    }
    
    /**
-    * Helper method for {@link #addGraphToFigure()}. It adds a minor tick mark set to the specified <i>FypML</i> 2D axis
+    * Helper method for {@link #addGraphToFigure}. It adds a minor tick mark set to the specified <i>FypML</i> 2D axis
     * node roughly consistent with how <i>Matlab</i> renders minor tick marks on an axis. The tick mark length is set to
     * one-half that of the first ("major") tick mark set, the tick orientation is the same, and labels are turned off.
     * @param axis A <i>FypML</i> 2D axis node.
     * @param isLog True for a logarithmic (base 10) axis; false for a linear axis.
     */
-   private final static void addMinorTicksToAxis(AxisNode axis, boolean isLog)
+   private static void addMinorTicksToAxis(AxisNode axis, boolean isLog)
    {
       if(!axis.getGraphicModel().insertNode(axis, FGNodeType.TICKS, -1))
          throw new NeverOccursException("Failed to insert new tick set into FypML axis.");
@@ -1301,11 +1308,11 @@ public class MatlabUtilities
    }
    
    /**
-    * Helper method for {@link #add3DGraphToFigure()}. Similar to {@link #addMinorTicksToAxis(AxisNode, boolean)}, but
+    * Helper method for {@link #add3DGraphToFigure}. Similar to {@link #addMinorTicksToAxis(AxisNode, boolean)}, but
     * it handles the FypML 3D graph axis, which is somewhat different than the 2D case.
     * @param a3 a <i>FypML</i> 3D axis node.
     */
-   private final static void addMinorTicksToAxis(Axis3DNode a3)
+   private static void addMinorTicksToAxis(Axis3DNode a3)
    {
       if(!a3.getGraphicModel().insertNode(a3, FGNodeType.TICKS3D, -1))
          throw new NeverOccursException("Failed to insert new tick set into FypML 3D axis.");
@@ -1368,7 +1375,7 @@ public class MatlabUtilities
     * @return The plot box aspect ratio [px py pz]. Returns null if the axes stretches to fill the plot box specified by 
     * the object's 'Position' property.
     */
-   private final static double[] getAxesAspectRatio(HGObject hgAxes)
+   private static double[] getAxesAspectRatio(HGObject hgAxes)
    {
       Object pbarModeProp = hgAxes.getProperty("PlotBoxAspectRatioMode");
       Object darModeProp = hgAxes.getProperty("DataAspectRatioMode");
@@ -1435,7 +1442,7 @@ public class MatlabUtilities
     * 
     * <p>This method converts such an "axes" object to a FypML polar plot node (introduced in FC 5.1.2), with a 360-deg
     * layout and with the polar plot's theta and radial axes configured to replicate the polar grid as much as possible.
-    * Call this method rather than {@link #addGraphToFigure()} whenever the "axes" object has been marked as a polar 
+    * Call this method rather than {@link #addGraphToFigure} whenever the "axes" object has been marked as a polar
     * plot.</p>
     * 
     * <p>Note that plot children of the "axes" have data in Cartesian coordinates. These data must be converted to polar
@@ -1464,8 +1471,8 @@ public class MatlabUtilities
          throw new NeverOccursException("Failed to insert new polar plot into FypML figure.");
       
       PolarPlotNode pgraph = (PolarPlotNode) fig.getChildAt(fig.getChildCount()-1);
-      PolarAxisNode thetaAxis = (PolarAxisNode) pgraph.getThetaAxis();
-      PolarAxisNode rAxis = (PolarAxisNode) pgraph.getRadialAxis();
+      PolarAxisNode thetaAxis = pgraph.getThetaAxis();
+      PolarAxisNode rAxis = pgraph.getRadialAxis();
       ColorBarNode colorBar = pgraph.getColorBar();
       
       // assign the figure's colormap to the graph's color axis
@@ -1489,13 +1496,21 @@ public class MatlabUtilities
       if(unitsProp != null && unitsProp.getClass().equals(String.class))
       {
          String units = (String) unitsProp;
-         if(units.equals("normalized")) scaleFac = 0;
-         else if(units.equals("inches")) scaleFac = 1.0;
-         else if(units.equals("centimeters")) scaleFac = Measure.MM2IN * 10.0;
-         else
+         switch(units)
          {
+         case "normalized":
+            scaleFac = 0;
+            break;
+         case "inches":
+            scaleFac = 1.0;
+            break;
+         case "centimeters":
+            scaleFac = Measure.MM2IN * 10.0;
+            break;
+         default:
             // "pixels" and "characters" are not supported and map arbitrarily to "points"
             scaleFac = Measure.PT2IN;
+            break;
          }
       }
       if(scaleFac == 0)
@@ -1656,8 +1671,8 @@ public class MatlabUtilities
     * and/or colorbar components are shown and configured  accordingly.</p>
     * 
     * <p>The specified HG "axes" object must be tagged as 3D -- see {@link HGObject#is3DAxes()}. Do NOT use this method 
-    * to translate a Matlab "axes" configured as a 2D plot; use {@link #addPolarPlotToFigure()} for 2D polar plots and 
-    * {@link #addGraphToFigure()} for 2D Cartesian plots.</p>
+    * to translate a Matlab "axes" configured as a 2D plot; use {@link #addPolarPlotToFigure} for 2D polar plots and
+    * {@link #addGraphToFigure} for 2D Cartesian plots.</p>
     * 
     * @param fig The FypML figure node that will parent the new 3D graph node.
     * @param hgFig The Matlab Handle Graphics object defining the Matlab figure.
@@ -1722,13 +1737,21 @@ public class MatlabUtilities
       if(unitsProp != null && unitsProp.getClass().equals(String.class))
       {
          String units = (String) unitsProp;
-         if(units.equals("normalized")) scaleFac = 0;
-         else if(units.equals("inches")) scaleFac = 1.0;
-         else if(units.equals("centimeters")) scaleFac = Measure.MM2IN * 10.0;
-         else
+         switch(units)
          {
+         case "normalized":
+            scaleFac = 0;
+            break;
+         case "inches":
+            scaleFac = 1.0;
+            break;
+         case "centimeters":
+            scaleFac = Measure.MM2IN * 10.0;
+            break;
+         default:
             // "pixels" and "characters" are not supported and map arbitrarily to "points"
             scaleFac = Measure.PT2IN;
+            break;
          }
       }
       if(scaleFac == 0)
@@ -1872,8 +1895,8 @@ public class MatlabUtilities
             double[] range = (double[]) rngProp;
             if(range.length == 2 && Utilities.isWellDefined(range))
             {
-               rngMin = (range[0] <= range[1]) ? range[0] : range[1];
-               rngMax = (range[0] <= range[1]) ? range[1] : range[0];
+               rngMin = Math.min(range[0], range[1]);
+               rngMax = Math.max(range[0], range[1]);
             }
          }
          g3.getAxis(axis).setRange(rngMin, rngMax, isLog);
@@ -1976,7 +1999,7 @@ public class MatlabUtilities
             Object prop = hgAxes.getProperty((i==0) ? "XTickLabelMode" : (i==1 ? "YTickLabelMode":"ZTickLabelMode"));
             if(prop == null) 
                prop = hgAxes.getProperty((i==0) ? "XTickLabelsMode" : (i==1 ? "YTickLabelsMode": "ZTickLabelsMode"));
-            if(prop != null && "manual".equals(prop))
+            if("manual".equals(prop))
             {
                prop = hgAxes.getProperty((i==0) ? "XTickLabel" : (i==1 ? "YTickLabel":"ZTickLabel"));
                if(prop != null && prop.getClass().equals(String[].class) && ((String[])prop).length > 0)
@@ -1985,7 +2008,7 @@ public class MatlabUtilities
                   for(int j=0; j<tLabels.length; j++) tLabels[j] = processSpecialCharacters(tLabels[j]);
                   ticks.setCustomTickLabels(tLabels);
                }
-               else if(prop != null && prop.getClass().equals(String.class) && ((String)prop).length() > 0)
+               else if(prop != null && prop.getClass().equals(String.class) && !((String) prop).isEmpty())
                {
                   String labelChars = (String) prop;
                   labelChars = processSpecialCharacters(labelChars);
@@ -2009,8 +2032,8 @@ public class MatlabUtilities
          double[] range = (double[]) cLim;
          if(range.length == 2 && Utilities.isWellDefined(range))
          {
-            g3.getColorBar().setStart((range[0] <= range[1]) ? range[0] : range[1]);
-            g3.getColorBar().setEnd((range[0] <= range[1]) ? range[1] : range[0]);
+            g3.getColorBar().setStart(Math.min(range[0], range[1]));
+            g3.getColorBar().setEnd(Math.max(range[0], range[1]));
          }
       }
 
@@ -2086,7 +2109,7 @@ public class MatlabUtilities
          Object prop = hgAxes.getProperty("LegendPeerHandle");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            double legendHandle = ((Double) prop).doubleValue();
+            double legendHandle = (Double) prop;
             for(int i=0;  i<hgFig.getChildCount(); i++)
             {
                HGObject hgChild = hgFig.getChildAt(i);
@@ -2111,11 +2134,12 @@ public class MatlabUtilities
                HGObject hgChild = hgFig.getChildAt(i);
                if(hgChild.getType().equals("scribe.legend"))
                {
-                  for(int j=0; j<layoutPeers.length; j++) if(layoutPeers[j] == hgChild.getHandle())
-                  {
-                     hgLegend = hgChild;
-                     break;
-                  }
+                  for(double layoutPeer : layoutPeers)
+                     if(layoutPeer == hgChild.getHandle())
+                     {
+                        hgLegend = hgChild;
+                        break;
+                     }
                }
             }
          }
@@ -2156,13 +2180,21 @@ public class MatlabUtilities
             if(unitsProp != null && unitsProp.getClass().equals(String.class))
             {
                String units = (String) unitsProp;
-               if(units.equals("normalized")) scaleFac = 0;
-               else if(units.equals("inches")) scaleFac = 1.0;
-               else if(units.equals("centimeters")) scaleFac = Measure.MM2IN * 10.0;
-               else
+               switch(units)
                {
+               case "normalized":
+                  scaleFac = 0;
+                  break;
+               case "inches":
+                  scaleFac = 1.0;
+                  break;
+               case "centimeters":
+                  scaleFac = Measure.MM2IN * 10.0;
+                  break;
+               default:
                   // "pixels" and "characters" are not supported and map arbitrarily to "points"
                   scaleFac = Measure.PT2IN;
+                  break;
                }
             }
             if(scaleFac == 0)
@@ -2328,7 +2360,7 @@ public class MatlabUtilities
          Object prop = hgAxes.getProperty("ColorbarPeerHandle");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            double cbHandle = ((Double) prop).doubleValue();
+            double cbHandle = (Double) prop;
             for(int i=0;  i<hgFig.getChildCount(); i++)
             {
                HGObject hgChild = hgFig.getChildAt(i);
@@ -2353,11 +2385,12 @@ public class MatlabUtilities
                HGObject hgChild = hgFig.getChildAt(i);
                if(hgChild.getType().equals("scribe.colorbar"))
                {
-                  for(int j=0; j<layoutPeers.length; j++) if(layoutPeers[j] == hgChild.getHandle())
-                  {
-                     hgColorBar = hgChild;
-                     break;
-                  }
+                  for(double layoutPeer : layoutPeers)
+                     if(layoutPeer == hgChild.getHandle())
+                     {
+                        hgColorBar = hgChild;
+                        break;
+                     }
                }
             }
          }
@@ -2370,7 +2403,7 @@ public class MatlabUtilities
       
       // HG "Visible" property (default = "on") determines whether or not we show the graph's colorbar
       Object prop = hgColorBar.getProperty("Visible");
-      boolean hide = (prop!=null) && prop.getClass().equals(String.class) && "off".equals((String) prop);
+      boolean hide = (prop!=null) && prop.getClass().equals(String.class) && "off".equals(prop);
       colorBar.setHide(hide);
       
       // HG "Location" property helps determine to which graph edge the colorbar is adjacent. (We ignore case b/c
@@ -2382,10 +2415,12 @@ public class MatlabUtilities
       if(prop != null && prop.getClass().equals(String.class))
       {
          String loc = (String) prop;
-         if(loc.equalsIgnoreCase("North") || loc.equalsIgnoreCase("NorthOutside")) edge = ColorBarNode.Edge.TOP;
-         else if(loc.equalsIgnoreCase("South") || loc.equalsIgnoreCase("SouthOutside")) edge= ColorBarNode.Edge.BOTTOM;
-         else if(loc.equalsIgnoreCase("West") || loc.equalsIgnoreCase("WestOutside")) edge = ColorBarNode.Edge.LEFT;
-         else if(loc.equalsIgnoreCase("East") || loc.equalsIgnoreCase("EastOutside")) edge = ColorBarNode.Edge.RIGHT;
+         if(loc.equalsIgnoreCase("North") || loc.equalsIgnoreCase("NorthOutside"))
+            edge = ColorBarNode.Edge.TOP;
+         else if(loc.equalsIgnoreCase("South") || loc.equalsIgnoreCase("SouthOutside"))
+            edge= ColorBarNode.Edge.BOTTOM;
+         else if(loc.equalsIgnoreCase("West") || loc.equalsIgnoreCase("WestOutside"))
+            edge = ColorBarNode.Edge.LEFT;
       }
       colorBar.setEdge(edge);
       boolean isHorizBar = (edge==ColorBarNode.Edge.BOTTOM || edge==ColorBarNode.Edge.TOP);
@@ -2407,13 +2442,21 @@ public class MatlabUtilities
             if(unitsProp != null && unitsProp.getClass().equals(String.class))
             {
                String units = (String) unitsProp;
-               if(units.equals("normalized")) scaleFac = 0;
-               else if(units.equals("inches")) scaleFac = 1.0;
-               else if(units.equals("centimeters")) scaleFac = Measure.MM2IN * 10.0;
-               else
+               switch(units)
                {
+               case "normalized":
+                  scaleFac = 0;
+                  break;
+               case "inches":
+                  scaleFac = 1.0;
+                  break;
+               case "centimeters":
+                  scaleFac = Measure.MM2IN * 10.0;
+                  break;
+               default:
                   // "pixels" and "characters" are not supported and map arbitrarily to "points"
                   scaleFac = Measure.PT2IN;
+                  break;
                }
             }
             if(scaleFac == 0)
@@ -2478,7 +2521,7 @@ public class MatlabUtilities
       prop = hgColorBar.getProperty("TickDir");
       if(prop == null) prop = hgColorBar.getProperty("TickDirection");
       Orientation ori = Orientation.IN;
-      if(prop != null && prop.getClass().equals(String.class) && "out".equals((String) prop))
+      if(prop != null && prop.getClass().equals(String.class) && "out".equals(prop))
          ori = Orientation.OUT;
       TickSetNode ticks = (TickSetNode) colorBar.getChildAt(0);
       ticks.setTickOrientation(ori);
@@ -2681,7 +2724,7 @@ public class MatlabUtilities
       Object fontSzProp = hgObj.getProperty("FontSize");
       if(fontSzProp != null && fontSzProp.getClass().equals(Double.class))
       {
-         double sz = ((Double) fontSzProp).doubleValue();
+         double sz = (Double) fontSzProp;
          Object unitsProp = hgObj.getProperty("FontUnits");
          if(unitsProp != null && unitsProp.getClass().equals(String.class))
          {
@@ -2769,11 +2812,23 @@ public class MatlabUtilities
       {
          // NOTE: may be Character or String class
          String lineStyle = prop.toString();
-         if(lineStyle.equals("none")) sp = null;
-         else if(lineStyle.equals("-")) sp = StrokePattern.SOLID;
-         else if(lineStyle.equals("--")) sp = StrokePattern.DASHED;
-         else if(lineStyle.equals("-.")) sp = StrokePattern.DASHDOT;
-         else if(lineStyle.equals(":")) sp = StrokePattern.DOTTED;
+         switch(lineStyle)
+         {
+         case "none":
+            sp = null;
+            break;
+         case "-":
+            break;
+         case "--":
+            sp = StrokePattern.DASHED;
+            break;
+         case "-.":
+            sp = StrokePattern.DASHDOT;
+            break;
+         case ":":
+            sp = StrokePattern.DOTTED;
+            break;
+         }
       }
       return(sp);
    }
@@ -2791,7 +2846,7 @@ public class MatlabUtilities
       Object lineWProp = hgObj.getProperty("LineWidth");
       if(lineWProp != null && lineWProp.getClass().equals(Double.class))
       {
-         lineW = ((Double) lineWProp).doubleValue();
+         lineW = (Double) lineWProp;
          if(lineW < 0) lineW = 0.5;
       }
       return(new Measure(Utilities.limitFracDigits(lineW, 1), Measure.Unit.PT));
@@ -2815,7 +2870,7 @@ public class MatlabUtilities
       if(nameProp != null && (nameProp.getClass().equals(String.class) || nameProp.getClass().equals(Character.class)))
       {
          title = processSpecialCharacters(nameProp.toString().trim());
-         if(title.length() > 0) showInLegend = true;
+         if(!title.isEmpty()) showInLegend = true;
       }
 
       // if HG "DisplayName" not set, we check for an undocumented property: the field 'legend_texthandle' in the HG
@@ -2839,33 +2894,65 @@ public class MatlabUtilities
       double markSzPts = 6;
       Object prop = lineSeriesObj.getProperty("MarkerSize");
       if(prop != null && prop.getClass().equals(Double.class))
-         markSzPts = ((Double) prop).doubleValue();
+         markSzPts = (Double) prop;
  
       prop = lineSeriesObj.getProperty("Marker");
       boolean isPointMarker = false;
       if(prop != null && (prop.getClass().equals(String.class) || prop.getClass().equals(Character.class)))
       {
          String s = prop.toString();
-         if(s.equals("+")) mark = Marker.TEE;
-         else if(s.equals("o")) mark = Marker.CIRCLE;
-         else if(s.equals("*")) mark = Marker.STAR;
-         else if(s.equals(".")) 
+         switch(s)
          {
-            mark = Marker.CIRCLE;
+         case "+":
+            mark = Marker.TEE;
+            break;
+         case "o":
+            break;
+         case "*":
+            mark = Marker.STAR;
+            break;
+         case ".":
             markSzPts /= 3.0;
             isPointMarker = true;
+            break;
+         case "x":
+            mark = Marker.XHAIR;
+            break;
+         case "_":
+            mark = Marker.HLINETHRU;
+            break;
+         case "|":
+            mark = Marker.LINETHRU;
+            break;
+         case "square":
+         case "s":
+            mark = Marker.BOX;
+            break;
+         case "diamond":
+         case "d":
+            mark = Marker.DIAMOND;
+            break;
+         case "^":
+            mark = Marker.UPTRIANGLE;
+            break;
+         case "v":
+            mark = Marker.DOWNTRIANGLE;
+            break;
+         case ">":
+            mark = Marker.RIGHTTRIANGLE;
+            break;
+         case "<":
+            mark = Marker.LEFTTRIANGLE;
+            break;
+         case "pentagram":
+         case "p":
+            mark = Marker.PENTAGRAM;
+            break;
+         case "hexagram":
+         case "h":
+            mark = Marker.HEXAGRAM;
+            break;
          }
-         else if(s.equals("x")) mark = Marker.XHAIR;
-         else if(s.equals("_")) mark = Marker.HLINETHRU;
-         else if(s.equals("|")) mark = Marker.LINETHRU;
-         else if(s.equals("square") || s.equals("s")) mark = Marker.BOX;
-         else if(s.equals("diamond") || s.equals("d")) mark = Marker.DIAMOND;
-         else if(s.equals("^")) mark = Marker.UPTRIANGLE;
-         else if(s.equals("v")) mark = Marker.DOWNTRIANGLE;
-         else if(s.equals(">")) mark = Marker.RIGHTTRIANGLE;
-         else if(s.equals("<")) mark = Marker.LEFTTRIANGLE;
-         else if(s.equals("pentagram") || s.equals("p")) mark = Marker.PENTAGRAM;
-         else if(s.equals("hexagram") || s.equals("h")) mark = Marker.HEXAGRAM;         
       }
       
       Measure markSz = new Measure(Utilities.limitFracDigits(markSzPts, 1), Measure.Unit.PT);
@@ -2900,7 +2987,7 @@ public class MatlabUtilities
       // if the Matlab marker type was "point", that is mapped to a filled circle in FypML, and we force the fill color 
       // to match the stroke color.
       prop = lineSeriesObj.getProperty("MarkerFaceColor");
-      Color fillC = null;
+      Color fillC;
       if(isPointMarker)
          fillC = (strokeC != null) ? strokeC : Color.BLACK;
       else if(prop == null)
@@ -2908,7 +2995,7 @@ public class MatlabUtilities
       else
       {
          fillC = processColorSpec(prop);
-         if(fillC == null && prop.getClass().equals(String.class) && "none".equals((String)prop))
+         if(fillC == null && prop.getClass().equals(String.class) && "none".equals(prop))
             fillC = TRANSPARENTBLACK;
       }
       
@@ -2939,7 +3026,7 @@ public class MatlabUtilities
     * <p>Typically the plot object will be converted into a FypML {@link TraceNode}. However, if the line series data is
     * consistent with a raster plot -- a series of short, disjoint vertical lines all starting on one baseline Y=L or a 
     * set of baselines Y=L, L+1, ... -- then it will be converted into a FypML {@link RasterNode}. See {@link 
-    * #addRasterToGraph()} for details.
+    * #addRasterToGraph} for details.
     * 
     * <p><i>Special case: Staircase plot</i>. The HG "specgraph.stairseries" plot object has all the same properties as
     * a "graph2d.lineseries" object. This method will translate the object to a {@link TraceNode} with its display mode
@@ -3015,7 +3102,7 @@ public class MatlabUtilities
       {
          String title = processSpecialCharacters(nameProp.toString().trim());
          trace.setTitle(title);
-         if(title.length() > 0) showInLegend = true;
+         if(!title.isEmpty()) showInLegend = true;
       }
 
       // if HG "DisplayName" not set, we check for an undocumented property: the field 'legend_texthandle' in the HG
@@ -3040,32 +3127,66 @@ public class MatlabUtilities
       double markSzPts = 6;
       Object prop = lineSeriesObj.getProperty("MarkerSize");
       if(prop != null && prop.getClass().equals(Double.class))
-         markSzPts = ((Double) prop).doubleValue();
+         markSzPts = (Double) prop;
       prop = lineSeriesObj.getProperty("Marker");
       boolean isPointMarker = false;
       if(prop != null && (prop.getClass().equals(String.class) || prop.getClass().equals(Character.class)))
       {
          String s = prop.toString();
-         if(s.equals("+")) mark = Marker.TEE;
-         else if(s.equals("o")) mark = Marker.CIRCLE;
-         else if(s.equals("*")) mark = Marker.STAR;
-         else if(s.equals(".")) 
+         switch(s)
          {
+         case "+":
+            mark = Marker.TEE;
+            break;
+         case "o":
+            mark = Marker.CIRCLE;
+            break;
+         case "*":
+            mark = Marker.STAR;
+            break;
+         case ".":
             mark = Marker.CIRCLE;
             markSzPts /= 3.0;
             isPointMarker = true;
+            break;
+         case "x":
+            mark = Marker.XHAIR;
+            break;
+         case "_":
+            mark = Marker.HLINETHRU;
+            break;
+         case "|":
+            mark = Marker.LINETHRU;
+            break;
+         case "square":
+         case "s":
+            mark = Marker.BOX;
+            break;
+         case "diamond":
+         case "d":
+            mark = Marker.DIAMOND;
+            break;
+         case "^":
+            mark = Marker.UPTRIANGLE;
+            break;
+         case "v":
+            mark = Marker.DOWNTRIANGLE;
+            break;
+         case ">":
+            mark = Marker.RIGHTTRIANGLE;
+            break;
+         case "<":
+            mark = Marker.LEFTTRIANGLE;
+            break;
+         case "pentagram":
+         case "p":
+            mark = Marker.PENTAGRAM;
+            break;
+         case "hexagram":
+         case "h":
+            mark = Marker.HEXAGRAM;
+            break;
          }
-         else if(s.equals("x")) mark = Marker.XHAIR;
-         else if(s.equals("_")) mark = Marker.HLINETHRU;
-         else if(s.equals("|")) mark = Marker.LINETHRU;
-         else if(s.equals("square") || s.equals("s")) mark = Marker.BOX;
-         else if(s.equals("diamond") || s.equals("d")) mark = Marker.DIAMOND;
-         else if(s.equals("^")) mark = Marker.UPTRIANGLE;
-         else if(s.equals("v")) mark = Marker.DOWNTRIANGLE;
-         else if(s.equals(">")) mark = Marker.RIGHTTRIANGLE;
-         else if(s.equals("<")) mark = Marker.LEFTTRIANGLE;
-         else if(s.equals("pentagram") || s.equals("p")) mark = Marker.PENTAGRAM;
-         else if(s.equals("hexagram") || s.equals("h")) mark = Marker.HEXAGRAM;         
       }
       if(mark == null)
          symbol.setSize(new Measure(0, Measure.Unit.PT));
@@ -3106,7 +3227,6 @@ public class MatlabUtilities
       // Matlab marker type was "point", that is mapped to a filled circle in FypML, and we force the fill color to
       // match the stroke color.
       prop = lineSeriesObj.getProperty("MarkerFaceColor");
-      c = null;
       if(isPointMarker)
          c = symbol.getStrokeColor();
       else if(prop == null)
@@ -3114,7 +3234,7 @@ public class MatlabUtilities
       else
       {
          c = processColorSpec(prop);
-         if(c == null && prop.getClass().equals(String.class) && "none".equals((String)prop))
+         if(c == null && prop.getClass().equals(String.class) && "none".equals(prop))
             c = TRANSPARENTBLACK;
       }
       if(c != null) symbol.setFillColor(c);
@@ -3148,7 +3268,7 @@ public class MatlabUtilities
       else if(lineSeriesObj.isRosePlot())
       {
          trace.setMode(DisplayMode.HISTOGRAM);
-         trace.setBarWidth(360/ds.getDataLength());
+         trace.setBarWidth(360f/ds.getDataLength());
          trace.setBaseline(0);
          trace.setFillColor(new Color(0,0,0,0));  // transparent fill = not filled!
       }
@@ -3160,7 +3280,7 @@ public class MatlabUtilities
          trace.setBarWidth(0);
          double baseline = 0;
          prop = lineSeriesObj.getProperty("BaseValue");
-         if(prop != null && prop.getClass().equals(Double.class)) baseline = ((Double)prop).doubleValue();
+         if(prop != null && prop.getClass().equals(Double.class)) baseline = (Double) prop;
          trace.setBaseline((float)baseline);
       }
    }
@@ -3252,7 +3372,6 @@ public class MatlabUtilities
       int[] nEventsSoFar = new int[nTrains];
       int[] firstEventIdx = new int[nTrains];
       float[] fData = new float[nTrains + nSamples];
-      for(int i=0; i<nTrains; i++) nEventsSoFar[i] = 0;
       for(int i=0; i<yData.length; i+=3)
       {
          int ord = (int) (yData[i] + 0.5);
@@ -3305,7 +3424,7 @@ public class MatlabUtilities
     * the trace line; and the error bar endcaps in Matlab are always short horizontal lines. As of release 2016b, the
     * endcap length is set by the 'CapSize' property, which defaults to 6pt.</p>
     * <p>Release 2016b also introduced support for horizontal as well as vertical error bars. The helper method {@link 
-    * HGObject#extractDataSetFromPlotObject()} handles the new properties encoding the horizontal and vertical deltas.
+    * HGObject#extractDataSetFromPlotObject} handles the new properties encoding the horizontal and vertical deltas.
     * Note that Matlab supports unsymmetrical error bars, while FypML does not.</p>
     * 
     * @param graph The parent graph node in the FypML figure being constructed.
@@ -3350,7 +3469,7 @@ public class MatlabUtilities
       {
          String title = processSpecialCharacters(nameProp.toString().trim());
          trace.setTitle(title);
-         if(title.length() > 0) showInLegend = true;
+         if(!title.isEmpty()) showInLegend = true;
       }
 
       // if HG "DisplayName" not set, we check for an undocumented property: the field 'legend_texthandle' in the HG
@@ -3373,32 +3492,66 @@ public class MatlabUtilities
       double markSzPts = 6;
       Object prop = ebarObj.getProperty("MarkerSize");
       if(prop != null && prop.getClass().equals(Double.class))
-         markSzPts = ((Double) prop).doubleValue();
+         markSzPts = (Double) prop;
       prop = ebarObj.getProperty("Marker");
       boolean isPointMarker = false;
       if(prop != null && (prop.getClass().equals(String.class) || prop.getClass().equals(Character.class)))
       {
          String s = prop.toString();
-         if(s.equals("+")) mark = Marker.TEE;
-         else if(s.equals("o")) mark = Marker.CIRCLE;
-         else if(s.equals("*")) mark = Marker.STAR;
-         else if(s.equals(".")) 
+         switch(s)
          {
+         case "+":
+            mark = Marker.TEE;
+            break;
+         case "o":
+            mark = Marker.CIRCLE;
+            break;
+         case "*":
+            mark = Marker.STAR;
+            break;
+         case ".":
             mark = Marker.CIRCLE;
             markSzPts /= 3.0;
             isPointMarker = true;
+            break;
+         case "x":
+            mark = Marker.XHAIR;
+            break;
+         case "_":
+            mark = Marker.HLINETHRU;
+            break;
+         case "|":
+            mark = Marker.LINETHRU;
+            break;
+         case "square":
+         case "s":
+            mark = Marker.BOX;
+            break;
+         case "diamond":
+         case "d":
+            mark = Marker.DIAMOND;
+            break;
+         case "^":
+            mark = Marker.UPTRIANGLE;
+            break;
+         case "v":
+            mark = Marker.DOWNTRIANGLE;
+            break;
+         case ">":
+            mark = Marker.RIGHTTRIANGLE;
+            break;
+         case "<":
+            mark = Marker.LEFTTRIANGLE;
+            break;
+         case "pentagram":
+         case "p":
+            mark = Marker.PENTAGRAM;
+            break;
+         case "hexagram":
+         case "h":
+            mark = Marker.HEXAGRAM;
+            break;
          }
-         else if(s.equals("x")) mark = Marker.XHAIR;
-         else if(s.equals("_")) mark = Marker.HLINETHRU;
-         else if(s.equals("|")) mark = Marker.LINETHRU;
-         else if(s.equals("square") || s.equals("s")) mark = Marker.BOX;
-         else if(s.equals("diamond") || s.equals("d")) mark = Marker.DIAMOND;
-         else if(s.equals("^")) mark = Marker.UPTRIANGLE;
-         else if(s.equals("v")) mark = Marker.DOWNTRIANGLE;
-         else if(s.equals(">")) mark = Marker.RIGHTTRIANGLE;
-         else if(s.equals("<")) mark = Marker.LEFTTRIANGLE;
-         else if(s.equals("pentagram") || s.equals("p")) mark = Marker.PENTAGRAM;
-         else if(s.equals("hexagram") || s.equals("h")) mark = Marker.HEXAGRAM;         
       }
       if(mark == null)
          symbol.setSize(new Measure(0, Measure.Unit.PT));
@@ -3438,7 +3591,6 @@ public class MatlabUtilities
       // Matlab marker type was "point", that is mapped to a filled circle in FypML, and we force the fill color to
       // match the stroke color.
       prop = ebarObj.getProperty("MarkerFaceColor");
-      c = null;
       if(isPointMarker)
          c = symbol.getStrokeColor();
       else if(prop == null)
@@ -3446,7 +3598,7 @@ public class MatlabUtilities
       else
       {
          c = processColorSpec(prop);
-         if(c == null && prop.getClass().equals(String.class) && "none".equals((String)prop))
+         if(c == null && prop.getClass().equals(String.class) && "none".equals(prop))
             c = Color.WHITE;
       }
       if(c != null) symbol.setFillColor(c);
@@ -3459,7 +3611,7 @@ public class MatlabUtilities
       double capSzPts = 6;
       prop = ebarObj.getProperty("CapSize");
       if(prop != null && prop.getClass().equals(Double.class))
-         capSzPts = ((Double) prop).doubleValue();
+         capSzPts = (Double) prop;
       ebarNode.setEndCapSize(new Measure(Utilities.limitFracDigits(capSzPts, 1), Measure.Unit.PT));
       
       // the ErrorBarNode's stroke width is determined by the Matlab 'LineWidth' property and the stroke pattern is 
@@ -3528,7 +3680,7 @@ public class MatlabUtilities
       if(nameProp != null && (nameProp.getClass().equals(String.class) || nameProp.getClass().equals(Character.class)))
       {
          title = processSpecialCharacters(nameProp.toString().trim());
-         if(title.length() > 0) showInLegend = true;
+         if(!title.isEmpty()) showInLegend = true;
       }
 
       // if HG "DisplayName" not set, we check for an undocumented property: the field 'legend_texthandle' in the HG
@@ -3572,25 +3724,59 @@ public class MatlabUtilities
       if(prop != null && (prop.getClass().equals(String.class) || prop.getClass().equals(Character.class)))
       {
          String s = prop.toString();
-         if(s.equals("+")) mark = Marker.TEE;
-         else if(s.equals("o")) mark = Marker.CIRCLE;
-         else if(s.equals("*")) mark = Marker.STAR;
-         else if(s.equals(".")) 
+         switch(s)
          {
+         case "+":
+            mark = Marker.TEE;
+            break;
+         case "o":
+            mark = Marker.CIRCLE;
+            break;
+         case "*":
+            mark = Marker.STAR;
+            break;
+         case ".":
             mark = Marker.CIRCLE;
             isPointMarker = true;
+            break;
+         case "x":
+            mark = Marker.XHAIR;
+            break;
+         case "_":
+            mark = Marker.HLINETHRU;
+            break;
+         case "|":
+            mark = Marker.LINETHRU;
+            break;
+         case "square":
+         case "s":
+            mark = Marker.BOX;
+            break;
+         case "diamond":
+         case "d":
+            mark = Marker.DIAMOND;
+            break;
+         case "^":
+            mark = Marker.UPTRIANGLE;
+            break;
+         case "v":
+            mark = Marker.DOWNTRIANGLE;
+            break;
+         case ">":
+            mark = Marker.RIGHTTRIANGLE;
+            break;
+         case "<":
+            mark = Marker.LEFTTRIANGLE;
+            break;
+         case "pentagram":
+         case "p":
+            mark = Marker.PENTAGRAM;
+            break;
+         case "hexagram":
+         case "h":
+            mark = Marker.HEXAGRAM;
+            break;
          }
-         else if(s.equals("x")) mark = Marker.XHAIR;
-         else if(s.equals("_")) mark = Marker.HLINETHRU;
-         else if(s.equals("|")) mark = Marker.LINETHRU;
-         else if(s.equals("square") || s.equals("s")) mark = Marker.BOX;
-         else if(s.equals("diamond") || s.equals("d")) mark = Marker.DIAMOND;
-         else if(s.equals("^")) mark = Marker.UPTRIANGLE;
-         else if(s.equals("v")) mark = Marker.DOWNTRIANGLE;
-         else if(s.equals(">")) mark = Marker.RIGHTTRIANGLE;
-         else if(s.equals("<")) mark = Marker.LEFTTRIANGLE;
-         else if(s.equals("pentagram") || s.equals("p")) mark = Marker.PENTAGRAM;
-         else if(s.equals("hexagram") || s.equals("h")) mark = Marker.HEXAGRAM;         
       }
       if(mark == null) mark = Marker.CIRCLE;
       
@@ -3626,7 +3812,7 @@ public class MatlabUtilities
          prop = scatObj.getProperty("MarkerEdgeAlpha");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            int alpha = Utilities.rangeRestrict(0, 255, (int) (255.0*((Double) prop).doubleValue()));
+            int alpha = Utilities.rangeRestrict(0, 255, (int) (255.0* (Double) prop));
             if(alpha < 255) strokeC = new Color(strokeC.getRed(), strokeC.getGreen(), strokeC.getBlue(), alpha);
          }
       }
@@ -3664,7 +3850,7 @@ public class MatlabUtilities
                   prop = scatObj.getProperty("MarkerFaceAlpha");
                   if(prop != null && prop.getClass().equals(Double.class))
                   {
-                     int alpha = Utilities.rangeRestrict(0,255, (int) (255*((Double)prop).doubleValue()));
+                     int alpha = Utilities.rangeRestrict(0,255, (int) (255* (Double) prop));
                      if(alpha < 255) fillC = new Color(fillC.getRed(), fillC.getGreen(), fillC.getBlue(), alpha);
                   }
                }
@@ -3681,7 +3867,7 @@ public class MatlabUtilities
       if(szData != null)
       {
          markSzPts = 0;
-         for(int i=0; i<szData.length; i++) if(szData[i] > markSzPts) markSzPts = szData[i];
+         for(double szDatum : szData) if(szDatum > markSzPts) markSzPts = szDatum;
 
          if(markSzPts <= 0) markSzPts = 6;
          else markSzPts = Math.sqrt(markSzPts);
@@ -3718,8 +3904,7 @@ public class MatlabUtilities
          Scatter3DNode.DisplayMode dm3 = null;
          switch(dispMode)
          {
-         case SCATTER : 
-         case TRENDLINE : dm3 = Scatter3DNode.DisplayMode.SCATTER; break;
+         case SCATTER : dm3 = Scatter3DNode.DisplayMode.SCATTER; break;
          case SIZEBUBBLE : dm3 = Scatter3DNode.DisplayMode.SIZEBUBBLE; break;
          case COLORBUBBLE : dm3 = Scatter3DNode.DisplayMode.COLORBUBBLE; break;
          case COLORSIZEBUBBLE : dm3 = Scatter3DNode.DisplayMode.COLORSIZEBUBBLE; break;
@@ -3776,7 +3961,7 @@ public class MatlabUtilities
       if(prop != null && (prop.getClass().equals(String.class) || prop.getClass().equals(Character.class)))
       {
          title = processSpecialCharacters(prop.toString().trim());
-         if(title.length() > 0) showInLegend = true;
+         if(!title.isEmpty()) showInLegend = true;
       }
 
       // if HG "DisplayName" not set, we check for an undocumented property: the field 'legend_texthandle' in the HG
@@ -3800,7 +3985,7 @@ public class MatlabUtilities
       prop = plotObj.getProperty("BaseValue");
       if(prop != null && prop.getClass().equals(Double.class))
       {
-         baseline = ((Double) prop).doubleValue();
+         baseline = (Double) prop;
          if(!Utilities.isWellDefined(baseline)) baseline = 0;
       }
       
@@ -3825,22 +4010,60 @@ public class MatlabUtilities
       if(prop != null && (prop.getClass().equals(String.class) || prop.getClass().equals(Character.class)))
       {
          String s = prop.toString();
-         if(s.equals("none")) noMarker = true;
-         else if(s.equals(".")) isPointMarker = true;
-         else if(s.equals("+")) mark = Marker.TEE;
-         else if(s.equals("o")) mark = Marker.CIRCLE;
-         else if(s.equals("*")) mark = Marker.STAR;
-         else if(s.equals("x")) mark = Marker.XHAIR;
-         else if(s.equals("_")) mark = Marker.HLINETHRU;
-         else if(s.equals("|")) mark = Marker.LINETHRU;
-         else if(s.equals("square") || s.equals("s")) mark = Marker.BOX;
-         else if(s.equals("diamond") || s.equals("d")) mark = Marker.DIAMOND;
-         else if(s.equals("^")) mark = Marker.UPTRIANGLE;
-         else if(s.equals("v")) mark = Marker.DOWNTRIANGLE;
-         else if(s.equals(">")) mark = Marker.RIGHTTRIANGLE;
-         else if(s.equals("<")) mark = Marker.LEFTTRIANGLE;
-         else if(s.equals("pentagram") || s.equals("p")) mark = Marker.PENTAGRAM;
-         else if(s.equals("hexagram") || s.equals("h")) mark = Marker.HEXAGRAM;         
+         switch(s)
+         {
+         case "none":
+            noMarker = true;
+            break;
+         case ".":
+            isPointMarker = true;
+            break;
+         case "+":
+            mark = Marker.TEE;
+            break;
+         case "o":
+            break;
+         case "*":
+            mark = Marker.STAR;
+            break;
+         case "x":
+            mark = Marker.XHAIR;
+            break;
+         case "_":
+            mark = Marker.HLINETHRU;
+            break;
+         case "|":
+            mark = Marker.LINETHRU;
+            break;
+         case "square":
+         case "s":
+            mark = Marker.BOX;
+            break;
+         case "diamond":
+         case "d":
+            mark = Marker.DIAMOND;
+            break;
+         case "^":
+            mark = Marker.UPTRIANGLE;
+            break;
+         case "v":
+            mark = Marker.DOWNTRIANGLE;
+            break;
+         case ">":
+            mark = Marker.RIGHTTRIANGLE;
+            break;
+         case "<":
+            mark = Marker.LEFTTRIANGLE;
+            break;
+         case "pentagram":
+         case "p":
+            mark = Marker.PENTAGRAM;
+            break;
+         case "hexagram":
+         case "h":
+            mark = Marker.HEXAGRAM;
+            break;
+         }
       }
       
       // HG "MarkerEdgeColor" property sets the stroke color for the marker symbols. The default is 'auto', which means
@@ -3854,14 +4077,13 @@ public class MatlabUtilities
          Color c = processColorSpec(prop);
          if(c != null) markerStrkC = c;
          else if("none".equals(prop)) markerStrkC = TRANSPARENTBLACK;
-         else if("auto".equals(prop)) markerStrkC = stemStrkC;
       }
       
       // HG "MarkerFaceColor" property sets the fill color for the marker symbols. It can be a Matlab color spec, OR 
       // the strings "none" (hollow symbol, which is the Matlab default) or "auto" (same as the stem line color). If the
       // marker type was "point", that is mapped to a filled circle in FypML, and we force the fill color to match the 
       // stroke color.
-      Color markerFillC = null;
+      Color markerFillC;
       if(isPointMarker) 
          markerFillC = markerStrkC;
       else
@@ -3883,7 +4105,7 @@ public class MatlabUtilities
       double markSzPts = noMarker ? 0 : 6;
       prop = plotObj.getProperty("MarkerSize");
       if((!noMarker) && prop != null && prop.getClass().equals(Double.class))
-         markSzPts = ((Double) prop).doubleValue();
+         markSzPts = (Double) prop;
       if(isPointMarker) markSzPts /= 3.0;
       Measure markSz = new Measure(markSzPts, Measure.Unit.PT);
       markSz = ScatterPlotNode.MAXSYMSIZECONSTRAINTS.constrain(markSz);
@@ -3946,10 +4168,10 @@ public class MatlabUtilities
     * range [0.05 .. 1.0].</li>
     * <li>B.EdgeColor, B.EdgeAlpha, B.LineStyle, and B.LineWidth define how the bars are stroked. All bar groups are 
     * stroked in the same fashion. Unlike Matlab, FC does not support different strokes for different bar groups.</li>
-    * <li>The underlying data is obtained directly from {@link HGObject#extractDataSetFromPlotObject()}; it will be an
+    * <li>The underlying data is obtained directly from {@link HGObject#extractDataSetFromPlotObject}; it will be an
     * MSET or MSERIES source for a multi-group bar plot; PTSET or SERIES for a single-group plot.</li>
     * <li>The data group legend labels and fill colors are extracted from the 'barseries' object via {@link
-    * HGObject#getDataGroupLabels()} and {@link HGObject#getDataGroupFillColors(int[], int[])}. Since fill colors
+    * HGObject#getDataGroupLabels()} and {@link HGObject#getDataGroupFillColors}. Since fill colors
     * may be specified as direct or scaled color map indices, figure color map information is supplied to the latter
     * method.</li>
     * </ul>
@@ -3972,7 +4194,7 @@ public class MatlabUtilities
       boolean isGrp = (prop == null) || "grouped".equals(prop);
       prop = hgBar.getProperty("Horizontal");
       boolean isVert = (prop == null) || "off".equals(prop);
-      BarPlotNode.DisplayMode dispMode = null;
+      BarPlotNode.DisplayMode dispMode;
       if(isGrp) dispMode = (isVert) ? BarPlotNode.DisplayMode.VGROUP : BarPlotNode.DisplayMode.HGROUP;
       else dispMode = (isVert) ? BarPlotNode.DisplayMode.VSTACK : BarPlotNode.DisplayMode.HSTACK;
       
@@ -3987,7 +4209,7 @@ public class MatlabUtilities
       prop = hgBar.getProperty("BaseValue");
       if(prop != null && prop.getClass().equals(Double.class))
       {
-         baseline = ((Double) prop).doubleValue();
+         baseline = (Double) prop;
          if(!Utilities.isWellDefined(baseline)) baseline = 0;
       }
       
@@ -3997,7 +4219,7 @@ public class MatlabUtilities
       prop = hgBar.getProperty(HGObject.ACTUALBW_PROP);
       if(prop != null && prop.getClass().equals(Double.class))
       {
-         double w = ((Double) prop).doubleValue();
+         double w = (Double) prop;
          
          // examine X coordinates for the minimum interval in X. The X-coordinates must be monotonically increasing
          // or decreasing. If not, then we cannot calculate a relative bar width and we stick with the default 80%.
@@ -4046,8 +4268,8 @@ public class MatlabUtilities
             else if(nx > 1 && nGrps >= 1)
             {
                double extent = minDX;
-               if(isGrp && nGrps >= 2 && nGrps < 6) extent = minDX * 2 * nGrps / (2*nGrps + 3);
-               else if(isGrp && nGrps >= 6) extent = 0.8 * minDX;
+               if(nGrps >= 2 && nGrps < 6) extent = minDX * 2 * nGrps / (2*nGrps + 3);
+               else if(nGrps >= 6) extent = 0.8 * minDX;
                
                if(extent < 0) extent = -extent;
                barWidth = (int) (100.0 * w * nGrps / extent + 0.5);
@@ -4063,7 +4285,7 @@ public class MatlabUtilities
          prop = hgBar.getProperty("BarWidth");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            barWidth = (int) (100.0 * ((Double) prop).doubleValue() + 0.5);
+            barWidth = (int) (100.0 * (Double) prop + 0.5);
             barWidth = Utilities.rangeRestrict(BarPlotNode.MINRELBW, BarPlotNode.MAXRELBW, barWidth);
          }
          else
@@ -4087,7 +4309,7 @@ public class MatlabUtilities
          prop = hgBar.getProperty("EdgeAlpha");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            int alpha = Utilities.rangeRestrict(0, 255, (int) (255.0 * ((Double) prop).doubleValue()));
+            int alpha = Utilities.rangeRestrict(0, 255, (int) (255.0 * (Double) prop));
             if(alpha < 255) strokeC = new Color(strokeC.getRed(), strokeC.getGreen(), strokeC.getBlue(), alpha);
          }
       }
@@ -4185,7 +4407,7 @@ public class MatlabUtilities
       if(!isBarPlot)
       {
          Object prop = hgBase.getProperty("BaseValue");
-         if(prop != null && prop.getClass().equals(Double.class)) baseValue = ((Double) prop).doubleValue(); 
+         if(prop != null && prop.getClass().equals(Double.class)) baseValue = (Double) prop;
       }
       else for(int i=0; i<graph.getChildCount(); i++)
       {
@@ -4257,11 +4479,11 @@ public class MatlabUtilities
     * <li>B.EdgeColor, B.EdgeAlpha, B.LineStyle, and B.LineWidth define how the area chart is stroked. All bands are 
     * stroked in the same fashion. Unlike Matlab, FC does not support different strokes for different bands.</li>
     * <li>The underlying data is already coalesced in B; the MSET or MSERIES source is obtained from it directly via
-    * {@link HGObject#extractDataSetFromPlotObject(String, boolean)}. If a B is a singleton 'areaseries', the data 
+    * {@link HGObject#extractDataSetFromPlotObject}. If a B is a singleton 'areaseries', the data
     * source will be a PTSET or SERIES.</li>
     * <li>The legend label and fill color for each band in the area chart are collected as the related 'areaseries'
     * objects are coalesced into one. They are obtained directly from the coalesced object via {@link 
-    * HGObject#getDataGroupLabels()} and {@link HGObject#getDataGroupFillColors(int[], int[])}. Since fill colors
+    * HGObject#getDataGroupLabels()} and {@link HGObject#getDataGroupFillColors}. Since fill colors
     * may be specified as direct or scaled color map indices, figure color map information is supplied to the latter
     * method.</li>
     * </ul>
@@ -4289,7 +4511,7 @@ public class MatlabUtilities
       Object prop = hgArea.getProperty("BaseValue");
       if(prop != null && prop.getClass().equals(Double.class))
       {
-         baseline = ((Double) prop).doubleValue();
+         baseline = (Double) prop;
          if(!Utilities.isWellDefined(baseline)) baseline = 0;
       }
       else if(prop == null)
@@ -4317,7 +4539,7 @@ public class MatlabUtilities
          prop = hgArea.getProperty("EdgeAlpha");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            int alpha = Utilities.rangeRestrict(0, 255, (int) (255.0 * ((Double) prop).doubleValue()));
+            int alpha = Utilities.rangeRestrict(0, 255, (int) (255.0 * (Double) prop));
             if(alpha < 255) strokeC = new Color(strokeC.getRed(), strokeC.getGreen(), strokeC.getBlue(), alpha);
          }
       }
@@ -4485,7 +4707,7 @@ public class MatlabUtilities
       {
          String title = processSpecialCharacters(nameProp.toString().trim());
          trace.setTitle(title);
-         if(title.length() > 0) showInLegend = true;
+         if(!title.isEmpty()) showInLegend = true;
       }
 
       // if HG "DisplayName" not set, we check for an undocumented property: the field 'legend_texthandle' in the HG
@@ -4544,10 +4766,9 @@ public class MatlabUtilities
       // process "FaceColor" to determine if we need to look at the other properties: implicit ==> use black as the fill
       // color; "none" ==> no fill (fill color is transparent); ColorSpec ==> use that color as the fill color; 
       // "flat" ==> need to look at the other two properties; "interp" ==> not supported; map to "flat".
-      Color fillC = null;
       prop = patchObj.getProperty("FaceColor");
-      fillC = (prop == null) ? Color.BLACK : processColorSpec(prop);
-      if(fillC == null && !"none".equals(prop) && ("flat".equals(prop) || "interp".equals(prop)))
+      Color fillC = (prop == null) ? Color.BLACK : processColorSpec(prop);
+      if(fillC == null && ("flat".equals(prop) || "interp".equals(prop)))
       {
          // get the "FaceVertexCData" property. We just want to get one color out of it, since we don't support 
          // different colors per face or per vertex. It may be indexed or true color, which complicates things. If it
@@ -4602,7 +4823,7 @@ public class MatlabUtilities
                      colorIdx = 1;
                   else
                   {
-                     double d = ((double) (colorIdx - 1)) / ((double) (cLim[1] - cLim[0]));
+                     double d = ((double) (colorIdx - 1)) / (cLim[1] - cLim[0]);
                      d *= matCM.length;
                      colorIdx = Utilities.rangeRestrict(1, matCM.length, ((int) d) + 1);
                   }
@@ -4626,7 +4847,7 @@ public class MatlabUtilities
          prop = patchObj.getProperty("FaceAlpha");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            double alpha = ((Double)prop).doubleValue();
+            double alpha = (Double) prop;
             if(alpha < 1.0)
             {
                int iAlpha = Utilities.rangeRestrict(0, 255, (int) (255 *alpha));
@@ -4726,7 +4947,7 @@ public class MatlabUtilities
       {
          String title = processSpecialCharacters(nameProp.toString().trim());
          trace.setTitle(title);
-         if(title.length() > 0) showInLegend = true;
+         if(!title.isEmpty()) showInLegend = true;
       }
 
       // if HG "DisplayName" not set, we check for an undocumented property: the field 'legend_texthandle' in the HG
@@ -4756,7 +4977,7 @@ public class MatlabUtilities
       boolean isSeries = Utilities.isWellDefined(dx) && (n >= 6);
       for(int i=2; isSeries && i<n/2; i++) isSeries = (dx == (vertices[i][0] - vertices[i-1][0]));
       
-      DataSet ds = null;
+      DataSet ds;
       if(isSeries)
       {
          float[] params = new float[] { (float) dx, (float) vertices[0][0] };
@@ -4818,9 +5039,8 @@ public class MatlabUtilities
       // HG "FaceColor" sets the error band fill color. implicit ==> use black as the fill color; "none" ==> no fill 
       // transparent fill color); ColorSpec ==> use that color as the fill color; "flat", "interp" ==> not supported; 
       // use black.
-      Color fillC = null;
       prop = patchObj.getProperty("FaceColor");
-      fillC = (prop == null) ? Color.BLACK : processColorSpec(prop);
+      Color fillC = (prop == null) ? Color.BLACK : processColorSpec(prop);
       if(fillC == null) fillC = "none".equals(prop) ? new Color(0,0,0,0) : Color.BLACK;
       
       // HG "FaceAlpha" sets the alpha component for the fill color between 0 and 1. The default is 1. "flat" and 
@@ -4830,7 +5050,7 @@ public class MatlabUtilities
          prop = patchObj.getProperty("FaceAlpha");
          if(prop != null && prop.getClass().equals(Double.class))
          {
-            double alpha = ((Double)prop).doubleValue();
+            double alpha = (Double) prop;
             if(alpha < 1.0)
             {
                int iAlpha = Utilities.rangeRestrict(0, 255, (int) (255 *alpha));
@@ -5066,7 +5286,7 @@ public class MatlabUtilities
     * 
     * @param graph The 2D graph container node in the FypML figure being constructed. This could be an instance of
     * {@link GraphNode} or {@link PolarPlotNode}. Not supported for 3D graphs.
-    * @param hgHistogram The HG "histogram" object that defines the histogram in Matlab.
+    * @param hgHist The HG "histogram" object that defines the histogram in Matlab.
     * @param isTruePolarAxes True if the "histogram" is a child of a Matlab "polaraxes" object. In this case, the data
     * is already in polar coordinates, with the theta coordinate in radians. <b>In addition, the "BinEdges" and 
     * "BinWidth" properties will be in radians. Both the data and these properties are converted to degrees IAW the
@@ -5220,10 +5440,10 @@ public class MatlabUtilities
     *    data. Note that, in Matlab, the surface coloring need not depend on Z, but FypML's surface only supports using
     *    the Z-coordinat data. Thus, the FypML surface could look very different from the Matlab version!</li>
     *    <li><i>XData, YData, ZData</i>. These determine the contents of the FypML surface node's <i>xyzimg</i> data
-    *    set. For details, see {@link HGObject#extractDataSetFromPlotObject()}.</li>
+    *    set. For details, see {@link HGObject#extractDataSetFromPlotObject}.</li>
     * </ul>
     * 
-    * @param graph The parent 3D graph node in the FypML figure being constructed.
+    * @param g3 The parent 3D graph node in the FypML figure being constructed.
     * @param hgSurface The HG "graph3d.surfaceplot" object defining the 3D surface's properties -- including raw data.
     */
    private static void add3DSurfaceToGraph(Graph3DNode g3, HGObject hgSurface)
@@ -5294,7 +5514,7 @@ public class MatlabUtilities
     *    <li><i>XData, YData, ZData</i>. These contain the bar vertices. During processing of the HG object tree, these
     *    are analyzed to confirm the "surface" renders a set of 3D bars, and the {X,Y,Z} data points represented by the
     *    bars (one point per bar) are calculated. That set of points form the 3D scatter plot node's <i>xyzset</i>
-    *    data source. For details, see {@link HGObject#extractDataSetFromPlotObject()}.</li>
+    *    data source. For details, see {@link HGObject#extractDataSetFromPlotObject}.</li>
     *    <li>The bar size and Z base plane coordinate, which are calculated during processing of the "surface" bar
     *    vertex data, are also key properties of the 3D scatter plot. The bar size is in native units in the Matlab
     *    case, whereas it is specified as a %-age of the 3D X-axis extent in FypML case; thus, the bar size may not be
@@ -5302,7 +5522,7 @@ public class MatlabUtilities
     * </ul>
     * </p>
     * 
-    * @param graph The parent 3D graph node in the FypML figure being constructed.
+    * @param g3 The parent 3D graph node in the FypML figure being constructed.
     * @param hgSurface The HG "surface" object defining the 3D bar plot's properties.
     */
    private static void add3DBarPlotToGraph(Graph3DNode g3, HGObject hgSurface)
@@ -5406,7 +5626,9 @@ public class MatlabUtilities
       {
          // special case: a line segment with no markers and LineStyle="none" is not drawn at all. So we skip it.
          if(sp == null) return;
-         
+
+         if(xData == null || xData.length < 2 || yData == null || yData.length < 2) return;
+
          if(!graph.getGraphicModel().insertNode(graph, FGNodeType.LINE, -1))
             throw new NeverOccursException("Failed to insert new line segment node into FypML 2D graph container.");
          
@@ -5488,31 +5710,65 @@ public class MatlabUtilities
       double markSzPts = 6;
       Object prop = lineObj.getProperty("MarkerSize");
       if(prop != null && prop.getClass().equals(Double.class))
-         markSzPts = ((Double) prop).doubleValue();
+         markSzPts = (Double) prop;
       boolean isPointMarker = false;
       if(markProp != null && (markProp.getClass().equals(String.class) || markProp.getClass().equals(Character.class)))
       {
          String s = markProp.toString();
-         if(s.equals("+")) mark = Marker.TEE;
-         else if(s.equals("o")) mark = Marker.CIRCLE;
-         else if(s.equals("*")) mark = Marker.STAR;
-         else if(s.equals(".")) 
+         switch(s)
          {
+         case "+":
+            mark = Marker.TEE;
+            break;
+         case "o":
+            mark = Marker.CIRCLE;
+            break;
+         case "*":
+            mark = Marker.STAR;
+            break;
+         case ".":
             mark = Marker.CIRCLE;
             markSzPts /= 3.0;
             isPointMarker = true;
+            break;
+         case "x":
+            mark = Marker.XHAIR;
+            break;
+         case "_":
+            mark = Marker.HLINETHRU;
+            break;
+         case "|":
+            mark = Marker.LINETHRU;
+            break;
+         case "square":
+         case "s":
+            mark = Marker.BOX;
+            break;
+         case "diamond":
+         case "d":
+            mark = Marker.DIAMOND;
+            break;
+         case "^":
+            mark = Marker.UPTRIANGLE;
+            break;
+         case "v":
+            mark = Marker.DOWNTRIANGLE;
+            break;
+         case ">":
+            mark = Marker.RIGHTTRIANGLE;
+            break;
+         case "<":
+            mark = Marker.LEFTTRIANGLE;
+            break;
+         case "pentagram":
+         case "p":
+            mark = Marker.PENTAGRAM;
+            break;
+         case "hexagram":
+         case "h":
+            mark = Marker.HEXAGRAM;
+            break;
          }
-         else if(s.equals("x")) mark = Marker.XHAIR;
-         else if(s.equals("_")) mark = Marker.HLINETHRU;
-         else if(s.equals("|")) mark = Marker.LINETHRU;
-         else if(s.equals("square") || s.equals("s")) mark = Marker.BOX;
-         else if(s.equals("diamond") || s.equals("d")) mark = Marker.DIAMOND;
-         else if(s.equals("^")) mark = Marker.UPTRIANGLE;
-         else if(s.equals("v")) mark = Marker.DOWNTRIANGLE;
-         else if(s.equals(">")) mark = Marker.RIGHTTRIANGLE;
-         else if(s.equals("<")) mark = Marker.LEFTTRIANGLE;
-         else if(s.equals("pentagram") || s.equals("p")) mark = Marker.PENTAGRAM;
-         else if(s.equals("hexagram") || s.equals("h")) mark = Marker.HEXAGRAM;         
       }
       if(mark == null)
          symbol.setSize(new Measure(0, Measure.Unit.PT));
@@ -5552,7 +5808,6 @@ public class MatlabUtilities
       // Matlab marker type was "point", that is mapped to a filled circle in FypML, and we force the fill color to
       // match the stroke color.
       prop = lineObj.getProperty("MarkerFaceColor");
-      c = null;
       if(isPointMarker)
          c = symbol.getStrokeColor();
       else if(prop == null)
@@ -5560,7 +5815,7 @@ public class MatlabUtilities
       else
       {
          c = processColorSpec(prop);
-         if(c == null && prop.getClass().equals(String.class) && "none".equals((String)prop))
+         if(c == null && prop.getClass().equals(String.class) && "none".equals(prop))
             c = Color.WHITE;
       }
       if(c != null) symbol.setFillColor(c);
@@ -5574,7 +5829,7 @@ public class MatlabUtilities
 
    /**
     * Append a text label to the graph as defined by a Matlab Handle Graphics "text" object.
-    * @param parent The parent 2D or 3D graph container in the FypML figure being constructed. It will be an instance of 
+    * @param graph The parent 2D or 3D graph container in the FypML figure being constructed. It will be an instance of
     * {@link GraphNode}, {@link PolarPlotNode}, or {@link Graph3DNode}.
     * @param hgAxes The HG "axes" or "polaraxes" begin converted to a FypML 2D or 3D graph.
     * @param textObj The HG "text" object defining the properties of the text label to be added to the graph.
@@ -5585,7 +5840,7 @@ public class MatlabUtilities
    {
       // HG "String" property: if this is implicit, null, or an empty string, then we don't add a text label at all.
       String labelStr = textObj.getTextStringProperty();
-      if(labelStr == null || labelStr.length() == 0) return;
+      if(labelStr == null || labelStr.isEmpty()) return;
       
       // process the string for TeX-encoded special characters
       labelStr = processSpecialCharacters(labelStr);
@@ -5629,31 +5884,34 @@ public class MatlabUtilities
       if(unitProp != null && unitProp.getClass().equals(String.class))
       {
          String unitStr = (String) unitProp;
-         if(unitStr.equals("normalized"))
+         switch(unitStr)
          {
+         case "normalized":
             unit = Measure.Unit.PCT;
             pos[0] *= 100.0;
             pos[1] *= 100.0;
-         }
-         else if(unitStr.equals("inches"))
+            break;
+         case "inches":
             unit = Measure.Unit.IN;
-         else if(unitStr.equals("centimeters"))
+            break;
+         case "centimeters":
             unit = Measure.Unit.CM;
-         else if(unitStr.equals("points"))
+            break;
+         case "points":
             unit = Measure.Unit.PT;
-         else if(unitStr.equals("pixels"))
-         {
+            break;
+         case "pixels":
             // assume dpi = 72 pixels/inch
             unit = Measure.Unit.IN;
             pos[0] /= 72.0;
             pos[1] /= 72.0;
-         }
-         else if(unitStr.equals("characters"))
-         {
+            break;
+         case "characters":
             // assume a default system font size of 12pt and that "x" character is about half that in width!
             unit = Measure.Unit.PT;
             pos[0] *= 6.0;
             pos[1] *= 6.0;
+            break;
          }
       }
       
@@ -5687,7 +5945,7 @@ public class MatlabUtilities
       Object rotProp = textObj.getProperty("Rotation");
       if(rotProp != null && rotProp.getClass().equals(Double.class))
       {
-         double rotDeg = ((Double) rotProp).doubleValue();
+         double rotDeg = (Double) rotProp;
          label.setRotate(rotDeg);
       }
       
@@ -5831,13 +6089,21 @@ public class MatlabUtilities
       if(unitsProp != null && unitsProp.getClass().equals(String.class))
       {
          String units = (String) unitsProp;
-         if(units.equals("normalized")) scaleFac = 0;
-         else if(units.equals("inches")) scaleFac = 1.0;
-         else if(units.equals("centimeters")) scaleFac = Measure.MM2IN * 10.0;
-         else
+         switch(units)
          {
+         case "normalized":
+            scaleFac = 0;
+            break;
+         case "inches":
+            scaleFac = 1.0;
+            break;
+         case "centimeters":
+            scaleFac = Measure.MM2IN * 10.0;
+            break;
+         default:
             // "pixels" and "characters" are not supported and map arbitrarily to "points"
             scaleFac = Measure.PT2IN;
+            break;
          }
       }
       if(scaleFac == 0)
@@ -5908,7 +6174,7 @@ public class MatlabUtilities
       int iAlpha = Utilities.rangeRestrict(0, 255, (int) (0.15*255));
       Object prop = hgPolar.getProperty("GridAlpha");
       if(prop != null && prop.getClass().equals(Double.class)) 
-         iAlpha = Utilities.rangeRestrict(0, 255, (int) (255 * ((Double) prop).doubleValue()));
+         iAlpha = Utilities.rangeRestrict(0, 255, (int) (255 * (Double) prop));
       Color thetaC = processColorSpec(hgPolar.getProperty("ThetaColor"));
       if(thetaC == null) thetaC = gridC;
       Color rC = processColorSpec(hgPolar.getProperty("RColor"));
@@ -5959,7 +6225,7 @@ public class MatlabUtilities
       // HG "ThetaTick": Set theta axis grid divisions accordingly. Must be a vector of increasing values. Default is 
       // [0 30 60 .. 360], which in FypML is a regularly spaced grid reprsented by the triplet [0 330 30]. If contents
       // of 'ThetaTick' are not regularly spaced, then we use it directly, setting the regular grid triplet to [0 0 0].
-      double[] divs = null; 
+      double[] divs;
       double[] ticks = HGObject.getDoubleVectorFromProperty(hgPolar.getProperty("ThetaTick"));
       if(ticks == null) divs = new double[] {0, 330, 30};
       else if(ticks.length == 0) divs = new double[] {0, 0, 0};
@@ -5990,7 +6256,7 @@ public class MatlabUtilities
             customLabels = (String[]) prop;
             for(int i=0; i<customLabels.length; i++) customLabels[i] = processSpecialCharacters(customLabels[i]);
          }
-         else if(prop != null && prop.getClass().equals(String.class) && ((String)prop).length() > 0)
+         else if(prop != null && prop.getClass().equals(String.class) && !((String) prop).isEmpty())
          {
             // there's just one custom label, which will get reused as needed!
             customLabels = new String[1];
@@ -6011,13 +6277,12 @@ public class MatlabUtilities
       refAngle = 80;
       prop = hgPolar.getProperty("RAxisLocation");
       if(prop != null && prop.getClass().equals(Double.class)) 
-         refAngle = Utilities.rangeRestrict(-359, 359, (int) (((Double)prop).doubleValue()*convert2Deg + 0.5));
+         refAngle = Utilities.rangeRestrict(-359, 359, (int) ((Double) prop *convert2Deg + 0.5));
       rAxis.setReferenceAngle(refAngle);
 
       // HG "RTick": Set radial axis grid divisions accordingly. Must be a vector of increasing values. Default is 
       // [0 0.2 .. 1], which in FypML is a regularly spaced grid reprsented by the triplet [0 1 0.2]. If contents
       // of 'RTick' are not regularly spaced, then we use it directly, setting the regular grid triplet to [0 0 0].
-      divs = null; 
       ticks = HGObject.getDoubleVectorFromProperty(hgPolar.getProperty("RTick"));
       if(ticks == null) divs = new double[] {0, 1, 0.2};
       else if(ticks.length == 0) divs = new double[] {0, 0, 0};
@@ -6046,7 +6311,7 @@ public class MatlabUtilities
             customLabels = (String[]) prop;
             for(int i=0; i<customLabels.length; i++) customLabels[i] = processSpecialCharacters(customLabels[i]);
          }
-         else if(prop != null && prop.getClass().equals(String.class) && ((String)prop).length() > 0)
+         else if(prop != null && prop.getClass().equals(String.class) && !((String) prop).isEmpty())
          {
             // there's just one custom label, which will get reused as needed!
             customLabels = new String[1];
@@ -6060,7 +6325,7 @@ public class MatlabUtilities
       // are inherited from the polar plot, but the HG properties "TitleFontWeight" and "TitleFontSizeMultiplier" can 
       // affect them. 
       String title = HGObject.getStringValuedProperty(hgPolar, "Title_Str");
-      if(title != null && title.length() > 0)
+      if(title != null && !title.isEmpty())
       {
          title = processSpecialCharacters(title);
          pgraph.setTitle(title);
@@ -6084,10 +6349,10 @@ public class MatlabUtilities
             // HG "TitleFontMultiplier": Scale title's font size WRT the graph's font size
             double scale = 1.1;
             prop = hgPolar.getProperty("TitleFontSizeMultiplier");
-            if(prop != null && prop.getClass().equals(Double.class)) scale = ((Double)prop).doubleValue();
+            if(prop != null && prop.getClass().equals(Double.class)) scale = (Double) prop;
             if(scale > 0)
             {
-               int sz = (int) (pgraph.getFontSizeInPoints().intValue() * scale + 0.5);
+               int sz = (int) (pgraph.getFontSizeInPoints() * scale + 0.5);
                label.setFontSizeInPoints(sz);
             }
             
@@ -6103,7 +6368,7 @@ public class MatlabUtilities
       
       // HG "CLim" property sets the range of the color axis. The default is [0 1].
       double[] cLim = HGObject.getDoubleVectorFromProperty(hgPolar.getProperty("CLim"));
-      if(cLim != null && Utilities.isWellDefined(cLim))
+      if(Utilities.isWellDefined(cLim))
       {
          colorBar.setStart(Utilities.limitSignificantDigits(cLim[0], 6));
          colorBar.setEnd(Utilities.limitSignificantDigits(cLim[1], 6));
@@ -6119,14 +6384,21 @@ public class MatlabUtilities
       for(int i=0; i<hgPolar.getChildCount(); i++)
       {
          HGObject hgChild = hgPolar.getChildAt(i);
-         if(hgChild.getType().equals("graph2d.lineseries"))
+         switch(hgChild.getType())
+         {
+         case "graph2d.lineseries":
             addDataTraceToGraph(pgraph, hgChild, true);
-         else if(hgChild.getType().equals("specgraph.scattergroup"))
+            break;
+         case "specgraph.scattergroup":
             addScatterGroupToGraph(pgraph, hgChild, true);
-         else if(hgChild.getType().equals("histogram"))
-            addHistogramToGraph(pgraph, hgChild, true); 
-         else if(hgChild.getType().equals("text"))
+            break;
+         case "histogram":
+            addHistogramToGraph(pgraph, hgChild, true);
+            break;
+         case "text":
             addTextLabelToGraph(pgraph, hgPolar, hgChild, false);
+            break;
+         }
       }
 
       // if a HG "scribe.legend" or "scribe.colorbar" object is attached to the "polaraxes", then configure the FypML
@@ -6274,119 +6546,119 @@ public class MatlabUtilities
     * not available in Matlab, it is mapped to a question mark. NOTE that some code names overlap: "o" and "otimes", 
     * "t" and "tau" or "theta", "n" and "ni" or "nu".
     */
-   private static HashMap<String, Character> tex2Unicode = new HashMap<String, Character>();
+   private static final HashMap<String, Character> tex2Unicode = new HashMap<>();
    
    static 
    {
       // each TeX special character code is mapped to its Unicode equivalent. If any Matlab-supported TeX character
       // is not available in FypML, it is replaced by a question mark.
-      tex2Unicode.put("alpha", new Character('\u03b1'));
-      tex2Unicode.put("angle", new Character('\u2220'));
-      tex2Unicode.put("ast", new Character('\u002a'));
-      tex2Unicode.put("beta", new Character('\u03b2'));
-      tex2Unicode.put("gamma", new Character('\u03b3'));
-      tex2Unicode.put("delta", new Character('\u03b4'));
-      tex2Unicode.put("epsilon", new Character('\u03b5'));
-      tex2Unicode.put("zeta", new Character('\u03b6'));
-      tex2Unicode.put("eta", new Character('\u03b7'));
-      tex2Unicode.put("theta", new Character('\u03b8'));
-      tex2Unicode.put("vartheta", new Character('\u03d1'));
-      tex2Unicode.put("iota", new Character('\u03b9'));
-      tex2Unicode.put("kappa", new Character('\u03ba'));
-      tex2Unicode.put("lambda", new Character('\u03bb'));
-      tex2Unicode.put("mu", new Character('\u03bc'));
-      tex2Unicode.put("nu", new Character('\u03bd'));
-      tex2Unicode.put("xi", new Character('\u03be'));
-      tex2Unicode.put("pi", new Character('\u03c0'));
-      tex2Unicode.put("rho", new Character('\u03c1'));
-      tex2Unicode.put("sigma", new Character('\u03c3'));
-      tex2Unicode.put("varsigma", new Character('\u03c2'));
-      tex2Unicode.put("tau", new Character('\u03c4'));
-      tex2Unicode.put("equiv", new Character('\u2261'));
-      tex2Unicode.put("Im", new Character('\u2111'));
-      tex2Unicode.put("otimes", new Character('\u2297'));
-      tex2Unicode.put("cap", new Character('\u2229'));
-      tex2Unicode.put("supset", new Character('\u2283'));
-      tex2Unicode.put("int", new Character('\u222b'));
-      tex2Unicode.put("rfloor", new Character('?'));
-      tex2Unicode.put("lfloor", new Character('?'));
-      tex2Unicode.put("perp", new Character('\u22a5'));
-      tex2Unicode.put("wedge", new Character('\u2227'));
-      tex2Unicode.put("rceil", new Character('?'));
-      tex2Unicode.put("vee", new Character('\u2228'));
+      tex2Unicode.put("alpha", '\u03b1');
+      tex2Unicode.put("angle", '\u2220');
+      tex2Unicode.put("ast", '\u002a');
+      tex2Unicode.put("beta", '\u03b2');
+      tex2Unicode.put("gamma", '\u03b3');
+      tex2Unicode.put("delta", '\u03b4');
+      tex2Unicode.put("epsilon", '\u03b5');
+      tex2Unicode.put("zeta", '\u03b6');
+      tex2Unicode.put("eta", '\u03b7');
+      tex2Unicode.put("theta", '\u03b8');
+      tex2Unicode.put("vartheta", '\u03d1');
+      tex2Unicode.put("iota", '\u03b9');
+      tex2Unicode.put("kappa", '\u03ba');
+      tex2Unicode.put("lambda", '\u03bb');
+      tex2Unicode.put("mu", '\u03bc');
+      tex2Unicode.put("nu", '\u03bd');
+      tex2Unicode.put("xi", '\u03be');
+      tex2Unicode.put("pi", '\u03c0');
+      tex2Unicode.put("rho", '\u03c1');
+      tex2Unicode.put("sigma", '\u03c3');
+      tex2Unicode.put("varsigma", '\u03c2');
+      tex2Unicode.put("tau", '\u03c4');
+      tex2Unicode.put("equiv", '\u2261');
+      tex2Unicode.put("Im", '\u2111');
+      tex2Unicode.put("otimes", '\u2297');
+      tex2Unicode.put("cap", '\u2229');
+      tex2Unicode.put("supset", '\u2283');
+      tex2Unicode.put("int", '\u222b');
+      tex2Unicode.put("rfloor", '?');
+      tex2Unicode.put("lfloor", '?');
+      tex2Unicode.put("perp", '\u22a5');
+      tex2Unicode.put("wedge", '\u2227');
+      tex2Unicode.put("rceil", '?');
+      tex2Unicode.put("vee", '\u2228');
 
-      tex2Unicode.put("upsilon", new Character('\u03c5'));
-      tex2Unicode.put("phi", new Character('\u03c6'));
-      tex2Unicode.put("chi", new Character('\u03c7'));
-      tex2Unicode.put("psi", new Character('\u03c8'));
-      tex2Unicode.put("omega", new Character('\u03c9'));
-      tex2Unicode.put("Gamma", new Character('\u0393'));
-      tex2Unicode.put("Delta", new Character('\u0394'));
-      tex2Unicode.put("Theta", new Character('\u0398'));
-      tex2Unicode.put("Lambda", new Character('\u039b'));
-      tex2Unicode.put("Xi", new Character('\u039e'));
-      tex2Unicode.put("Pi", new Character('\u03a0'));
-      tex2Unicode.put("Sigma", new Character('\u03a3'));
-      tex2Unicode.put("Upsilon", new Character('\u03a5'));
-      tex2Unicode.put("Phi", new Character('\u03a6'));
-      tex2Unicode.put("Psi", new Character('\u03a8'));
-      tex2Unicode.put("Omega", new Character('\u03a9'));
-      tex2Unicode.put("forall", new Character('\u2200'));
-      tex2Unicode.put("exists", new Character('\u2203'));
-      tex2Unicode.put("ni", new Character('\u220b'));
-      tex2Unicode.put("cong", new Character('\u2245'));
-      tex2Unicode.put("approx", new Character('\u2248'));
-      tex2Unicode.put("Re", new Character('\u211c'));
-      tex2Unicode.put("oplus", new Character('\u2295'));
-      tex2Unicode.put("cup", new Character('\u222a'));
-      tex2Unicode.put("subseteq", new Character('\u2286'));
-      tex2Unicode.put("in", new Character('\u2208'));
-      tex2Unicode.put("lceil", new Character('?'));
-      tex2Unicode.put("cdot", new Character('\u00b7'));
-      tex2Unicode.put("neg", new Character('\u00ac'));
-      tex2Unicode.put("times", new Character('\u00d7'));
-      tex2Unicode.put("surd", new Character('\u221a'));
-      tex2Unicode.put("warpi", new Character('\u03d6'));
-      tex2Unicode.put("rangle", new Character('?'));
-      tex2Unicode.put("langle", new Character('?'));
+      tex2Unicode.put("upsilon", '\u03c5');
+      tex2Unicode.put("phi", '\u03c6');
+      tex2Unicode.put("chi", '\u03c7');
+      tex2Unicode.put("psi", '\u03c8');
+      tex2Unicode.put("omega", '\u03c9');
+      tex2Unicode.put("Gamma", '\u0393');
+      tex2Unicode.put("Delta", '\u0394');
+      tex2Unicode.put("Theta", '\u0398');
+      tex2Unicode.put("Lambda", '\u039b');
+      tex2Unicode.put("Xi", '\u039e');
+      tex2Unicode.put("Pi", '\u03a0');
+      tex2Unicode.put("Sigma", '\u03a3');
+      tex2Unicode.put("Upsilon", '\u03a5');
+      tex2Unicode.put("Phi", '\u03a6');
+      tex2Unicode.put("Psi", '\u03a8');
+      tex2Unicode.put("Omega", '\u03a9');
+      tex2Unicode.put("forall", '\u2200');
+      tex2Unicode.put("exists", '\u2203');
+      tex2Unicode.put("ni", '\u220b');
+      tex2Unicode.put("cong", '\u2245');
+      tex2Unicode.put("approx", '\u2248');
+      tex2Unicode.put("Re", '\u211c');
+      tex2Unicode.put("oplus", '\u2295');
+      tex2Unicode.put("cup", '\u222a');
+      tex2Unicode.put("subseteq", '\u2286');
+      tex2Unicode.put("in", '\u2208');
+      tex2Unicode.put("lceil", '?');
+      tex2Unicode.put("cdot", '\u00b7');
+      tex2Unicode.put("neg", '\u00ac');
+      tex2Unicode.put("times", '\u00d7');
+      tex2Unicode.put("surd", '\u221a');
+      tex2Unicode.put("warpi", '\u03d6');
+      tex2Unicode.put("rangle", '?');
+      tex2Unicode.put("langle", '?');
 
-      tex2Unicode.put("sim", new Character('\u007e'));
-      tex2Unicode.put("leq", new Character('\u2264'));
-      tex2Unicode.put("infty", new Character('\u221e'));
-      tex2Unicode.put("clubsuit", new Character('\u2663'));
-      tex2Unicode.put("diamondsuit", new Character('\u2666'));
-      tex2Unicode.put("heartsuit", new Character('\u2665'));
-      tex2Unicode.put("spadesuit", new Character('\u2660'));
-      tex2Unicode.put("leftrightarrow", new Character('\u2194'));
-      tex2Unicode.put("leftarrow", new Character('\u2190'));
-      tex2Unicode.put("Leftarrow", new Character('\u21d0'));
-      tex2Unicode.put("uparrow", new Character('\u2191'));
-      tex2Unicode.put("rightarrow", new Character('\u2192'));
-      tex2Unicode.put("Rightarrow", new Character('\u21d2'));
-      tex2Unicode.put("downarrow", new Character('\u2193'));
-      tex2Unicode.put("circ", new Character('\u00ba'));
-      tex2Unicode.put("pm", new Character('\u00b1'));
-      tex2Unicode.put("geq", new Character('\u2265'));
-      tex2Unicode.put("propto", new Character('\u221d'));
-      tex2Unicode.put("partial", new Character('\u2202'));
-      tex2Unicode.put("bullet", new Character('\u2022'));
-      tex2Unicode.put("div", new Character('\u00f7'));
-      tex2Unicode.put("neq", new Character('\u2260'));
-      tex2Unicode.put("aleph", new Character('\u2135'));
-      tex2Unicode.put("wp", new Character('\u2118'));
-      tex2Unicode.put("oslash", new Character('\u2205'));
-      tex2Unicode.put("supseteq", new Character('\u2287'));
-      tex2Unicode.put("subset", new Character('\u2282'));
-      tex2Unicode.put("o", new Character('\u03bf'));
-      tex2Unicode.put("nabla", new Character('\u2207'));
-      tex2Unicode.put("ldots", new Character('\u2026'));
-      tex2Unicode.put("prime", new Character('\u2032'));
-      tex2Unicode.put("0", new Character('\u2205'));
-      tex2Unicode.put("mid", new Character('\u007c'));
-      tex2Unicode.put("copyright", new Character('\u00a9'));
+      tex2Unicode.put("sim", '\u007e');
+      tex2Unicode.put("leq", '\u2264');
+      tex2Unicode.put("infty", '\u221e');
+      tex2Unicode.put("clubsuit", '\u2663');
+      tex2Unicode.put("diamondsuit", '\u2666');
+      tex2Unicode.put("heartsuit", '\u2665');
+      tex2Unicode.put("spadesuit", '\u2660');
+      tex2Unicode.put("leftrightarrow", '\u2194');
+      tex2Unicode.put("leftarrow", '\u2190');
+      tex2Unicode.put("Leftarrow", '\u21d0');
+      tex2Unicode.put("uparrow", '\u2191');
+      tex2Unicode.put("rightarrow", '\u2192');
+      tex2Unicode.put("Rightarrow", '\u21d2');
+      tex2Unicode.put("downarrow", '\u2193');
+      tex2Unicode.put("circ", '\u00ba');
+      tex2Unicode.put("pm", '\u00b1');
+      tex2Unicode.put("geq", '\u2265');
+      tex2Unicode.put("propto", '\u221d');
+      tex2Unicode.put("partial", '\u2202');
+      tex2Unicode.put("bullet", '\u2022');
+      tex2Unicode.put("div", '\u00f7');
+      tex2Unicode.put("neq", '\u2260');
+      tex2Unicode.put("aleph", '\u2135');
+      tex2Unicode.put("wp", '\u2118');
+      tex2Unicode.put("oslash", '\u2205');
+      tex2Unicode.put("supseteq", '\u2287');
+      tex2Unicode.put("subset", '\u2282');
+      tex2Unicode.put("o", '\u03bf');
+      tex2Unicode.put("nabla", '\u2207');
+      tex2Unicode.put("ldots", '\u2026');
+      tex2Unicode.put("prime", '\u2032');
+      tex2Unicode.put("0", '\u2205');
+      tex2Unicode.put("mid", '\u007c');
+      tex2Unicode.put("copyright", '\u00a9');
       
-      tex2Unicode.put("t", new Character('\t'));
-      tex2Unicode.put("n", new Character('\n'));
+      tex2Unicode.put("t", '\t');
+      tex2Unicode.put("n", '\n');
    }
    
    /** Matlab's seven default plot colors, in the default color order (as of R2014b). */

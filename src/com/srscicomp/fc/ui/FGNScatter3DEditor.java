@@ -31,6 +31,7 @@ import com.srscicomp.fc.fig.FGNodeType;
 import com.srscicomp.fc.fig.FGraphicNode;
 import com.srscicomp.fc.fig.Graph3DNode.Side;
 import com.srscicomp.fc.fig.Scatter3DNode;
+import com.srscicomp.fc.fig.SymbolNode;
 import com.srscicomp.fc.uibase.StyledTextEditor;
 import com.srscicomp.fc.uibase.FCIcons;
 
@@ -59,7 +60,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNScatter3DEditor extends FGNEditor implements ActionListener, PropertyChangeListener, TabStripModel
 {
    /** Construct the scatter plot node properties editor. */
@@ -82,7 +82,7 @@ class FGNScatter3DEditor extends FGNEditor implements ActionListener, PropertyCh
 
       JLabel modeLabel = new JLabel("Display Mode ");
       add(modeLabel);
-      modeCombo = new JComboBox<Scatter3DNode.DisplayMode>(Scatter3DNode.DisplayMode.values());
+      modeCombo = new JComboBox<>(Scatter3DNode.DisplayMode.values());
       modeCombo.addActionListener(this);
       add(modeCombo);
       
@@ -488,7 +488,7 @@ class FGNScatter3DEditor extends FGNEditor implements ActionListener, PropertyCh
    private JPanel tabContent = null;
    
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
    /** 
     * Notifies any change listeners that the list of tabs has changed in some way -- including the identity of the 
@@ -506,7 +506,7 @@ class FGNScatter3DEditor extends FGNEditor implements ActionListener, PropertyCh
    private Scatter3DNode getScatter3DNode() { return((Scatter3DNode) getEditedNode()); }
    
    /** When checked, an entry for the 3D scatter plot is included in parent graph's automated legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** The custom widget within which the 3D scatter plot's title (which may contain attributed text) is edited.  */
    private StyledTextEditor titleEditor = null;

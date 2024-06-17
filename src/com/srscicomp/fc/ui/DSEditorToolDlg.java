@@ -5,17 +5,13 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.Window;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.datatransfer.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -156,7 +152,8 @@ import com.srscicomp.fc.uibase.WrapLayout;
  * 
  * <h2>Text mode</h2>
  * <p>Data is exposed in a {@link JTextArea}. The raw data is converted to and from plain text form via the methods 
- * {@link DataSet#toPlainText()} and {@link DataSet#fromPlainText()}. Each line in the text area is analogous to a 
+ * {@link DataSet#toPlainText()} and {@link DataSet#fromPlainText(String, StringBuffer)}. Each line in the text area is
+ * analogous to a
  * single table row in the tabular mode. Whenever any change is made to the text area, the resulting content may no 
  * longer be parsed as a valid data matrix. Thus, upon detecting a change, <i>Apply</i> and <i>Revert</i> buttons in an 
  * adjacent tool bar are enabled so that the user can apply the changes made to the data set or discard them and revert
@@ -178,7 +175,8 @@ import com.srscicomp.fc.uibase.WrapLayout;
  * The dialog can be repositioned and resized by the user so that it does not overlap with the container -- so you can
  * switch back and forth between the two.
  * <ul>
- * <li>To raise the dialog, call {@link #editDataFor()}, passing the data presentation node {@link FGNPlottableData}
+ * <li>To raise the dialog, call {@link #editDataFor(FGNPlottableData, JComponent)}, passing the data presentation node
+ * {@link FGNPlottableData}
  * containing the data set to be displayed/edited. On the first invocation the singleton dialog is created, using the
  * top-level ancestor of the passed-in component as the dialog's owner. This ensures that the data set editor dialog
  * will behave correctly whether the {@link FigComposer} component is installed in a modal dialog (in the DataNav 
@@ -186,11 +184,12 @@ import com.srscicomp.fc.uibase.WrapLayout;
  * <li>Once raised, the dialog sets a "sticky bit" that remains set until the user explicitly closes the dialog via the
  * <i>Cancel</i> button or the close button in the dialog title bar.</li>
  * <li>Whenever the identity of the selected graphic node changes in {@link FigComposer}, message the singleton dialog
- * via {@link #onNodeSelected()}. If the selected node is NOT a data presentation node, the dialog is unloaded and
+ * via {@link #onNodeSelected(FGraphicNode)}. If the selected node is NOT a data presentation node, the dialog is
+ * unloaded and
  * hidden. If it is a data presentation node and the dialog is currently hidden, it will be raised ONLY if the "sticky
  * bit" is set. The idea here is to ensure that the dialog appears only if the user has explicitly requested it. Once
  * the user closes the dialog, the sticky bit is reset and the dialog won't appear again until explicitly raised via
- * {@link #editDataFor()}.</li>
+ * {@link #editDataFor(FGNPlottableData, JComponent)}.</li>
  * <li>Whenever the dialog is unloaded, the data set will be updated (silently) IF there are unsaved changes.</li>
  * <li>If the data presentation node containing the data set on display is changed in any way, notify the singleton
  * dialog via {@link #onNodeChanged(FGraphicNode)}. If the data set itself has changed, the dialog will reload itself
@@ -239,8 +238,8 @@ class DSEditorToolDlg extends JDialog
     * <ul>
     * <li>If the selected node is not a data presentation node, the dialog is always hidden.</li>
     * <li>If the selected node is a data presentation node, the dialog is raised IF the "sticky bit" is set. Else it
-    * remains hidden. The user must take action to raise it, and {@link #editDataFor()} must be invoked to explicitly
-    * raise the dialog (and set the sticky bit).</li>
+    * remains hidden. The user must take action to raise it, and {@link #editDataFor(FGNPlottableData, JComponent)}
+    * must be invoked to explicitly raise the dialog (and set the sticky bit).</li>
     * <li>If the dialog is already raised when this method is invoked and the data set displayed has been changed, 
     * those changes are saved before loading the new data set (or hiding the dialog because the just-selected node is
     * NOT a data presentation node). Thus, if the user forgets to explicitly update the data set after making some
@@ -350,10 +349,10 @@ class DSEditorToolDlg extends JDialog
    private JLabel paramLabel = null;
    
    /** Exposes the data set's underlying data as an NxM matrix in tabular form. */
-   private JTable dataTable = null;
+   private final JTable dataTable = new JTable();
    
    /** A one-column table that serves as the row header for the main table exposing the data matrix. */
-   private JTable rowHdrForDataTable = null;
+   private final JTable rowHdrForDataTable = new JTable();
    
    /** Press button to append a new row to data table. */
    private JButton appendRowBtn = null;
@@ -427,7 +426,7 @@ class DSEditorToolDlg extends JDialog
       idField.addActionListener(this);
       idField.addFocusListener(this);
       
-      formatCombo = new JComboBox<Fmt>();
+      formatCombo = new JComboBox<>();
       formatCombo.addActionListener(this);
       formatCombo.setToolTipText("Select data format. Choices limited by the type of data presentation node.");
       
@@ -441,8 +440,8 @@ class DSEditorToolDlg extends JDialog
       }
       
       paramLabel = new JLabel(" ", JLabel.TRAILING);
-      
-      dataTable = new JTable(dataTableModel);
+
+      dataTable.setModel(dataTableModel);
       Font f = new Font(LocalFontEnvironment.getMonospaceFont(), 8, Font.PLAIN);
       dataTable.setFont( f.deriveFont(Font.PLAIN, 8) );  // NOTE: setFont(f) directly behaved as if no font installed!
       dataTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -472,7 +471,7 @@ class DSEditorToolDlg extends JDialog
       // compute a column width that can handle most reasonable values, modify column model to force columns to use
       // this fixed width, and set table's viewport size to expose 10 columns and all rows in a single block
       Component renderer = dataTable.getDefaultRenderer(Float.class).getTableCellRendererComponent(
-               dataTable, new Float((float) -1.2345E-10), true, true, 0, 0);
+               dataTable, (float) -1.2345E-10, true, true, 0, 0);
       int colWidth = renderer.getPreferredSize().width + 5;
       dataTable.setColumnModel(new FixedWidthTCM(colWidth));
       
@@ -500,7 +499,7 @@ class DSEditorToolDlg extends JDialog
       // full-row selections on the data table. That same handler is also installed on the row header's header so we can
       // scroll the top-left corner of the data table into view whenever the user single-clicks on that header, which is 
       // in the top-left corner of the parent scroll pane.
-      rowHdrForDataTable = new JTable(dataTableModel.getRowHeaderModel());
+      rowHdrForDataTable.setModel(dataTableModel.getRowHeaderModel());
       LookAndFeel.installColorsAndFont(rowHdrForDataTable, 
                "TableHeader.background", "TableHeader.foreground", "TableHeader.font");
       rowHdrForDataTable.setIntercellSpacing(new Dimension(0, 0));
@@ -728,7 +727,7 @@ class DSEditorToolDlg extends JDialog
       if(!(currDS.isEmpty() || fixedEditorFont))
       {
          Font f = new Font(LocalFontEnvironment.getMonospaceFont(), 10, Font.PLAIN);
-         dataTable.getDefaultEditor(Float.class).getTableCellEditorComponent(dataTable, new Float(0), false, 0, 0)
+         dataTable.getDefaultEditor(Float.class).getTableCellEditorComponent(dataTable, (float) 0, false, 0, 0)
                .setFont(f.deriveFont(Font.PLAIN, 10));
          fixedEditorFont = true;
       }
@@ -758,7 +757,7 @@ class DSEditorToolDlg extends JDialog
       else
       {
          s = dataOwner.getTitle().trim();
-         if(s.length() == 0) s = dataOwner.getNodeType().getNiceName();
+         if(s.isEmpty()) s = dataOwner.getNodeType().getNiceName();
          s = "Data for: " + s;
       }
       setTitle(s);
@@ -766,7 +765,7 @@ class DSEditorToolDlg extends JDialog
    
    /**
     * Hide the data set editor dialog and can discard any unsaved changes to the data set on display. The "sticky bit"
-    * is reset, so {@link #editDataFor()} must be invoked to raise the dialog again.
+    * is reset, so {@link #editDataFor(FGNPlottableData, JComponent)} must be invoked to raise the dialog again.
     */
    private void cancel()
    {
@@ -910,8 +909,7 @@ class DSEditorToolDlg extends JDialog
          paramFields[2].setVisible(false);
          paramFields[3].setVisible(false);
       }
-      else for(int i=0; i<paramFields.length; i++) 
-         paramFields[i].setVisible(false);
+      else for(NumericTextField paramField : paramFields) paramField.setVisible(false);
          
    }
    
@@ -949,9 +947,8 @@ class DSEditorToolDlg extends JDialog
          // changing the data format may require adding or removing columns in the raw data matrix to satisfy the target
          // format. It also may be necessary to set/correct any additional defining parameters.
          Fmt fmt = (Fmt)formatCombo.getSelectedItem();
-         if(fmt == currDS.getFormat()) return;
-         else if(fmt == null) formatCombo.setSelectedItem(currDS.getFormat());
-         else 
+         if(fmt == null) formatCombo.setSelectedItem(currDS.getFormat());
+         else if(fmt != currDS.getFormat())
          {
             int nr = currDS.getDataLength();
             int ncOld = currDS.getDataBreadth();
@@ -965,14 +962,14 @@ class DSEditorToolDlg extends JDialog
                if(ncNew < ncOld)
                {
                    for(int i=0; i<nr; i++)
-                      for(int j=0; j<ncNew; j++)
-                         raw[i*ncNew + j] = currRawData[i*ncOld + j];
+                      if(ncNew >= 0)
+                         System.arraycopy(currRawData, i * ncOld, raw, i * ncNew, ncNew);
                }
                else 
                {
                   for(int i=0; i<nr; i++)
                   {
-                     for(int j=0; j<ncOld; j++) raw[i*ncNew + j] = currRawData[i*ncOld + j];
+                     if(ncOld >= 0) System.arraycopy(currRawData, i * ncOld, raw, i * ncNew, ncOld);
                      for(int j=ncOld; j<ncNew; j++) raw[i*ncNew + j] = Float.NaN;
                   }
                }
@@ -1081,7 +1078,7 @@ class DSEditorToolDlg extends JDialog
          // it with tuples. Otherwise, we'll incorrectly calculate the number of fully visible lines in the text area.
          if((!isTableView) && (!textViewShown))
          {
-            SwingUtilities.invokeLater( new Runnable() { public void run() {reload();} });
+            SwingUtilities.invokeLater(this::reload);
             textViewShown = true;
          }
          else
@@ -1160,7 +1157,7 @@ class DSEditorToolDlg extends JDialog
     * generate OOMs if the dataset size is not bounded.
     * @author sruffner
     */
-   public class MaxSizeFilter extends DocumentFilter
+   public static class MaxSizeFilter extends DocumentFilter
    {
       @Override 
       public void insertString(FilterBypass fb, int ofs, String string, AttributeSet attr) throws BadLocationException
@@ -1192,7 +1189,7 @@ class DSEditorToolDlg extends JDialog
     * necessary. Any value that is not a {@link Float} is displayed as an empty string.
     * @author sruffner
     */
-   private class FloatTCRenderer extends DefaultTableCellRenderer
+   private static class FloatTCRenderer extends DefaultTableCellRenderer
    {
       public FloatTCRenderer()
       {
@@ -1215,13 +1212,13 @@ class DSEditorToolDlg extends JDialog
     * more quickly and intuitively. The other functional difference is that, if the user enters a text string that 
     * cannot be parsed as a float value, the cell editor value is set to <i>Float.NaN</i> rather than keeping the cell
     * editor up displaying the bad string.
-    * 
+    *
     * <p>NOTE: The "select all on invocation" feature does NOT work in Mac OSX when cell editor is invoked by a 
     * double-click or by the F6 (instead of F2) key. However, one can immediately start typing printable characters, 
     * which is the critical functionality we need.</p>
-    * 
-    * CREDITS: Adapted from <code>javax.swing.JTable.NumberEditor</code> and the "select all" solution found here:
-    * http://forums.java.net/jive/thread.jspa?threadID=42682&tstart=0.
+    *
+    * CREDITS: Adapted from the "select all" solution found
+    * <a href="http://forums.java.net/jive/thread.jspa?threadID=42682&tstart=0">here</a>.
     */
    private static class SelectAllFloatEditor extends DefaultCellEditor
    {
@@ -1266,13 +1263,13 @@ class DSEditorToolDlg extends JDialog
          this.value = null;
          
          // we only show first 6 significant digits
-         float entry = (value instanceof Float) ? ((Float) value).floatValue() : 0.0f;
+         float entry = (value instanceof Float) ? (Float) value : 0.0f;
          entry = (float) Utilities.limitSignificantDigits(entry, 6);
          
          ((JTextField)getComponent()).setBorder(new LineBorder(Color.black));
-         Font f = ((JTextField)getComponent()).getFont();
-         ((JTextField)getComponent()).setFont( f.deriveFont(Font.PLAIN, 8));
-         return(super.getTableCellEditorComponent(table, new Float(entry), isSelected, row, column));
+         Font f = getComponent().getFont();
+         getComponent().setFont( f.deriveFont(Font.PLAIN, 8));
+         return(super.getTableCellEditorComponent(table, entry, isSelected, row, column));
       }
 
       public Object getCellEditorValue() { return(value); }
@@ -1306,9 +1303,9 @@ class DSEditorToolDlg extends JDialog
     * 
     * <p><code>DataSetTM</code> supports changing an individual datum in the array without having to create a new 
     * data set instance, which could involve a hefty heap allocation if the set is large. For details, see {@link 
-    * #setValueAt()}. In addition, it provides support for deleting, cutting, and copying the current table selection, 
-    * as well as pasting the system clip board contents (if possible) into the table. For more information on these 
-    * operations, see the enclosing class header.</p>
+    * #setValueAt(Object, int, int)}. In addition, it provides support for deleting, cutting, and copying the current
+    * table selection, as well as pasting the system clip board contents (if possible) into the table. For more
+    * information on these operations, see the enclosing class header.</p>
     * 
     * @author sruffner
     */
@@ -1331,23 +1328,21 @@ class DSEditorToolDlg extends JDialog
          if(rowIndex < 0 || rowIndex >= getRowCount() || columnIndex < 0 || columnIndex >= getColumnCount())
             return(NULLDATUM);
          if(currDS == null || nRows == 0 || nCols == 0) return(NULLDATUM);
-         
-         int r = rowIndex;
-         int c = columnIndex;
+
          int w = currDS.getDataBreadth();
          Object datum = NULLDATUM;
          if(currDS.getFormat() == Fmt.RASTER1D)
          {
-            int n = (int) currRawData[r];
-            if(c < n)
+            int n = (int) currRawData[rowIndex];
+            if(columnIndex < n)
             {
                int start = nRows;
-               for(int i=0; i<r; i++) start += (int) currRawData[i];
-               datum = new Float(currRawData[start + c]);
+               for(int i = 0; i< rowIndex; i++) start += (int) currRawData[i];
+               datum = currRawData[start + columnIndex];
             }
          }
          else
-            datum = new Float(currRawData[r*w + c]);
+            datum = currRawData[rowIndex * w + columnIndex];
          return(datum);
       }
  
@@ -1415,27 +1410,25 @@ class DSEditorToolDlg extends JDialog
          if(currDS == null || !(value instanceof Float) || rowIndex < 0 || rowIndex >= getRowCount() || 
                columnIndex < 0 || columnIndex >= getColumnCount())
             return;
-         
-         int r = rowIndex;
-         int c = columnIndex;
+
          int w = currDS.getDataBreadth();
-         float f = ((Float)value).floatValue();
+         float f = (Float) value;
          
          if(currDS.getFormat() == Fmt.RASTER1D)
          {
-            int n = (int) currRawData[r];
-            if(c < n)
+            int n = (int) currRawData[rowIndex];
+            if(columnIndex < n)
             {
                int start = nRows;
-               for(int i=0; i<r; i++) start += (int) currRawData[i];
-               if(currRawData[start + c] == f) return;
-               currRawData[start + c] = f;
+               for(int i = 0; i< rowIndex; i++) start += (int) currRawData[i];
+               if(currRawData[start + columnIndex] == f) return;
+               currRawData[start + columnIndex] = f;
             }
          }
          else 
          {
-            if(currRawData[r*w + c] == f) return;
-            currRawData[r*w + c] = f;
+            if(currRawData[rowIndex * w + columnIndex] == f) return;
+            currRawData[rowIndex * w + columnIndex] = f;
          }
 
          // create a new dataset using the just-modified raw data array
@@ -1586,7 +1579,8 @@ class DSEditorToolDlg extends JDialog
                chunk[0] = 1;
                chunk[1] = nCopy;
                chunk[2] = nr;
-               for(int i=firstRow; i<firstRow+nr; i++) chunk[3+i-firstRow] = currRawData[i];
+               if(firstRow + nr - firstRow >= 0)
+                  System.arraycopy(currRawData, firstRow, chunk, 3 + firstRow - firstRow, firstRow + nr - firstRow);
                System.arraycopy(currRawData, nRows+nSkip, chunk, 3+nr, nCopy);
             }
          }
@@ -1766,8 +1760,9 @@ class DSEditorToolDlg extends JDialog
             int offsetNew = 0;
             for(int i=0; i<nRows; i++)
             {
-               for(int j=0; j<firstCol; j++) raw[offsetNew + j] = currRawData[offsetOld + j];
-               for(int j=firstCol+nc; j<nCols; j++) raw[offsetNew + j - nc] = currRawData[offsetOld + j];
+               if(firstCol >= 0) System.arraycopy(currRawData, offsetOld, raw, offsetNew, firstCol);
+               if(nCols - (firstCol + nc) >= 0)
+                  System.arraycopy(currRawData, offsetOld + firstCol + nc, raw, offsetNew + firstCol + nc - nc, nCols - (firstCol + nc));
                offsetOld += nCols;
                offsetNew += (nCols - nc);
             }
@@ -1920,11 +1915,11 @@ class DSEditorToolDlg extends JDialog
          // get selected rows or selected cols. If there's no current selection, fail immediately -- the selection 
          // defines the insertion point!
          Fmt currFmt = currDS.getFormat();
-         boolean isFullReplace = false;
-         int rSelStart = -1;
-         int nrSel = -1;
-         int cSelStart = -1;
-         int ncSel = -1;
+         boolean isFullReplace;
+         int rSelStart;
+         int nrSel;
+         int cSelStart;
+         int ncSel;
 
          
          if(dataTable.getSelectionModel().getValueIsAdjusting()) return(false);
@@ -1984,7 +1979,7 @@ class DSEditorToolDlg extends JDialog
             // copy rasters from chunk data provided
             if(isRasterChunk)
             {
-               for(int i=0; i<nAddRasters; i++) raw[rSelStart+i] = data[3+i];
+               if(nAddRasters >= 0) System.arraycopy(data, 3, raw, rSelStart, nAddRasters);
                System.arraycopy(data, 3+nAddRasters, raw, dstOffset, nAddSamps);
             }
             else
@@ -2114,18 +2109,17 @@ class DSEditorToolDlg extends JDialog
          // case 2: Non-raster dataset being entirely replaced. Use all chunk rows, but pad or truncate columns if nec.
          if(isFullReplace)
          {
-            float[] raw = null;
-            DataSet ds = null;
+            float[] raw;
+            DataSet ds;
             if(isRasterChunk)
             {
                // convert raster chunk data into non-raster data...
                int nColsRes = currFmt.restrictToValidDataBreadth(nMaxRasterLen);
-               int nRowsRes = nc;
-               
-               raw = new float[nRowsRes*nColsRes];
+
+               raw = new float[nc *nColsRes];
                int dstOffset = 0;
-               int srcOffset = 3 + nRowsRes;
-               for(int i=0; i<nRowsRes; i++)
+               int srcOffset = 3 + nc;
+               for(int i = 0; i< nc; i++)
                {
                   int nSamps = (int) data[3+i];
                   int nCopy = Math.min(nColsRes, nSamps);
@@ -2134,7 +2128,7 @@ class DSEditorToolDlg extends JDialog
                   srcOffset += nSamps;
                   dstOffset += nColsRes;
                }
-               ds = DataSet.createDataSet(currDS.getID(), currFmt, currDS.getParams(), nRowsRes, nColsRes, raw);
+               ds = DataSet.createDataSet(currDS.getID(), currFmt, currDS.getParams(), nc, nColsRes, raw);
             }
             else
             {
@@ -2263,7 +2257,7 @@ class DSEditorToolDlg extends JDialog
             if((!replace) && !currFmt.isValidDataBreadth(nCols+1)) return(false);
             
             int nDelCols = replace ? ncSel : 0;
-            int nChunkRows = nr;
+            int nChunkRows;
             int nChunkCols = nc;
             if(isRasterChunk)
             {
@@ -2437,14 +2431,14 @@ class DSEditorToolDlg extends JDialog
        * such, the operation fails. Otherwise, the method prepares a floating-point array that it then passes to 
        * {@link #insertDataChunk(float[], boolean)} to complete the insertion.</p>
        * 
-       * @param data The chunk of data to be inserted, in text form as described. 
+       * @param textData The chunk of data to be inserted, in text form as described.
        * @param replace If true, the currently selected chunk of table data is replaced by the chunk provided. 
        * Otherwise, the chunk is inserted immediately before the first selected row.
        * @return True if insertion was successful. 
        */
       boolean insertDataChunk(String textData, boolean replace)
       {
-         if(textData == null || textData.length() == 0) return(false);
+         if(textData == null || textData.isEmpty()) return(false);
          
          // parse each line in the text source as a "row" of floating-pt data values. Abort if this is not possible.
          // While parsing, count the total data size and determine if rows are all the same length or not. If not, it's 
@@ -2453,7 +2447,7 @@ class DSEditorToolDlg extends JDialog
          int nTotal = 0;
          int nc = -1;
          
-         List<float[]> rows = new ArrayList<float[]>();
+         List<float[]> rows = new ArrayList<>();
          StringTokenizer tokenizer = new StringTokenizer(textData, "\r\n");
          while(tokenizer.hasMoreTokens())
          {
@@ -2478,7 +2472,7 @@ class DSEditorToolDlg extends JDialog
          if(nTotal == 0) return(false);
          
          // prepare 1D float array containing the parsed data.
-         float[] data = null;
+         float[] data;
          if(isRasterChunk)
          {
             data = new float[3 + rows.size() + nTotal];
@@ -2501,9 +2495,8 @@ class DSEditorToolDlg extends JDialog
             data[1] = rows.size();
             data[2] = nc;
             int dstOffset = 3;
-            for(int i=0; i<rows.size(); i++)
+            for(float[] row : rows)
             {
-               float[] row = rows.get(i);
                System.arraycopy(row, 0, data, dstOffset, nc);
                dstOffset += nc;
             }
@@ -2550,7 +2543,8 @@ class DSEditorToolDlg extends JDialog
       
       /**
        * Insert or append a new row or column in the tabular view of the current data set, if possible. The added row or 
-       * column is selected in the table and populated with <i>Float.NaN</i>. See {@link #canInsertNewRowOrCol()}.
+       * column is selected in the table and populated with <i>Float.NaN</i>. See {@link #canInsertNewRowOrCol(boolean,
+       * boolean)}.
        * @param isCol True to add a new column, false to add a new row.
        * @param isAppend If set, append rather than insert a new row or column.
        * @return True if operation was successful.
@@ -2558,8 +2552,8 @@ class DSEditorToolDlg extends JDialog
       boolean insertNewRowOrCol(boolean isCol, boolean isAppend)
       {
          Fmt fmt = currDS.getFormat();
-         int selRowNum = -1;
-         int selColNum = -1;
+         int selRowNum;
+         int selColNum;
          
          // special case: dataset is currently empty.
          boolean addRasterSample = false;
@@ -2572,7 +2566,6 @@ class DSEditorToolDlg extends JDialog
                if(ds == null) return(false);
                currRawData = raw;
                currDS = ds;
-               selRowNum = selColNum = 0;
             }
             else
             {
@@ -2586,8 +2579,8 @@ class DSEditorToolDlg extends JDialog
                if(ds == null) return(false);
                currRawData = raw;
                currDS = ds;
-               selRowNum = selColNum = 0;
             }
+            selRowNum = selColNum = 0;
          }
          else if(!isCol)
          {
@@ -2758,7 +2751,7 @@ class DSEditorToolDlg extends JDialog
       private int nCols = 0;
       
       /** A table model that acts as a row header for the enclosing instance of <code>DataSetTM</code>. */
-      private RowHdrTM rowHeaderTableModel = new RowHdrTM();
+      private final RowHdrTM rowHeaderTableModel = new RowHdrTM();
       
       /**
        * Get a table model that serves as a row header for this <code>DataSetTM</code>. The contents of the row
@@ -2785,7 +2778,7 @@ class DSEditorToolDlg extends JDialog
          public Object getValueAt(int rowIndex, int columnIndex)
          {
            if(rowIndex < 0 || rowIndex >= getRowCount() || columnIndex != 0) return(NULLDATUM);
-           return(new Integer(rowIndex + 1));
+           return(rowIndex + 1);
          }
          
          @Override public Class<?> getColumnClass(int columnIndex) { return(Integer.class); }
@@ -2798,10 +2791,10 @@ class DSEditorToolDlg extends JDialog
     * A fixed-width table column model.
     * @author sruffner
     */
-   private class FixedWidthTCM extends DefaultTableColumnModel
+   private static class FixedWidthTCM extends DefaultTableColumnModel
    {
       /** The desired width of all columns in this column model, in pixels. */
-      private int fixedW;
+      private final int fixedW;
       
       /**
        * Construct a <code>FixedWidthTCM</code>.
@@ -2840,11 +2833,8 @@ class DSEditorToolDlg extends JDialog
          if(src == rowHdrForDataTable.getTableHeader())
          {
             Rectangle r = dataTable.getCellRect(0, 0, true);
-            if(r != null) 
-            {
-               dataTable.scrollRectToVisible(r);
-               dataTable.clearSelection();
-            }
+            dataTable.scrollRectToVisible(r);
+            dataTable.clearSelection();
          }
          else if(src == rowHdrForDataTable)
          {
@@ -2966,7 +2956,7 @@ class DSEditorToolDlg extends JDialog
                //
                Rectangle cellR = dataTable.getCellRect(row, 0, true);
                visR = dataTable.getVisibleRect();
-               if(cellR != null && visR != null && !visR.contains(cellR))
+               if(visR != null && !visR.contains(cellR))
                   dataTable.scrollRectToVisible(cellR);
             }
          }
@@ -3011,7 +3001,7 @@ class DSEditorToolDlg extends JDialog
                if(p.x < left || p.x > right)
                {
                   Rectangle scrollTo = dataTable.getCellRect(0, col, true);
-                  if(scrollTo != null) dataTable.scrollRectToVisible(scrollTo);
+                  dataTable.scrollRectToVisible(scrollTo);
                }
             }
          }
@@ -3085,11 +3075,11 @@ class DSEditorToolDlg extends JDialog
    {
       if(dataTableActions != null) return;
       if(dataTable == null) return;
-      int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+      int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
       dataTableActions = new DataTableAction[NTABLEACTIONS];
       
       dataTableActions[TABLE_APPENDROW] = new DataTableAction(TABLE_APPENDROW, "Append New Row", 
-            FCIcons.V4_APPENDROW_22, KeyStroke.getKeyStroke(KeyEvent.VK_R, mask|KeyEvent.SHIFT_MASK), 
+            FCIcons.V4_APPENDROW_22, KeyStroke.getKeyStroke(KeyEvent.VK_R, mask|KeyEvent.SHIFT_DOWN_MASK),
             "Append a new row to dataset");
       appendRowBtn = new JButton(dataTableActions[TABLE_APPENDROW]);
       makeToolButton(appendRowBtn);
@@ -3101,7 +3091,7 @@ class DSEditorToolDlg extends JDialog
       makeToolButton(insertRowBtn);
       
       dataTableActions[TABLE_APPENDCOL] = new DataTableAction(TABLE_APPENDCOL, "Append New Column", 
-            FCIcons.V4_APPENDCOL_22, KeyStroke.getKeyStroke(KeyEvent.VK_K, mask|KeyEvent.SHIFT_MASK), 
+            FCIcons.V4_APPENDCOL_22, KeyStroke.getKeyStroke(KeyEvent.VK_K, mask|KeyEvent.SHIFT_DOWN_MASK),
             "Append a new column to dataset");
       appendColBtn = new JButton(dataTableActions[TABLE_APPENDCOL]);
       makeToolButton(appendColBtn);
@@ -3146,13 +3136,13 @@ class DSEditorToolDlg extends JDialog
       // install key input-action bindings for the data table
       ActionMap am = dataTable.getActionMap();
       InputMap im = dataTable.getInputMap();
-      for(int i = 0; i < dataTableActions.length; i++)
+      for(DataTableAction dataTableAction : dataTableActions)
       {
-         String name = (String) dataTableActions[i].getValue(Action.NAME);
-         KeyStroke accel = (KeyStroke) dataTableActions[i].getValue(Action.ACCELERATOR_KEY);
+         String name = (String) dataTableAction.getValue(Action.NAME);
+         KeyStroke accel = (KeyStroke) dataTableAction.getValue(Action.ACCELERATOR_KEY);
          if(name != null && accel != null)
          {
-            am.put(name, dataTableActions[i]);
+            am.put(name, dataTableAction);
             im.put(accel, name);
          }
       }
@@ -3178,7 +3168,7 @@ class DSEditorToolDlg extends JDialog
     */
    private void refreshDataTableActions()
    {
-      if(dataTableActions != null) for(int i=0; i<dataTableActions.length; i++) dataTableActions[i].refresh();
+      if(dataTableActions != null) for(DataTableAction dataTableAction : dataTableActions) dataTableAction.refresh();
    }
    
    /**
@@ -3208,7 +3198,7 @@ class DSEditorToolDlg extends JDialog
       public void actionPerformed(ActionEvent e)
       {
          boolean ok = false;
-
+         float[] chunk;
          if(isEnabled()) switch(code)
          {
             case TABLE_APPENDROW :
@@ -3221,7 +3211,7 @@ class DSEditorToolDlg extends JDialog
                break;
             case TABLE_COPY :
             case TABLE_CUT :
-               float[] chunk = dataTableModel.getCurrentSelectionAsDataChunk();
+               chunk = dataTableModel.getCurrentSelectionAsDataChunk();
                if(chunk != null)
                {
                   // copying huge chunks to system clipboard is unavoidably slow!
@@ -3240,7 +3230,7 @@ class DSEditorToolDlg extends JDialog
                      if(code == TABLE_CUT) ok = dataTableModel.removeCurrentSelectionIfPossible();
                      else ok = true;
                   }
-                  catch(IllegalStateException ise) {}
+                  catch(IllegalStateException ignored) {}
                   
                   if(oldCursor != null) DSEditorToolDlg.this.setCursor(oldCursor);
                }
@@ -3274,9 +3264,7 @@ class DSEditorToolDlg extends JDialog
                      ok = dataTableModel.insertDataChunk(s, code==TABLE_PASTE);
                   }
                }
-               catch(IllegalStateException ise) {}
-               catch(UnsupportedFlavorException ufe) {}
-               catch(IOException ioe) {}
+               catch(IllegalStateException | UnsupportedFlavorException | IOException ignored) {}
                finally
                {
                   if(oldCursor != null) DSEditorToolDlg.this.setCursor(oldCursor);
@@ -3331,7 +3319,7 @@ class DSEditorToolDlg extends JDialog
       }
       
       /** This action's unique ID. */
-      private int code;
+      private final int code;
    }
    
    
@@ -3349,13 +3337,13 @@ class DSEditorToolDlg extends JDialog
     * 
     * <p><i>Performance tweaks</i>. Tests on both Mac OSX and Windows showed a long delay when copying a large data
     * chunk (200K) -- as long as 60 seconds on Windows! After testing/debugging, we learned that when copying a 
-    * transferable to the system clipboard via {@link Clipboard#setContents()}, the data is transferred into the
-    * clipboard immediately rather than storing the transferable object (apparently for security reasons). Thus, the
-    * {@link #getTransferData()} is called under the hood when you copy to the clipboard. Under Windows XP, this call 
-    * happened three times, and I determined that this is because the generic "string flavor" maps to three native data 
-    * types (not sure what they are). Furthermore, the initial implementation of {@link #getTransferData()} used 
-    * {@link Utilities#toString()}, which is not particularly efficient (eg, it uses string concatenation
-    * rather than a string buffer).</p>
+    * transferable to the system clipboard via {@link Clipboard#setContents(Transferable, ClipboardOwner)}, the data is
+    * transferred into the clipboard immediately rather than storing the transferable object (apparently for security
+    * reasons). Thus, the {@link #getTransferData(DataFlavor)} method is called under the hood when you copy to the
+    * clipboard. Under Windows XP, this call happened three times, and I determined that this is because the generic
+    * "string flavor" maps to three native data types (not sure what they are). Furthermore, the initial implementation
+    * of <b>getTransferData()</b> used {@link Utilities#toString()}, which is not particularly efficient (eg, it uses
+    * string concatenation rather than a string buffer).</p>
     * 
     * <p>Given these discoveries, we dramatically improved the performance by using a string buffer and {@link 
     * Float#toString()} to prepare the text form of the data chunk. Then we saved a weak reference to the enerated 
@@ -3383,14 +3371,14 @@ class DSEditorToolDlg extends JDialog
             return(chunk);
          }
          
-         String cachedText = null;
+         String cachedText;
          if(dataAsText != null)
          {
             cachedText = dataAsText.get();
             if(cachedText != null) return(cachedText);
          }
          
-         StringBuffer buf = new StringBuffer(10000);
+         StringBuilder buf = new StringBuilder(10000);
          final String CRLF = "\r\n";
          if(dataChunk[0] != 0)
          {
@@ -3401,7 +3389,7 @@ class DSEditorToolDlg extends JDialog
                int nSamps = (int) dataChunk[3+i];
                for(int j=0; j<nSamps; j++)
                {
-                  buf.append(Float.toString(dataChunk[offset+j]));
+                  buf.append(dataChunk[offset + j]);
                   if(j < (nSamps-1)) buf.append(" ");
                }
                buf.append(CRLF);
@@ -3417,7 +3405,7 @@ class DSEditorToolDlg extends JDialog
             {
                for(int j=0; j<nc; j++)
                {
-                  buf.append(Float.toString(dataChunk[offset+j]));
+                  buf.append(dataChunk[offset + j]);
                   if(j < (nc-1)) buf.append(" ");
                }
                buf.append(CRLF);
@@ -3426,7 +3414,7 @@ class DSEditorToolDlg extends JDialog
          }
          
          cachedText = buf.toString();
-         dataAsText = new WeakReference<String>(cachedText);
+         dataAsText = new WeakReference<>(cachedText);
          return(cachedText);
       }
 
@@ -3442,7 +3430,7 @@ class DSEditorToolDlg extends JDialog
       
       /**
        * Construct a <code>DataSetChunkTransferable</code> wrapping the specified array. 
-       * @param An array holding the dataset chunk. First three elements provide info about the shape of the data as 
+       * @param chunk An array holding the dataset chunk. First three elements provide info about the shape of the data
        * stored in the remainder of the array. The first element is nonzero if the array contains <code>RASTER1D</code>
        * data, and the second and third elements are the length and breadth of the chunk. The remainder of the array is 
        * organized in the exact same manner as the raw data array of the <code>DataSet</code> from which the chunk was 
@@ -3491,7 +3479,7 @@ class DSEditorToolDlg extends JDialog
       }
       
       /** The transferable data chunk. */
-      private float[] dataChunk;
+      private final float[] dataChunk;
       
       /** 
        * A weak reference to the data converted to string form. This is here in case the data is requested in string

@@ -28,7 +28,6 @@ import javax.swing.SwingUtilities;
 import com.srscicomp.common.ui.GUIUtilities;
 import com.srscicomp.common.ui.LocalFontEnvironment;
 import com.srscicomp.common.ui.OSXAdapter;
-import com.srscicomp.common.ui.OSXCompatibleApp;
 import com.srscicomp.common.util.Utilities;
 import com.srscicomp.fc.uibase.FCAboutDlg;
 import com.srscicomp.fc.uibase.FCChooser;
@@ -42,20 +41,16 @@ import com.srscicomp.fc.uibase.FCWorkspace.EventID;
 /**
  * TODO: Figure Composer TASK LIST
  * This is where I keep notes on the "big picture" about the current state of FigureComposer development.
- * 
+ * <p>
  * CHANGES SINCE 5.4.5 release...
- * 
- * 
- * 
+ * <p>
  * FUTURE WORK?:
- * 
+ * <p>
  * ==> Can I get a hold of a figure containing a Matlab box plot to see if I can do the conversion to fyp? Note that
  * the statistics toolbox is required to generate box plots in Matlab...
- *
-
+ * <p>
  * ===================================================
- * 
- * 
+ * <p>
  * The application frame window for the stand-alone <i>Figure Composer</i> application, a tool for constructing 
  * publication-quality figures displaying scientific data in a variety of formats.
  * 
@@ -73,7 +68,7 @@ import com.srscicomp.fc.uibase.FCWorkspace.EventID;
  *   <li><i>On Mac OSX</i>. The <code>.fyp</code> file type and association is defined in the application bundle's 
  *   <code>Info.plist</code>, in the <code>CFBundleDocumentTypes</code> and <code>UTExportedTypeDeclarations</code>
  *   keys. OS X sends "application events" when the user double-clicks a file to open it, and these are received via
- *   the {@link OSXCompatibleApp OSXCompatibleApp} interface. Note that the same mechanism works
+ *   through {@link java.awt.Desktop}. Note that the same mechanism works
  *   for two similar use cases: double-clicking a .fyp file when the application is not running and when it is; both 
  *   cases are supported -- but only for a single file (Mac OSX supports opening multiple files at once in this manner).
  *   In the latter case, the application is de-iconified and brought to the foreground as needed before opening the 
@@ -98,7 +93,7 @@ import com.srscicomp.fc.uibase.FCWorkspace.EventID;
  * @author sruffner
  */
 @SuppressWarnings("serial")
-public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowListener, FCWorkspace.Listener
+public class FigureComposer extends JFrame implements WindowListener, FCWorkspace.Listener
 {
    /**
     * This helper class serves as the "launcher" for the Figure Composer application. It performs various initialization
@@ -139,11 +134,13 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
             return;
          }
          PrinterSupport.getInstance();
-         try { Thread.sleep(300); } catch(InterruptedException ie) {}
+         try { Thread.sleep(300); } catch(InterruptedException ignored) {}
          
          // construct and show the UI
-         updateProgress(15, "Preparing application...");         
-         appFrame = new FigureComposer();
+         updateProgress(15, "Preparing application...");
+
+         // the main application frame window opened by this launcher.
+         FigureComposer appFrame = new FigureComposer();
          updateProgress(100, "Finishing...");
          
          // under Windows only, the application may be invoked with a single argument specifying the full path to a figure
@@ -190,7 +187,7 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
        */
       private void updateProgress(int prg, String msg)
       {
-         progress = Math.max(0, Math.min(100, prg));
+         int progress = Math.max(0, Math.min(100, prg));
          if(splash != null && splash.isVisible())
          {
             Dimension d = splash.getSize();
@@ -200,7 +197,7 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
             g2d.setColor(new Color(176, 196, 222));
             int w = progress * (d.width - 64) / 100;
             g2d.fillRect(32, d.height-31, w, 14);
-            if(msg != null && msg.length() > 0)
+            if(msg != null && !msg.isEmpty())
             {
                if(msg.length() > 30) msg = msg.substring(0, 30) + "...";
                g2d.setColor(Color.BLACK);
@@ -217,14 +214,10 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
       }
       
       /** Arguments passed into main() when application launched. */
-      private String[] mainArgs = null;
+      private final String[] mainArgs;
       /** Application's splash screen. */
-      private SplashScreen splash = null;
-      /** Application startup progress - rough estimate of percent complete. */
-      private int progress = 0;
-      
-      /** The main application frame window opened by this launcher. */
-      private FigureComposer appFrame = null;
+      private final SplashScreen splash;
+
    }
 
    /** The application launcher. Active and non-null only during start-up. */
@@ -308,7 +301,7 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
          File f = new File(cmd);
          if(f.isFile())
          {
-            List<File> files = new ArrayList<File>();
+            List<File> files = new ArrayList<>();
             files.add(f);
             currentAppForWindowsActivation.doFileOpen(files);
          }
@@ -327,7 +320,7 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
     * Constructor for the <i>FigureComposer</i> application frame window, which also serves as application controller. 
     * The entire user interface is created here, but it is not displayed. The frame window can be created from the 
     * main() thread, but it should be shown on the event dispatch thread.
-    * @throws HeadlessException
+    * @throws HeadlessException if there is no display, keyboard or mouse
     */
    public FigureComposer() throws HeadlessException
    {
@@ -336,14 +329,17 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
       addWindowListener(this);
       
       FCWorkspace.getInstance().addWorkspaceListener(this);
-      
-      List<Image> appIcons = new ArrayList<Image>();
-      appIcons.add(FCIcons.FC_APP16.getImage());
-      appIcons.add(FCIcons.FC_APP32.getImage());
-      appIcons.add(FCIcons.FC_APP48.getImage());
-      appIcons.add(FCIcons.FC_APP128.getImage());
-      setIconImages(appIcons);
-      
+
+      if(FCIcons.FC_APP16 != null && FCIcons.FC_APP32 != null && FCIcons.FC_APP48 != null && FCIcons.FC_APP128 != null)
+      {
+         List<Image> appIcons = new ArrayList<>();
+         appIcons.add(FCIcons.FC_APP16.getImage());
+         appIcons.add(FCIcons.FC_APP32.getImage());
+         appIcons.add(FCIcons.FC_APP48.getImage());
+         appIcons.add(FCIcons.FC_APP128.getImage());
+         setIconImages(appIcons);
+      }
+
       updateStartupProgress(20, "Preparing application...");
 
       // initialize custom file chooser singleton providing workspace access and file browsing
@@ -564,7 +560,7 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
    private class AppAction extends AbstractAction
    {
       /** This action type code. */
-      private int type;
+      private final int type;
       
      /**
        * Construct one of the application-level actions exposed.
@@ -583,7 +579,7 @@ public class FigureComposer extends JFrame implements OSXCompatibleApp, WindowLi
          putValue(SHORT_DESCRIPTION, name);
          putValue(ACTION_COMMAND_KEY, name);
          if(accel != null) putValue(ACCELERATOR_KEY, accel);
-         if(menuKey != -1) putValue(MNEMONIC_KEY, new Integer(menuKey));
+         if(menuKey != -1) putValue(MNEMONIC_KEY, menuKey);
       }
       
       public void actionPerformed(ActionEvent e)

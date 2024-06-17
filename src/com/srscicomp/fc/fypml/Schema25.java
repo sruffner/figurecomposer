@@ -136,11 +136,11 @@ class Schema25 extends Schema24
     * This element map contains {@link SchemaElementInfo} objects for each element that is new to this schema or has a 
     * different attribute set compared to the previous schema.
     */
-   private static Map<String, SchemaElementInfo> elementMap25 = null;
+   private static final Map<String, SchemaElementInfo> elementMap25;
 
    static
    {
-      elementMap25 = new HashMap<String, SchemaElementInfo>();
+      elementMap25 = new HashMap<>();
       
       // 15mar2023: Polar graph now admits bar plot as a child.
       // 11may2023: New attributes to support a semi-automated graph title.
@@ -217,7 +217,7 @@ class Schema25 extends Schema24
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap25.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap25.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
    /**
@@ -226,7 +226,7 @@ class Schema25 extends Schema24
     */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
    {
-      SchemaElementInfo info = (SchemaElementInfo) elementMap25.get(elTag);
+      SchemaElementInfo info = elementMap25.get(elTag);
       return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
    }
 
@@ -243,8 +243,8 @@ class Schema25 extends Schema24
       List<ISimpleXMLElement> children = e.getElementContent();
       if(EL_BOX.equals(elTag))
          return(children.size() == 2 && 
-            EL_SYMBOL.equals(((BasicSchemaElement) children.get(0)).getTag()) &&
-            EL_EBAR.equals(((BasicSchemaElement) children.get(1)).getTag()));
+            EL_SYMBOL.equals(children.get(0).getTag()) &&
+            EL_EBAR.equals(children.get(1).getTag()));
 
       return(super.hasRequiredChildren(e));
    }
@@ -258,7 +258,7 @@ class Schema25 extends Schema24
    @Override public boolean isValidChildAtIndex(BasicSchemaElement e, String childTag, int index)
    {
       String elTag = e.getTag();
-      SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+      SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
       if(!eInfo.isChildAllowed(childTag)) return(false);
       if(EL_BOX.equals(elTag))
          return((EL_SYMBOL.equals(childTag) && index == 0) || (EL_EBAR.equals(childTag) && index == 1));
@@ -295,11 +295,13 @@ class Schema25 extends Schema24
             return(isValidEnumAttributeValue(value, MODE_BOX_CHOICES));
          if(A_BARWIDTH.equals(attr))
             return(isValidMeasureAttributeValue(value, false, true, false));
+         if(A_TITLE.equals(attr))
+            return(isValidStyledTextString(value));
       }
       else if(EL_COLORBAR.equals(tag) && A_CMAP.equals(attr))
          return(isValidEnumAttributeValue(value, CMAP_CHOICES_V25) || isValidCustomColorMapDefinition(value));
       else if(A_TITLE.equals(attr) && (EL_TRACE.equals(tag) || EL_SCATTER.equals(tag) || EL_SCATTER3D.equals(tag) ||
-            EL_RASTER.equals(tag) || EL_BOX.equals(tag) || EL_FUNCTION.equals(tag) || EL_FIGURE.equals(tag)) ||
+            EL_RASTER.equals(tag) || EL_FUNCTION.equals(tag) || EL_FIGURE.equals(tag)) ||
             EL_GRAPH.equals(tag) || EL_GRAPH3D.equals(tag) || EL_PGRAPH.equals(tag))
          return(isValidStyledTextString(value));
       else if(A_MODE.equals(attr) && EL_PIE.equals(tag))
@@ -363,7 +365,7 @@ class Schema25 extends Schema24
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

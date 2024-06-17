@@ -31,7 +31,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNCalibEditor extends FGNEditor implements ActionListener
 {
 
@@ -82,7 +81,7 @@ class FGNCalibEditor extends FGNEditor implements ActionListener
       
       JLabel capLabel = new JLabel("End caps: ");
       add(capLabel);
-      endcapCombo = new JComboBox<Marker>(Marker.values());
+      endcapCombo = new JComboBox<>(Marker.values());
       endcapCombo.setToolTipText("Select endcap shape");
       endcapCombo.addActionListener(this);
       add(endcapCombo);
@@ -228,7 +227,7 @@ class FGNCalibEditor extends FGNEditor implements ActionListener
    private NumericTextField lengthField = null;
 
    /** Radio button associates calibration bar with primary (horizontal/theta) axis of parent graph. */
-   private JRadioButton primaryBtn = null;
+   private final JRadioButton primaryBtn;
    
    /** Radio button associates calibration bar with secondary (vertical/radial) axis of parent graph. */
    private JRadioButton secondaryBtn = null;

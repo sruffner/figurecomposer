@@ -43,7 +43,6 @@ import com.srscicomp.fc.fig.StrokePattern;
  * 
  * @author 	sruffner
  */
-@SuppressWarnings("serial")
 public final class StrokePatternCombo extends JComboBox<StrokePattern>
 {
    /** The default prototype display value, which governs preferred size of combo box. */

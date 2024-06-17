@@ -23,7 +23,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNLineEditor extends FGNEditor implements ActionListener
 {
 
@@ -157,7 +156,7 @@ class FGNLineEditor extends FGNEditor implements ActionListener
    private LineNode getLineNode() { return((LineNode) getEditedNode()); }
    
    /** Customized component for editing the x-coordinate of the line segment's first endpoint. */
-   private MeasureEditor xEditor = null;
+   private final MeasureEditor xEditor;
 
    /** Customized component for editing the y-coordinate of the line segment's first endpoint. */
    private MeasureEditor yEditor = null;

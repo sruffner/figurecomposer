@@ -64,7 +64,7 @@ class FGNFigureEditor extends FGNEditor implements ActionListener, FocusListener
       titleEditor.addActionListener(this);
       add(titleEditor);
       
-      hAlignWidget = new MultiButton<TextAlign>();
+      hAlignWidget = new MultiButton<>();
       hAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_ALIGNLEFT_16, "Left");
       hAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_ALIGNCENTER_16, "Center");
       hAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_ALIGNRIGHT_16, "Right");
@@ -72,7 +72,7 @@ class FGNFigureEditor extends FGNEditor implements ActionListener, FocusListener
       hAlignWidget.setToolTipText("Horizontal alignment of figure title");
       add(hAlignWidget);
       
-      vAlignWidget = new MultiButton<TextAlign>();
+      vAlignWidget = new MultiButton<>();
       vAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_VALIGNTOP_16, "Top");
       vAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_VALIGNMID_16, "Middle");
       vAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_VALIGNBOT_16, "Bottom");
@@ -399,7 +399,7 @@ class FGNFigureEditor extends FGNEditor implements ActionListener, FocusListener
    private StyledTextEditor titleEditor = null;
 
    /** When checked, the figure's title is rendered (unless title string is empty). */
-   private JCheckBox showTitleChk = null;
+   private final JCheckBox showTitleChk;
    
    /** Multiple-choice button widget for editing the H alignment of figure's title WRT its bounding box. */
    private MultiButton<TextAlign> hAlignWidget = null;

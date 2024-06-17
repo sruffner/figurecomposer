@@ -2,6 +2,7 @@ package com.srscicomp.fc.matlab;
 
 import java.awt.Color;
 import java.awt.geom.Point2D;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,9 +36,9 @@ import com.srscicomp.fc.fig.StrokePattern;
  * applications' figure models. A companion Matlab function first constructs the <code>HGObject</code> hierarchy for a
  * figure rendered in Matlab, selecting only those HG objects and properties that can be replicated in a FypML figure
  * (alternatively, the <code>HGObject</code> tree may be parsed directly from a Matlab FIG file that is to be imported
- * as a FypML figure -- see {@link MatlabFigureImporter#importMatlabFigureFromFile()}). It then passes the root of this 
- * HG object tree to {@link MatlabUtilities#matFigToFyp(HGObject)}, which traverses the tree and constructs a FypML 
- * figure based on its contents.</p>
+ * as a FypML figure -- see {@link MatlabFigureImporter#importMatlabFigureFromFile(File, StringBuffer)}). It then passes
+ * the root of this HG object tree to {@link MatlabUtilities#matFigToFyp(HGObject, double, StringBuffer, boolean)}, 
+ * which traverses the tree and constructs a FypML figure based on its contents.</p>
  * 
  * @author sruffner
  */
@@ -72,8 +73,8 @@ public class HGObject
          hYLabel = labelHandles[2];
          hZLabel = labelHandles[3];
       }
-      properties = new HashMap<String, Object>();
-      children = new ArrayList<HGObject>();
+      properties = new HashMap<>();
+      children = new ArrayList<>();
    }
    
    /**
@@ -147,9 +148,9 @@ public class HGObject
     * 
     * <p>Next, the method will coalesce similar child plot objects into a single plot object backed by a data set that 
     * includes all the data in the individual plot objects. For details on the relevant use cases and how the coalesced
-    * plot objects are rendered in the <i>FypML</i> figure, see {@link #coalesce()}. The four Matlab HG plot object 
-    * types that may be coalesced into a single object are 'line', 'graph2d.lineseries', 'specgraph.barseries', and
-    * 'specgraph.areaseries'.</p>
+    * plot objects are rendered in the <i>FypML</i> figure, see {@link #coalesce(HGObject, HGObject)}. The four Matlab 
+    * HG plot object types that may be coalesced into a single object are 'line', 'graph2d.lineseries', 
+    * 'specgraph.barseries', and 'specgraph.areaseries'.</p>
     */
    public void afterChildrenAdded()
    {
@@ -190,7 +191,7 @@ public class HGObject
       {
          polarGridLine = children.get(1);
          int nRmv = 1 + 2*nRadialTicks + 18;
-         while(children.size() > 0 && nRmv > 0)
+         while((!children.isEmpty()) && nRmv > 0)
          {
             children.remove(0);
             nRmv--;
@@ -202,7 +203,7 @@ public class HGObject
       if(!isPolarAxes) detectAndProcessPieChart();
       
       // coalesce matching plot objects under certain circumstances...
-      List<HGObject> retained  = new ArrayList<HGObject>();
+      List<HGObject> retained  = new ArrayList<>();
       
       for(HGObject kid : children) 
       {
@@ -260,7 +261,7 @@ public class HGObject
     * Get the list of properties that were explicitly specified for this Matlab Handle Graphics object.
     * @return List of names of all explicitly specified object properties.
     */
-   public List<String> getExplicitProperties() { return(new ArrayList<String>(properties.keySet())); }
+   public List<String> getExplicitProperties() { return(new ArrayList<>(properties.keySet())); }
    
    /**
     * Get the number of child objects contained by this Matlab Handle Graphics object.
@@ -294,7 +295,7 @@ public class HGObject
       Object strProp = getProperty("String");
       if("text".equals(type) && strProp != null)
       {
-         Class<? extends Object> strC = strProp.getClass();
+         Class<?> strC = strProp.getClass();
          if(strC.equals(String.class)|| strC.equals(Character.class))
             out = strProp.toString().trim();
          else if(strC.equals(String[].class))
@@ -680,6 +681,7 @@ public class HGObject
     * supported plot objects. In the case of a "surface" object, returns null if the mapping mode is "direct", which
     * is not supported by FypML.
     */
+   @SuppressWarnings("DataFlowIssue")
    public DataSet extractDataSetFromPlotObject(String suggestedID, boolean isPolarPlot, boolean isTruePolarAxes)
    {
       if(!(type.equals("graph2d.lineseries") || type.equals("line") || type.equals("specgraph.errorbarseries") ||
@@ -722,7 +724,7 @@ public class HGObject
          // NOTE: It is possible that 'XDataMode' is omitted, implying "auto"; yet 'XData' is specified -- this was the
          // case in a Matlab 2014b FIG file. We no longer assume XData is missing if XDataMode==auto!
          Object prop = getProperty("XDataMode");
-         boolean isAuto = (prop == null) || "auto".equals((String)prop);
+         boolean isAuto = (prop == null) || "auto".equals(prop);
          double[] xData = getDoubleVectorFromProperty(getProperty("XData"));
          float[] params = null;
          
@@ -773,10 +775,9 @@ public class HGObject
             }
             if(multiSetData != null)
             {
-               for(int j=0; j<multiSetData.size(); j++)
+               for(double[] multiSetDatum : multiSetData)
                {
-                  yData = multiSetData.get(j);
-                  for(int i=0; i<nrows; i++) fData[ncols*i + iCol] = (float) yData[i];
+                  for(int i = 0; i < nrows; i++) fData[ncols * i + iCol] = (float) multiSetDatum[i];
                   ++iCol;
                }
             }
@@ -831,10 +832,9 @@ public class HGObject
                for(int i=0; i<nrows; i++) fData[ncols*i] = (float) xData[i];
                ++iCol;
             }
-            for(int j=0; j<multiSetData.size(); j++)
+            for(double[] multiSetDatum : multiSetData)
             {
-               yData = multiSetData.get(j);
-               for(int i=0; i<nrows; i++) fData[ncols*i + iCol] = (float) yData[i];
+               for(int i = 0; i < nrows; i++) fData[ncols * i + iCol] = (float) multiSetDatum[i];
                ++iCol;
             }
             
@@ -908,9 +908,9 @@ public class HGObject
       else if(type.equals("line"))
       {
          // prepare two-column PTSET containing the data points: { (x,y) }
-         float[] fData = null;
+         float[] fData;
          int ncols = 2;
-         int nrows = 0;
+         int nrows;
          if(scatterPoints != null)
          {
             nrows = scatterPoints.size();
@@ -978,7 +978,7 @@ public class HGObject
          boolean isSeries = false;
          float[] params = null;
          Object prop = getProperty("XDataMode");
-         boolean isAuto = (prop == null) || "auto".equals((String)prop);
+         boolean isAuto = (prop == null) || "auto".equals(prop);
          if(xData == null)
          {
             if(!isAuto) throw new UnsupportedOperationException("Data type for 'XData' not supported!");
@@ -1085,8 +1085,8 @@ public class HGObject
             else ncols = 2;
          }
          float[] fData = new float[nrows*ncols];
-         Fmt fmt = null;
-         
+
+         Fmt fmt;
          if(isSeries)
          {
             fmt = Fmt.SERIES;
@@ -1317,7 +1317,7 @@ public class HGObject
          Object prop = getProperty("CDataMapping");
          if(!useZData)
          {
-            if(prop != null && prop.getClass().equals(String.class) && "direct".equals((String) prop))
+            if(prop != null && prop.getClass().equals(String.class) && "direct".equals(prop))
                return(null);
          }
          
@@ -1516,10 +1516,10 @@ public class HGObject
       if(type.equals("specgraph.barseries") || type.equals("specgraph.areaseries") ||
             (type.equals("patch") && isPieChart))
       {
-         if(dataGrpLabels != null) out = new ArrayList<String>(dataGrpLabels);
+         if(dataGrpLabels != null) out = new ArrayList<>(dataGrpLabels);
          else 
          {
-            out = new ArrayList<String>();
+            out = new ArrayList<>();
             out.add(extractDataGroupLegendLabel(0));
          }
       }
@@ -1543,13 +1543,13 @@ public class HGObject
       if(type.equals("specgraph.barseries") || type.equals("specgraph.areaseries") ||
             (type.equals("patch") && isPieChart))
       {
-         colors = new ArrayList<Color>();
+         colors = new ArrayList<>();
          
          List<Object> colorObjects = dataGrpColors;
          if(colorObjects == null)
          {
             // the singleton case -- there's only one data group
-            colorObjects = new ArrayList<Object>();
+            colorObjects = new ArrayList<>();
             colorObjects.add(extractDataGroupFillColor());
          }
          
@@ -1560,7 +1560,7 @@ public class HGObject
             else if(colorObj.getClass().equals(Integer.class))
             {
                // process a direct or scaled color map index
-               int idx = ((Integer) colorObj).intValue();
+               int idx = (Integer) colorObj;
                Color c = Color.BLACK;
                if(matCM != null && matCM.length > 0 && idx != 0)
                {
@@ -1572,7 +1572,7 @@ public class HGObject
                         idx = 1;
                      else
                      {
-                        double d = ((double) (idx - 1)) / ((double) (cLim[1] - cLim[0]));
+                        double d = ((double) (idx - 1)) / (cLim[1] - cLim[0]);
                         d *= matCM.length;
                         idx = Utilities.rangeRestrict(1, matCM.length, ((int) d) + 1);
                      }
@@ -1634,14 +1634,14 @@ public class HGObject
       
       // for each triplet of points: x1==x2, x3=NaN, and y2-y1 == h. While we're at it, compile the set of distinct 
       // raster train ordinals (y1 for each triplet y1, y2, y3).
-      List<Double> ordinals = new ArrayList<Double>();
+      List<Double> ordinals = new ArrayList<>();
       int idx = 0;
       while(ok && idx < xData.length)
       {
          ok = (xData[idx] == xData[idx+1]) && Double.isNaN(xData[idx+2]) && (yData[idx+1] - yData[idx] == h);
          if(ok)
          {
-            Double ord = new Double(yData[idx]);
+            Double ord = yData[idx];
             if(!ordinals.contains(ord)) ordinals.add(ord);
          }
          idx += 3;
@@ -1652,9 +1652,9 @@ public class HGObject
       if(ok)
       {
          Collections.sort(ordinals);
-         double yOffset = ordinals.get(0).doubleValue();
+         double yOffset = ordinals.get(0);
          for(int i=0; ok && i<ordinals.size(); i++)
-            ok = ((double) i) == (ordinals.get(i).doubleValue() - yOffset);
+            ok = ((double) i) == (ordinals.get(i) - yOffset);
       }
       
       return(ok);
@@ -1819,7 +1819,7 @@ public class HGObject
     * 3D scatter plot with a bar plot-like display mode. NOTE that the "surface" object should NOT be confused with
     * the "graph3d.surfaceplot" object, which is the object generated by Matlab's <i>surf()</i> function.
     * 
-    * <p>For details, see {@link #postProcess3DBarPlot()} and {@link #coalesce()}.</p>
+    * <p>For details, see {@link #postProcess3DBarPlot(HGObject)} and {@link #coalesce(HGObject, HGObject)}.</p>
     */
    private void postProcess3DPlot()
    {
@@ -1838,7 +1838,7 @@ public class HGObject
       }
       
       // second pass: coalesce all "surface" children with the same appearance into one "surface
-      List<HGObject> retained  = new ArrayList<HGObject>();
+      List<HGObject> retained  = new ArrayList<>();
       for(HGObject kid : children) 
       {
          boolean retain = true;
@@ -1906,11 +1906,9 @@ public class HGObject
     */
    private static boolean postProcess3DBarPlot(HGObject surf)
    {
-      boolean ok = true;
-      
       // FaceColor: Must be "none", "interp", or RGB color spec. Default value ("flat") not supported.
       Object prop = surf.getProperty("FaceColor");
-      ok = "none".equals(prop) || "interp".equals(prop) || (null != MatlabUtilities.processColorSpec(prop));
+      boolean ok = "none".equals(prop) || "interp".equals(prop) || (null != MatlabUtilities.processColorSpec(prop));
       
       // FaceAlpha: Must be implicit (null), or a scalar double in [0..1]
       if(ok)
@@ -2033,8 +2031,8 @@ public class HGObject
          surf.bar3DBaseZ = zBase;
          surf.bar3DSize = barSz;
          
-         surf.bar3DPoints = new ArrayList<Point3D>();
-         for(int i=0; ok && i<nRows; i+=6)
+         surf.bar3DPoints = new ArrayList<>();
+         for(int i = 0; i<nRows; i+=6)
          {
             double x0 = xData[i+1][0], x1 = xData[i+1][3], y0 = yData[i][1], y1 = yData[i+3][1], z1 = zData[i+1][1];
             surf.bar3DPoints.add(new Point3D((x0+x1)/2.0, (y0+y1)/2.0, z1));
@@ -2091,14 +2089,14 @@ public class HGObject
       // get the scalar value for the stem plot baseline from the 'baseline' object. If implicit, default is 0.
       Object prop = baselineObj.getProperty("BaseValue");
       double baseVal = 0;
-      if(prop != null && prop.getClass().equals(Double.class)) baseVal = ((Double) prop).doubleValue();
+      if(prop != null && prop.getClass().equals(Double.class)) baseVal = (Double) prop;
       
       // now, for each 'stemseries' child, explicitly set its "BaseValue" property if it is not already set.
       for(HGObject child : children) if("specgraph.stemseries".equals(child.type))
       {
          prop = child.getProperty("BaseValue");
          if(prop == null || !prop.getClass().equals(Double.class))
-            child.putProperty("BaseValue", new Double(baseVal));
+            child.putProperty("BaseValue", baseVal);
       }
    }
    
@@ -2135,7 +2133,7 @@ public class HGObject
       int iKid = 0;
       if(!"patch".equals(children.get(iKid).type)) return;
       ++iKid;
-      boolean isRadialTickPair = true;
+      boolean isRadialTickPair;
       do
       {
          HGObject kid1 = children.get(iKid++);
@@ -2302,8 +2300,8 @@ public class HGObject
       // As we make these checks, we extract the information we'll need to generate the FypML pie chart: outer radius,
       // radial offset of a displaced slice (same for all displaced slices), and per-slice information -- angular
       // extent in degrees, fill color, legend label, and displace flag.
-      List<String> labels = new ArrayList<String>();
-      List<Object> fillColors = new ArrayList<Object>();   // could be Integer or Color
+      List<String> labels = new ArrayList<>();
+      List<Object> fillColors = new ArrayList<>();   // could be Integer or Color
       int flagBits = 0;
       double[] sliceArcs = new double[nSlices];
       boolean gotRadOfs = false;
@@ -2364,7 +2362,7 @@ public class HGObject
          }
          
          String str = children.get(i*2+1).getTextStringProperty();
-         labels.add(new String(str == null ? "" : str));
+         labels.add(str == null ? "" : str);
          
          fillColors.add(slice.extractDataGroupFillColor());
       }
@@ -2384,7 +2382,7 @@ public class HGObject
       slice0.pieRadius = radius;
       slice0.pieRadOfsPct = radOfs;
       slice0.pieDisplacedBits = flagBits;
-      slice0.multiSetData = new ArrayList<double[]>();
+      slice0.multiSetData = new ArrayList<>();
       slice0.multiSetData.add(sliceArcs);
       slice0.dataGrpColors = fillColors;
       slice0.dataGrpLabels = labels;
@@ -2421,7 +2419,7 @@ public class HGObject
     * values of these properties. We do this by looking at the 'patch' child object that renders the bar group
     * represented by a single 'barseries' object. The bar group's orientation and actual bar width are calculated here.
     * "BarLayout" and "BaseValue" can be unambiguously determined when the first two 'barseries' in a collection are
-    * coalesced, by comparing the first bar vertex in each. See {@link #coalesce()}.</p>
+    * coalesced, by comparing the first bar vertex in each. See {@link #coalesce(HGObject, HGObject)}.</p>
     * 
     * <p><b>IMPORTANT</b>: The method examines the "Faces" and "Vertices" properties of the barseries object's single
     * "patch" child. For a barseries containing N bars, the "Faces" propety will be an Nx4 matrix, each element of which
@@ -2535,8 +2533,8 @@ public class HGObject
       if(!ok) return;
 
       putProperty("Horizontal", isVert ? "off" : "on");
-      putProperty(ACTUALBW_PROP, new Double(actualBW));
-      if(p1Idx > -1) putProperty(P1BAR_PROP, vertices[p1Idx]);
+      putProperty(ACTUALBW_PROP, actualBW);
+      putProperty(P1BAR_PROP, vertices[p1Idx]);
    }
    
    /** A computed property value for 'specgraph.barseries' objects: the actual bar width. Double-valued. */
@@ -2561,26 +2559,26 @@ public class HGObject
       if(levelList != null && levelList.length > 0) return;
       
       // compile the list of distinct contour levels by examining the 'patch' children.
-      List<Double> levels = new ArrayList<Double>();
+      List<Double> levels = new ArrayList<>();
       for(int i=0; i<getChildCount(); i++)
       {
          HGObject patchObj = getChildAt(i);
          if(patchObj == null || !patchObj.getType().equals("patch")) continue;
          
          double[] userData = getDoubleVectorFromProperty(patchObj.getProperty("UserData"));
-         if(userData != null && userData.length == 1 && !levels.contains(new Double(userData[0])))
-            levels.add(new Double(userData[0]));
+         if(userData != null && userData.length == 1 && !levels.contains(userData[0]))
+            levels.add(userData[0]);
       }
       
       // if some levels were found, sort in ascending order. Limit number of levels accepted IAW constraint on FypML
       // contour node. Explicitly save the level list in the "LevelList" property.
-      if(levels.size() > 0)
+      if(!levels.isEmpty())
       {
          Collections.sort(levels);
          while(levels.size() > ContourNode.MAXLEVELS) levels.remove(levels.size()-1);
          
          levelList = new double[levels.size()];
-         for(int i=0; i<levelList.length; i++) levelList[i] = levels.get(i).doubleValue();
+         for(int i=0; i<levelList.length; i++) levelList[i] = levels.get(i);
          putProperty("LevelList", levelList);
       }
    }
@@ -2686,183 +2684,186 @@ public class HGObject
       // if the candidate object passes this test, then coalescing is warranted
       if(hgObj==null || hgAxes==null || !shouldCoalesce(this, hgObj, hgAxes)) return(false);
 
-      if(type.equals("line"))
+      switch(type)
       {
-         // for "line" objects, XData and YData are double[] with a minimum length of 2.
-         double[] xData = null;
-         double[] yData = null;
-         if(scatterPoints == null)
+         case "line":
          {
-            scatterPoints = new ArrayList<Point2D>();
-            xData = (double[]) getProperty("XData");
-            yData = (double[]) getProperty("YData");
-            for(int i=0; i<xData.length; i++) scatterPoints.add(new Point2D.Double(xData[i], yData[i]));
-         }
-         scatterPoints.add(new Point2D.Double(Double.NaN, Double.NaN));
-         xData = (double[]) hgObj.getProperty("XData");
-         yData = (double[]) hgObj.getProperty("YData");
-         for(int i=0; i<xData.length; i++) scatterPoints.add(new Point2D.Double(xData[i], yData[i]));
-      }
-      else if(type.equals("graph2d.lineseries"))
-      {
-         double[] yData = getDoubleVectorFromProperty(hgObj.getProperty("YData"));
-         if(yData.length == 1)
-         {
-            // in this case, we know the XData and YData properties are all java.lang.Double
+            // for "line" objects, XData and YData are double[] with a minimum length of 2.
+            double[] xData;
+            double[] yData;
             if(scatterPoints == null)
             {
-               scatterPoints = new ArrayList<Point2D>();
-               scatterPoints.add(new Point2D.Double(((Double) getProperty("XData")), ((Double) getProperty("YData"))));
-            }
-            scatterPoints.add(new Point2D.Double(((Double) hgObj.getProperty("XData")), yData[0]));
-         }
-         else if(hgAxes.isPolarAxes() && isCompassPlotVector && hgObj.isCompassPlotVector)
-         {
-            // in this case, we know the XData and YData properties are of length 5, and the coalesced compass plot
-            // object only saves the vector endpoint == (x[1], y[1]).
-            double[] xData = null;
-            yData = null;
-            if(scatterPoints == null)
-            {
-               scatterPoints = new ArrayList<Point2D>();
+               scatterPoints = new ArrayList<>();
                xData = (double[]) getProperty("XData");
                yData = (double[]) getProperty("YData");
-               scatterPoints.add(new Point2D.Double(xData[1], yData[1]));
+               for(int i = 0; i < xData.length; i++) scatterPoints.add(new Point2D.Double(xData[i], yData[i]));
             }
+            scatterPoints.add(new Point2D.Double(Double.NaN, Double.NaN));
             xData = (double[]) hgObj.getProperty("XData");
             yData = (double[]) hgObj.getProperty("YData");
-            scatterPoints.add(new Point2D.Double(xData[1], yData[1]));
+            for(int i = 0; i < xData.length; i++) scatterPoints.add(new Point2D.Double(xData[i], yData[i]));
+            break;
          }
-         else
+         case "graph2d.lineseries":
          {
-            if(multiSetData == null)
+            double[] yData = getDoubleVectorFromProperty(hgObj.getProperty("YData"));
+            if(yData.length == 1)
             {
-               multiSetData = new ArrayList<double[]>();
-               multiSetData.add((double[]) getProperty("YData"));
-            }
-            multiSetData.add(yData);
-         }
-      }
-      else if(type.equals("specgraph.barseries"))
-      {
-         // it is assumed that each 'barseries' object represents one bar group in the Matlab bar plot. This 'barseries'
-         // object contains the properties that determine the layout, orientation, and common stroke properties of the
-         // eventual <i>FypML</i> bar plot node. Here we need to collect the following information for the 'barseries'
-         // object being coalesed: the YData, the bar group legend label, and the bar group color.
-         
-         // if we're coalescing the first two bar groups, we can now unambiguously determine the bar group layout and
-         // baseline value by examing the first bar vertex of each barseries object. The vertex and orientation (H,V)
-         // of each bar group was determined when the corresponding HGObject was initially created.
-         boolean initial = (multiSetData == null);
-         if(initial)
-         {
-            Object prop = getProperty("Horizontal");
-            boolean isVert = prop == null || "off".equals(prop);
-            
-            double[] p1 = getDoubleVectorFromProperty(getProperty(P1BAR_PROP));
-            double[] p1_2 = getDoubleVectorFromProperty(hgObj.getProperty(P1BAR_PROP));
-            if(p1 != null && p1_2 != null && p1.length >= 2 & p1_2.length >= 2)
+               // in this case, we know the XData and YData properties are all java.lang.Double
+               if(scatterPoints == null)
+               {
+                  scatterPoints = new ArrayList<>();
+                  scatterPoints.add(new Point2D.Double(((Double) getProperty("XData")), ((Double) getProperty("YData"))));
+               }
+               scatterPoints.add(new Point2D.Double(((Double) hgObj.getProperty("XData")), yData[0]));
+            } else if(hgAxes.isPolarAxes() && isCompassPlotVector && hgObj.isCompassPlotVector)
             {
-               boolean isGrp = false;
-               double baseline = 0;
-               if(isVert)
+               // in this case, we know the XData and YData properties are of length 5, and the coalesced compass plot
+               // object only saves the vector endpoint == (x[1], y[1]).
+               double[] xData;
+               if(scatterPoints == null)
                {
-                  // for V grouped(stacked) bar plots, the x-coordinates are unequal (equal). Baseline value is the 
-                  // Y-coordinate of the first bar vertex of the first bar group.
-                  isGrp = (p1[0] != p1_2[0]);
-                  baseline = p1[1];
+                  scatterPoints = new ArrayList<>();
+                  xData = (double[]) getProperty("XData");
+                  yData = (double[]) getProperty("YData");
+                  scatterPoints.add(new Point2D.Double(xData[1], yData[1]));
                }
-               else
+               xData = (double[]) hgObj.getProperty("XData");
+               yData = (double[]) hgObj.getProperty("YData");
+               scatterPoints.add(new Point2D.Double(xData[1], yData[1]));
+            } else
+            {
+               if(multiSetData == null)
                {
-                  // for H grouped (stacked) bar plots, the y-coordinates are unequal (equal). Baseline value is the
-                  // X-coordinate of the first bar vertex of the first bar group.
-                  isGrp = (p1[1] != p1_2[1]);
-                  baseline = p1[0];
+                  multiSetData = new ArrayList<>();
+                  multiSetData.add((double[]) getProperty("YData"));
                }
-               
-               putProperty("BarLayout", isGrp ? "grouped" : "stacked");
-               putProperty("BaseValue", new Double(baseline));
+               multiSetData.add(yData);
             }
+            break;
          }
-         
-         if(initial)
+         case "specgraph.barseries":
          {
-            multiSetData = new ArrayList<double[]>();
-            multiSetData.add(getDoubleVectorFromProperty(getProperty("YData")));
+            // it is assumed that each 'barseries' object represents one bar group in the Matlab bar plot. This 'barseries'
+            // object contains the properties that determine the layout, orientation, and common stroke properties of the
+            // eventual <i>FypML</i> bar plot node. Here we need to collect the following information for the 'barseries'
+            // object being coalesed: the YData, the bar group legend label, and the bar group color.
+
+            // if we're coalescing the first two bar groups, we can now unambiguously determine the bar group layout and
+            // baseline value by examing the first bar vertex of each barseries object. The vertex and orientation (H,V)
+            // of each bar group was determined when the corresponding HGObject was initially created.
+            boolean initial = (multiSetData == null);
+            if(initial)
+            {
+               Object prop = getProperty("Horizontal");
+               boolean isVert = prop == null || "off".equals(prop);
+
+               double[] p1 = getDoubleVectorFromProperty(getProperty(P1BAR_PROP));
+               double[] p1_2 = getDoubleVectorFromProperty(hgObj.getProperty(P1BAR_PROP));
+               if(p1 != null && p1_2 != null && p1.length >= 2 & p1_2.length >= 2)
+               {
+                  boolean isGrp;
+                  double baseline;
+                  if(isVert)
+                  {
+                     // for V grouped(stacked) bar plots, the x-coordinates are unequal (equal). Baseline value is the
+                     // Y-coordinate of the first bar vertex of the first bar group.
+                     isGrp = (p1[0] != p1_2[0]);
+                     baseline = p1[1];
+                  } else
+                  {
+                     // for H grouped (stacked) bar plots, the y-coordinates are unequal (equal). Baseline value is the
+                     // X-coordinate of the first bar vertex of the first bar group.
+                     isGrp = (p1[1] != p1_2[1]);
+                     baseline = p1[0];
+                  }
+
+                  putProperty("BarLayout", isGrp ? "grouped" : "stacked");
+                  putProperty("BaseValue", baseline);
+               }
+            }
+
+            if(initial)
+            {
+               multiSetData = new ArrayList<>();
+               multiSetData.add(getDoubleVectorFromProperty(getProperty("YData")));
+            }
+            multiSetData.add(getDoubleVectorFromProperty(hgObj.getProperty("YData")));
+
+            if(initial)
+            {
+               dataGrpLabels = new ArrayList<>();
+               dataGrpLabels.add(extractDataGroupLegendLabel(0));
+            }
+            dataGrpLabels.add(hgObj.extractDataGroupLegendLabel(dataGrpLabels.size()));
+
+            if(initial)
+            {
+               dataGrpColors = new ArrayList<>();
+               dataGrpColors.add(extractDataGroupFillColor());
+            }
+            dataGrpColors.add(hgObj.extractDataGroupFillColor());
+            break;
          }
-         multiSetData.add( getDoubleVectorFromProperty(hgObj.getProperty("YData")) );
-         
-         if(initial)
+         case "specgraph.areaseries":
          {
-            dataGrpLabels = new ArrayList<String>();
-            dataGrpLabels.add(extractDataGroupLegendLabel(0));
+            // each coalesced 'areaseries' object represents one band in the Matlab area chart. This 'areaseries' object
+            // contains the properties that determine the baseline value and stroke properties of the eventual <i>FypML</i>
+            // area chart node. Here we need to collect the following information for the 'areaseries' object being
+            // coalesed: the YData, the data group legend label, and the data group color.
+
+            boolean initial = (multiSetData == null);
+            if(initial)
+            {
+               multiSetData = new ArrayList<>();
+               multiSetData.add(getDoubleVectorFromProperty(getProperty("YData")));
+            }
+            multiSetData.add(getDoubleVectorFromProperty(hgObj.getProperty("YData")));
+
+            if(initial)
+            {
+               dataGrpLabels = new ArrayList<>();
+               dataGrpLabels.add(extractDataGroupLegendLabel(0));
+            }
+            dataGrpLabels.add(hgObj.extractDataGroupLegendLabel(dataGrpLabels.size()));
+
+            if(initial)
+            {
+               dataGrpColors = new ArrayList<>();
+               dataGrpColors.add(extractDataGroupFillColor());
+            }
+            dataGrpColors.add(hgObj.extractDataGroupFillColor());
+            break;
          }
-         dataGrpLabels.add(hgObj.extractDataGroupLegendLabel(dataGrpLabels.size()));
-         
-         if(initial)
+         case "specgraph.scattergroup":
          {
-            dataGrpColors = new ArrayList<Object>();
-            dataGrpColors.add(extractDataGroupFillColor());
-         }
-         dataGrpColors.add(hgObj.extractDataGroupFillColor());
-      }
-      else if(type.equals("specgraph.areaseries")) 
-      {
-         // each coalesced 'areaseries' object represents one band in the Matlab area chart. This 'areaseries' object 
-         // contains the properties that determine the baseline value and stroke properties of the eventual <i>FypML</i>
-         // area chart node. Here we need to collect the following information for the 'areaseries' object being 
-         // coalesed: the YData, the data group legend label, and the data group color.
-         
-         boolean initial = (multiSetData == null);
-         if(initial)
-         {
-            multiSetData = new ArrayList<double[]>();
-            multiSetData.add(getDoubleVectorFromProperty(getProperty("YData")));
-         }
-         multiSetData.add( getDoubleVectorFromProperty(hgObj.getProperty("YData")) );
-         
-         if(initial)
-         {
-            dataGrpLabels = new ArrayList<String>();
-            dataGrpLabels.add(extractDataGroupLegendLabel(0));
-         }
-         dataGrpLabels.add(hgObj.extractDataGroupLegendLabel(dataGrpLabels.size()));
-         
-         if(initial)
-         {
-            dataGrpColors = new ArrayList<Object>();
-            dataGrpColors.add(extractDataGroupFillColor());
-         }
-         dataGrpColors.add(hgObj.extractDataGroupFillColor());
-      }
-      else if(type.equals("specgraph.scattergroup"))
-      {
-         // the coalesced 'scattergroup' objects are combined into one FypML scatter or scatter3d node with a PTSET or
-         // XYZSET data source, respectively. Here we compile a list of the data vectors extracted from the individual
-         // scattergroup objects: XData1, YData1, XData2, YData2,... for the 2D scatter plot; XData1, YData1, ZData1,
-         // XData2, ... for the 3D case
-         
-         boolean initial = (multiSetData == null);
-         if(initial)
-         {
-            multiSetData = new ArrayList<double[]>();
-            multiSetData.add(getDoubleVectorFromProperty(getProperty("XData")));
-            multiSetData.add(getDoubleVectorFromProperty(getProperty("YData")));
-            double[] zData = getDoubleVectorFromProperty(getProperty("ZData"));
+            // the coalesced 'scattergroup' objects are combined into one FypML scatter or scatter3d node with a PTSET or
+            // XYZSET data source, respectively. Here we compile a list of the data vectors extracted from the individual
+            // scattergroup objects: XData1, YData1, XData2, YData2,... for the 2D scatter plot; XData1, YData1, ZData1,
+            // XData2, ... for the 3D case
+
+            boolean initial = (multiSetData == null);
+            if(initial)
+            {
+               multiSetData = new ArrayList<>();
+               multiSetData.add(getDoubleVectorFromProperty(getProperty("XData")));
+               multiSetData.add(getDoubleVectorFromProperty(getProperty("YData")));
+               double[] zData = getDoubleVectorFromProperty(getProperty("ZData"));
+               if(zData != null && zData.length > 0) multiSetData.add(zData);
+            }
+            multiSetData.add(getDoubleVectorFromProperty(hgObj.getProperty("XData")));
+            multiSetData.add(getDoubleVectorFromProperty(hgObj.getProperty("YData")));
+            double[] zData = getDoubleVectorFromProperty(hgObj.getProperty("ZData"));
             if(zData != null && zData.length > 0) multiSetData.add(zData);
+            break;
          }
-         multiSetData.add( getDoubleVectorFromProperty(hgObj.getProperty("XData")) );
-         multiSetData.add( getDoubleVectorFromProperty(hgObj.getProperty("YData")) );
-         double[] zData = getDoubleVectorFromProperty(hgObj.getProperty("ZData"));
-         if(zData != null && zData.length > 0) multiSetData.add(zData);
-      }
-      else if(type.equals("surface"))
-      {
-         // 'surface' objects rendering 3D bar plots in a 3D graph context (generated by bar3()): during
-         // post-processing and before coalescing, the set of 3D data points represented by the individual bars rendered
-         // by the 'surface' are computed and stored internally. All we have to do here is add the coalesced surface's
-         // data points to this surface.
-         bar3DPoints.addAll(hgObj.bar3DPoints);
+         case "surface":
+            // 'surface' objects rendering 3D bar plots in a 3D graph context (generated by bar3()): during
+            // post-processing and before coalescing, the set of 3D data points represented by the individual bars rendered
+            // by the 'surface' are computed and stored internally. All we have to do here is add the coalesced surface's
+            // data points to this surface.
+            bar3DPoints.addAll(hgObj.bar3DPoints);
+            break;
       }
       
       return(true);
@@ -2878,7 +2879,7 @@ public class HGObject
     * {i}", where {i} is the data group index as an integer string. If neither property is found, the legend label will 
     * be null.
     * 
-    * @param The index position of the data group represented by this bar or area series plot object.
+    * @param idx The index position of the data group represented by this bar or area series plot object.
     * @return The legend label, if any found; else null. Returns null always if this is neither a bar series nor an
     * area series plot object.
     */
@@ -2892,7 +2893,7 @@ public class HGObject
       if(prop != null && (prop.getClass().equals(String.class) || prop.getClass().equals(Character.class)))
       {
          label = prop.toString().trim();
-         if(label.length() == 0) label = null;
+         if(label.isEmpty()) label = null;
       }
 
       // if no label in 'DisplayName', check field 'legend_texthandle' in the HG object's 'ApplicationData' property. If
@@ -2940,11 +2941,11 @@ public class HGObject
       Object prop = getProperty("FaceAlpha");
       int alpha = 255;
       if(prop != null && prop.getClass().equals(Double.class))
-         alpha = Utilities.rangeRestrict(0, 255, (int) (255.0 * ((Double) prop).doubleValue()));
+         alpha = Utilities.rangeRestrict(0, 255, (int) (255.0 * (Double) prop));
       
       // the default (implicit) value for FaceColor property is "flat"
       prop = getProperty("FaceColor");
-      if(prop == null) prop = new String("flat");   
+      if(prop == null) prop = "flat";
       
       // transparent black
       if("none".equals(prop)) return(new Color(0,0,0,0));
@@ -3000,7 +3001,7 @@ public class HGObject
       prop = getProperty("CDataMapping");
       if(prop == null || "scaled".equals(prop)) colorIdx = -colorIdx;
       
-      return(new Integer(colorIdx));
+      return(colorIdx);
    }
    
    /**
@@ -3008,7 +3009,7 @@ public class HGObject
     * coalesced into one plot. Coalescing handles use cases in which a collection of Matlab HG plot objects within an
     * 'axes' object are related in some way and can be converted to a single <i>FypML</i> data presentation node. For 
     * details on the relevant uses cases and the conditions that must be met to coalesce the HG objects, see {@link 
-    * #coalesce(HGObject, boolean)}.
+    * #coalesce(HGObject, HGObject)}.
     * 
     * @param hg1 One Handle Graphics plot object. Must not be null.
     * @param hg2 A second Handle Graphics plot object. Must not be null. The method tests whether this object may be
@@ -3025,341 +3026,339 @@ public class HGObject
             plotType.equals("specgraph.barseries") || plotType.equals("specgraph.areaseries") ||
             plotType.equals("specgraph.scattergroup") || plotType.equals("surface");
       if(!ok) return(false);
-      
-      // handle 'scattergroup' use case
-      if(plotType.equals("specgraph.scattergroup"))
-      {
-         // both must be simple scatter plots, in which all symbols have the same size and appearance.
-         ok = isSimpleScatterPlot(hg1) && isSimpleScatterPlot(hg2);
-         
-         // verify that the marker symbol has the same size and appearance
-         if(ok)
-         {
-            Object prop1 = hg1.getProperty("SizeData");
-            Object prop2 = hg2.getProperty("SizeData");
-            ok = (prop1==null && prop2==null) || (prop1!=null && prop2!=null && prop1.equals(prop2));
-         }
-         if(ok)
-         {
-            Object prop1 = hg1.getProperty("LineWidth");
-            Object prop2 = hg2.getProperty("LineWidth");
-            ok = (prop1==null && prop2==null) || (prop1!=null && prop2!=null && prop1.equals(prop2));
-         }
-         if(ok)
-         {
-            Object prop1 = hg1.getProperty("Marker");
-            Object prop2 = hg2.getProperty("Marker");
-            ok = (prop1==null && prop2==null) || (prop1!=null && prop2!=null && prop1.equals(prop2));
-         }
-         if(ok)
-         {
-            // MarkerEdgeColor = "flat" (default), "none", or a Matlab color specification
-            Object prop1 = hg1.getProperty("MarkerEdgeColor");
-            Object prop2 = hg2.getProperty("MarkerEdgeColor");
-            
-            Color c1 = null;
-            if(!"none".equals(prop1))
-            {
-               if(prop1==null || "flat".equals(prop1)) c1 = MatlabUtilities.processColorSpec(hg1.getProperty("CData"));
-               else c1 = MatlabUtilities.processColorSpec(prop1);
-            }
-            Color c2 = null;
-            if(!"none".equals(prop2))
-            {
-               if(prop2==null || "flat".equals(prop2)) c2 = MatlabUtilities.processColorSpec(hg2.getProperty("CData"));
-               else c2 = MatlabUtilities.processColorSpec(prop2);
-            }
-            ok = (c1==null && c2==null) || c1.equals(c2);
-            
-            // if edge color is not "none", ensure alpha components are the same
-            if(ok && !"none".equals(prop1))
-            {
-               prop1 = hg1.getProperty("MarkerEdgeAlpha");
-               prop2 = hg2.getProperty("MarkerEdgeAlpha");
-               ok = (prop1==null && prop2==null) || (prop1!=null && prop2!=null && prop1.equals(prop2));
-            }
-         }
-         if(ok)
-         {
-            // MarkerFaceColor = "none" (default), "flat", "auto", or Matlab color specification
-            Object prop1 = hg1.getProperty("MarkerFaceColor");
-            Object prop2 = hg2.getProperty("MarkerFaceColor");
-            
-            boolean isNone = (prop1==null || "none".equals(prop1)) && (prop2==null || "none".equals(prop2));
-            boolean isAuto = ("auto".equals(prop1) && "auto".equals(prop2));
-            ok = isNone || isAuto;
-            if(!ok)
-            {
-               Color c1 = MatlabUtilities.processColorSpec(prop1);
-               if(c1 == null && "flat".equals(prop1))
-                  c1 = MatlabUtilities.processColorSpec(hg1.getProperty("CData"));
-               
-               Color c2 = MatlabUtilities.processColorSpec(prop2);
-               if(c2 == null && "flat".equals(prop2))
-                  c2 = MatlabUtilities.processColorSpec(hg2.getProperty("CData"));
-               
-               ok = (c1 != null) && (c2 != null) && (c1.equals(c2));
-               if(ok)
-               {
-                  // make sure alpha components are the same 
-                  prop1 = hg1.getProperty("MarkerFaceAlpha");
-                  prop2 = hg2.getProperty("MarkerFaceAlpha");
-                  ok = (prop1==null && prop2==null) || (prop1!=null && prop2!=null && prop1.equals(prop2));
-               }
-            }
-         }
 
-         // finally, verify that the XData and YData properties have the same length for each individual scatter group.
-         // If there's a ZData vector, that also must have the same length as XData. Any 'scattergroup' that does not
-         // meet this criterion won't be converted to FypML anyway. Note that there's no need to compare across the two 
-         // groups -- XData1.length need not match XData2.length. However, if one group has ZData, so must the other -- 
-         // for coalescing 3D scatter plots.
-         if(ok)
+      switch(plotType)
+      {
+         case "specgraph.scattergroup":
          {
-            double[] xData = getDoubleVectorFromProperty(hg1.getProperty("XData"));
-            double[] yData = getDoubleVectorFromProperty(hg1.getProperty("YData"));
-            double[] zData = getDoubleVectorFromProperty(hg1.getProperty("ZData"));
-            ok = xData != null && yData != null && xData.length == yData.length;
-            boolean hasZData = zData != null && zData.length > 0;
-            if(ok && hasZData) ok = xData.length == zData.length;
-            
+            // both must be simple scatter plots, in which all symbols have the same size and appearance.
+            ok = isSimpleScatterPlot(hg1) && isSimpleScatterPlot(hg2);
+
+            // verify that the marker symbol has the same size and appearance
             if(ok)
             {
-               xData = getDoubleVectorFromProperty(hg2.getProperty("XData"));
-               yData = getDoubleVectorFromProperty(hg2.getProperty("YData"));
-               zData = getDoubleVectorFromProperty(hg2.getProperty("ZData"));
-               ok = xData != null && yData != null && xData.length == yData.length;
-               if(ok)
+               Object prop1 = hg1.getProperty("SizeData");
+               Object prop2 = hg2.getProperty("SizeData");
+               ok = (prop1 == null && prop2 == null) || (prop1 != null && prop1.equals(prop2));
+            }
+            if(ok)
+            {
+               Object prop1 = hg1.getProperty("LineWidth");
+               Object prop2 = hg2.getProperty("LineWidth");
+               ok = (prop1 == null && prop2 == null) || (prop1 != null && prop1.equals(prop2));
+            }
+            if(ok)
+            {
+               Object prop1 = hg1.getProperty("Marker");
+               Object prop2 = hg2.getProperty("Marker");
+               ok = (prop1 == null && prop2 == null) || (prop1 != null && prop1.equals(prop2));
+            }
+            if(ok)
+            {
+               // MarkerEdgeColor = "flat" (default), "none", or a Matlab color specification
+               Object prop1 = hg1.getProperty("MarkerEdgeColor");
+               Object prop2 = hg2.getProperty("MarkerEdgeColor");
+
+               Color c1 = null;
+               if(!"none".equals(prop1))
                {
-                  if(hasZData) ok = zData != null && zData.length == xData.length;
-                  else ok = zData == null || zData.length == 0;
+                  if(prop1 == null || "flat".equals(prop1))
+                     c1 = MatlabUtilities.processColorSpec(hg1.getProperty("CData"));
+                  else c1 = MatlabUtilities.processColorSpec(prop1);
+               }
+               Color c2 = null;
+               if(!"none".equals(prop2))
+               {
+                  if(prop2 == null || "flat".equals(prop2))
+                     c2 = MatlabUtilities.processColorSpec(hg2.getProperty("CData"));
+                  else c2 = MatlabUtilities.processColorSpec(prop2);
+               }
+               ok = (c1 == null && c2 == null) || (c1 != null && c1.equals(c2));
+
+               // if edge color is not "none", ensure alpha components are the same
+               if(ok && !"none".equals(prop1))
+               {
+                  prop1 = hg1.getProperty("MarkerEdgeAlpha");
+                  prop2 = hg2.getProperty("MarkerEdgeAlpha");
+                  ok = (prop1 == null && prop2 == null) || (prop1 != null && prop1.equals(prop2));
                }
             }
-         }
-         
-         return(ok);
-      }
-      
-      // handle 'barseries' use case...
-      if(plotType.equals("specgraph.barseries"))
-      {
-         // a bar plot in a polar graph is not supported. Don't bother coalescing at all.
-         if(hgAxes.isPolarAxes()) return(false);
-         
-         // check 'Horizontal' property: 'on' or 'off'. The implicit default is 'off'.
-         Object prop1 = hg1.getProperty("Horizontal");
-         boolean isVert = (prop1 == null) || "off".equals(prop1);
-         Object prop2 = hg2.getProperty("Horizontal");
-         ok = isVert == ((prop2 == null) || "off".equals(prop2));
-         
-         // is YData the same length for both 'barseries' objects? NOTE that we assume here that YData will only be a
-         // vector, not a matrix.
-         int len = 0;
-         if(ok)
-         {
-            double[] yData1 = getDoubleVectorFromProperty(hg1.getProperty("YData"));
-            double[] yData2 = getDoubleVectorFromProperty(hg2.getProperty("YData"));
-            ok = (yData1 != null) && (yData2 != null) && (yData1.length == yData2.length);
-            if(ok) len = yData1.length;
-         }
+            if(ok)
+            {
+               // MarkerFaceColor = "none" (default), "flat", "auto", or Matlab color specification
+               Object prop1 = hg1.getProperty("MarkerFaceColor");
+               Object prop2 = hg2.getProperty("MarkerFaceColor");
 
-         // check 'XDataMode' and 'XData' properties. If 'XData' is explicit, no need to check 'XDataMode'. If 'XData'
-         // is implicit, then expect 'XDataMode' == 'auto' (the default). Coalescing is appropriate only if the two
-         // bar series' X-vectors are both implicit, or they're both explicit and have the same length = len(YData).
-         if(ok)
+               boolean isNone = (prop1 == null || "none".equals(prop1)) && (prop2 == null || "none".equals(prop2));
+               boolean isAuto = ("auto".equals(prop1) && "auto".equals(prop2));
+               ok = isNone || isAuto;
+               if(!ok)
+               {
+                  Color c1 = MatlabUtilities.processColorSpec(prop1);
+                  if(c1 == null && "flat".equals(prop1))
+                     c1 = MatlabUtilities.processColorSpec(hg1.getProperty("CData"));
+
+                  Color c2 = MatlabUtilities.processColorSpec(prop2);
+                  if(c2 == null && "flat".equals(prop2))
+                     c2 = MatlabUtilities.processColorSpec(hg2.getProperty("CData"));
+
+                  ok = (c1 != null) && (c1.equals(c2));
+                  if(ok)
+                  {
+                     // make sure alpha components are the same
+                     prop1 = hg1.getProperty("MarkerFaceAlpha");
+                     prop2 = hg2.getProperty("MarkerFaceAlpha");
+                     ok = (prop1 == null && prop2 == null) || (prop1 != null && prop1.equals(prop2));
+                  }
+               }
+            }
+
+            // finally, verify that the XData and YData properties have the same length for each individual scatter group.
+            // If there's a ZData vector, that also must have the same length as XData. Any 'scattergroup' that does not
+            // meet this criterion won't be converted to FypML anyway. Note that there's no need to compare across the two
+            // groups -- XData1.length need not match XData2.length. However, if one group has ZData, so must the other --
+            // for coalescing 3D scatter plots.
+            if(ok)
+            {
+               double[] xData = getDoubleVectorFromProperty(hg1.getProperty("XData"));
+               double[] yData = getDoubleVectorFromProperty(hg1.getProperty("YData"));
+               double[] zData = getDoubleVectorFromProperty(hg1.getProperty("ZData"));
+               ok = xData != null && yData != null && xData.length == yData.length;
+               boolean hasZData = zData != null && zData.length > 0;
+               if(ok && hasZData) ok = xData.length == zData.length;
+
+               if(ok)
+               {
+                  xData = getDoubleVectorFromProperty(hg2.getProperty("XData"));
+                  yData = getDoubleVectorFromProperty(hg2.getProperty("YData"));
+                  zData = getDoubleVectorFromProperty(hg2.getProperty("ZData"));
+                  ok = xData != null && yData != null && xData.length == yData.length;
+                  if(ok)
+                  {
+                     if(hasZData) ok = zData != null && zData.length == xData.length;
+                     else ok = zData == null || zData.length == 0;
+                  }
+               }
+            }
+
+            return (ok);
+         }
+         case "specgraph.barseries":
          {
-            double[] xData1 = getDoubleVectorFromProperty(hg1.getProperty("XData"));
-            double[] xData2 = getDoubleVectorFromProperty(hg2.getProperty("XData"));
-            ok = (xData1 != null) && (xData2 != null) && (xData1.length == xData2.length) && (len == xData1.length);
+            // a bar plot in a polar graph is not supported. Don't bother coalescing at all.
+            if(hgAxes.isPolarAxes()) return (false);
+
+            // check 'Horizontal' property: 'on' or 'off'. The implicit default is 'off'.
+            Object prop1 = hg1.getProperty("Horizontal");
+            boolean isVert = (prop1 == null) || "off".equals(prop1);
+            Object prop2 = hg2.getProperty("Horizontal");
+            ok = isVert == ((prop2 == null) || "off".equals(prop2));
+
+            // is YData the same length for both 'barseries' objects? NOTE that we assume here that YData will only be a
+            // vector, not a matrix.
+            int len = 0;
+            if(ok)
+            {
+               double[] yData1 = getDoubleVectorFromProperty(hg1.getProperty("YData"));
+               double[] yData2 = getDoubleVectorFromProperty(hg2.getProperty("YData"));
+               ok = (yData1 != null) && (yData2 != null) && (yData1.length == yData2.length);
+               if(ok) len = yData1.length;
+            }
+
+            // check 'XDataMode' and 'XData' properties. If 'XData' is explicit, no need to check 'XDataMode'. If 'XData'
+            // is implicit, then expect 'XDataMode' == 'auto' (the default). Coalescing is appropriate only if the two
+            // bar series' X-vectors are both implicit, or they're both explicit and have the same length = len(YData).
+            if(ok)
+            {
+               double[] xData1 = getDoubleVectorFromProperty(hg1.getProperty("XData"));
+               double[] xData2 = getDoubleVectorFromProperty(hg2.getProperty("XData"));
+               ok = (xData1 != null) && (xData2 != null) && (xData1.length == xData2.length) && (len == xData1.length);
+               if(!ok)
+               {
+                  // check for 'auto' case
+                  prop1 = hg1.getProperty("XDataMode");
+                  prop2 = hg2.getProperty("XDataMode");
+                  boolean isAuto1 = (prop1 == null) || "auto".equals(prop1);
+                  boolean isAuto2 = (prop2 == null) || "auto".equals(prop2);
+                  ok = xData1 == null && xData2 == null && (isAuto1 == isAuto2);
+               }
+            }
+
+            // check the calculated actual bar width. Should be explicit for both bar series, else ignore it.
+            if(ok)
+            {
+               prop1 = hg1.getProperty(ACTUALBW_PROP);
+               prop2 = hg2.getProperty(ACTUALBW_PROP);
+               if(prop1 != null && prop2 != null)
+                  ok = Math.abs((Double) prop1 - (Double) prop2) < 0.0001;
+            }
+
+            // if the first barseries already contains coalesced data, then the 'BarLayout' property has been determined
+            // unambiguously. In this case, we have expectations on the first bar vertex of the candidate barseries...
+            if(ok && hg1.isCoalescedBarPlot())
+            {
+               double[] p1_1 = getDoubleVectorFromProperty(hg1.getProperty(P1BAR_PROP));
+               double[] p1_2 = getDoubleVectorFromProperty(hg2.getProperty(P1BAR_PROP));
+
+               // the above properties should always be defined at this point. But if they aren't, we simply exclude this
+               // check in our considerations.
+               if(p1_1 != null && p1_2 != null && p1_1.length >= 2 && p1_2.length >= 2)
+               {
+                  prop1 = hg1.getProperty("BarLayout");
+                  boolean isGrp = (prop1 == null) || "grouped".equals(prop1);
+
+                  // for V grouped(stacked) bar plots, the x-coordinates are unequal (equal). For H grouped (stacked) bar
+                  // plots, the y-coordinates are unequal (equal).
+                  int idx = isVert ? 0 : 1;
+                  ok = isGrp ? (p1_1[idx] != p1_2[idx]) : (p1_1[idx] == p1_2[idx]);
+               }
+            }
+
+            return (ok);
+         }
+         case "specgraph.areaseries":
+         {
+            // check 'BaseValue' property. Both must share the same baseline value. Object will be a Double, so we can
+            // safely use Object.equals.
+            // value will be a Double, so we can safely use Object.equals
+            Object prop1 = hg1.getProperty("BaseValue");
+            Object prop2 = hg2.getProperty("BaseValue");
+            ok = (prop1 == null && prop2 == null) || (prop1 != null && prop1.equals(prop2));
+
+            // is YData the same length for both 'areaseries' objects? NOTE that we assume here that YData will only be a
+            // vector, not a matrix.
+            int len = 0;
+            if(ok)
+            {
+               double[] yData1 = getDoubleVectorFromProperty(hg1.getProperty("YData"));
+               double[] yData2 = getDoubleVectorFromProperty(hg2.getProperty("YData"));
+               ok = (yData1 != null) && (yData2 != null) && (yData1.length == yData2.length);
+               if(ok) len = yData1.length;
+            }
+
+            // check 'XDataMode' and 'XData' properties. If 'XData' is explicit, no need to check 'XDataMode'. If 'XData'
+            // is implicit, then expect 'XDataMode' == 'auto' (the default). Coalescing is appropriate only if the two
+            // X-vectors are both implicit, or they're both explicit, have the same length = len(YData), and are equal.
+            if(ok)
+            {
+               double[] xData1 = getDoubleVectorFromProperty(hg1.getProperty("XData"));
+               double[] xData2 = getDoubleVectorFromProperty(hg2.getProperty("XData"));
+               ok = (xData1 != null) && (xData2 != null) && Arrays.equals(xData1, xData2) && (xData1.length == len);
+               if(!ok)
+               {
+                  // check for 'auto' case
+                  prop1 = hg1.getProperty("XDataMode");
+                  prop2 = hg2.getProperty("XDataMode");
+                  boolean isAuto1 = (prop1 == null) || "auto".equals(prop1);
+                  boolean isAuto2 = (prop2 == null) || "auto".equals(prop2);
+                  ok = xData1 == null && xData2 == null && (isAuto1 == isAuto2);
+               }
+            }
+
+            return (ok);
+         }
+         case "surface":
+         {
+            if(!(hgAxes.is3D && hg1.isBar3D && hg2.isBar3D)) return (false);
+
+            // difference in base plane Z-coordinates must be 0.1% or less, but we have to be careful b/c the base plane Z
+            // could be zero, and we cannot divide by zero to find %-age!
+            ok = (hg1.bar3DBaseZ == hg1.bar3DBaseZ);
             if(!ok)
             {
-               // check for 'auto' case
-               prop1 = hg1.getProperty("XDataMode");
-               prop2 = hg2.getProperty("XDataMode");
-               boolean isAuto1 = (prop1 == null) || "auto".equals(prop1);
-               boolean isAuto2 = (prop2 == null) || "auto".equals(prop2);
-               ok = xData1 == null && xData2 == null && (isAuto1 == isAuto2);
+               double d = Math.abs(hg1.bar3DBaseZ - hg2.bar3DBaseZ);
+               ok = ((d / Math.abs(hg1.bar3DBaseZ != 0 ? hg1.bar3DBaseZ : hg2.bar3DBaseZ)) <= 0.001);
             }
-         }
-         
-         // check the calculated actual bar width. Should be explicit for both bar series, else ignore it.
-         if(ok) 
-         {
-            prop1 = hg1.getProperty(ACTUALBW_PROP);
-            prop2 = hg2.getProperty(ACTUALBW_PROP);
-            if(prop1 != null && prop2 != null)
-               ok = Math.abs(((Double)prop1).doubleValue() - ((Double)prop2).doubleValue()) < 0.0001;
-         }
-         
-         // if the first barseries already contains coalesced data, then the 'BarLayout' property has been determined
-         // unambiguously. In this case, we have expectations on the first bar vertex of the candidate barseries...
-         if(ok && hg1.isCoalescedBarPlot())
-         {
-            double[] p1_1 = getDoubleVectorFromProperty(hg1.getProperty(P1BAR_PROP));
-            double[] p1_2 = getDoubleVectorFromProperty(hg2.getProperty(P1BAR_PROP));
 
-            // the above properties should always be defined at this point. But if they aren't, we simply exclude this
-            // check in our considerations.
-            if(p1_1 != null && p1_2 != null && p1_1.length >= 2 && p1_2.length >= 2)
+            // difference in bar size must be 0.1% or less (bar size cannot be zero).
+            if(ok) ok = (Math.abs(hg1.bar3DSize - hg2.bar3DSize) / Math.abs(hg1.bar3DSize) <= 0.001);
+
+            // FaceColor: Both can be "interp" or "none", or both can be an RGB color spec. Default (implicit) value is
+            // "flat", which FypML does not support.
+            if(ok)
             {
-               prop1 = hg1.getProperty("BarLayout");
-               boolean isGrp = (prop1 == null) || "grouped".equals(prop1);
-               
-               // for V grouped(stacked) bar plots, the x-coordinates are unequal (equal). For H grouped (stacked) bar 
-               // plots, the y-coordinates are unequal (equal). 
-               int idx = isVert ? 0 : 1;
-               ok = isGrp ? (p1_1[idx] != p1_2[idx]) : (p1_1[idx] == p1_2[idx]);
+               Object prop1 = hg1.getProperty("FaceColor");
+               Object prop2 = hg2.getProperty("FaceColor");
+               ok = (prop1 != null) && prop1.equals(prop2);
+               if(!ok)
+               {
+                  Color c1 = MatlabUtilities.processColorSpec(prop1);
+                  Color c2 = MatlabUtilities.processColorSpec(prop2);
+                  ok = (c1 != null) && c1.equals(c2);
+               }
             }
+
+            // FaceAlpha: Must be scalar double in [0..1]. If implicit, alpha is 1 (opaque).
+            if(ok)
+            {
+               Object prop1 = hg1.getProperty("FaceAlpha");
+               double alpha1 = 1.0;
+               if(prop1 != null)
+               {
+                  double[] vec = getDoubleVectorFromProperty(prop1);
+                  if(vec != null && vec.length == 1) alpha1 = vec[0];
+               }
+               Object prop2 = hg2.getProperty("FaceAlpha");
+               double alpha2 = 1.0;
+               if(prop2 != null)
+               {
+                  double[] vec = getDoubleVectorFromProperty(prop2);
+                  if(vec != null && vec.length == 1) alpha2 = vec[0];
+               }
+               ok = (alpha1 == alpha2);
+            }
+
+            // EdgeColor: Both can be none or RGB color spec; implicit value is black. */
+            if(ok)
+            {
+               Object prop1 = hg1.getProperty("EdgeColor");
+               Object prop2 = hg2.getProperty("EdgeColor");
+               ok = "none".equals(prop1) && "none".equals(prop2);
+               if(!ok)
+               {
+                  Color c1 = (prop1 == null) ? Color.BLACK : MatlabUtilities.processColorSpec(prop1);
+                  Color c2 = (prop2 == null) ? Color.BLACK : MatlabUtilities.processColorSpec(prop2);
+                  ok = (c1 != null) && c1.equals(c2);
+               }
+            }
+
+            // EdgeAlpha: Must be scalar double in [0..1]. If implicit, alpha is 1 (opaque).
+            if(ok)
+            {
+               Object prop1 = hg1.getProperty("EdgeAlpha");
+               double alpha1 = 1.0;
+               if(prop1 != null)
+               {
+                  double[] vec = getDoubleVectorFromProperty(prop1);
+                  if(vec != null && vec.length == 1) alpha1 = vec[0];
+               }
+               Object prop2 = hg2.getProperty("EdgeAlpha");
+               double alpha2 = 1.0;
+               if(prop2 != null)
+               {
+                  double[] vec = getDoubleVectorFromProperty(prop2);
+                  if(vec != null && vec.length == 1) alpha2 = vec[0];
+               }
+               ok = (alpha1 == alpha2);
+            }
+
+            // LineStyle, LineWidth must match
+            if(ok)
+            {
+               StrokePattern sp1 = MatlabUtilities.processLineStyle(hg1);
+               StrokePattern sp2 = MatlabUtilities.processLineStyle(hg2);
+               ok = (sp1 == null && sp2 == null) || StrokePattern.equal(sp1, sp2);
+            }
+
+            if(ok) ok = Measure.equal(MatlabUtilities.processLineWidth(hg1), MatlabUtilities.processLineWidth(hg2));
+
+            return (ok);
          }
-         
-         return(ok);
       }
-      
-      // handle 'areaseries' use case...
-      if(plotType.equals("specgraph.areaseries"))
-      {
-         // check 'BaseValue' property. Both must share the same baseline value. Object will be a Double, so we can
-         // safely use Object.equals.
-         // value will be a Double, so we can safely use Object.equals
-         Object prop1 = hg1.getProperty("BaseValue");
-         Object prop2 = hg2.getProperty("BaseValue");
-         ok = (prop1 == null && prop2 == null) || (prop1 != null && prop1.equals(prop2));
-         
-         // is YData the same length for both 'areaseries' objects? NOTE that we assume here that YData will only be a
-         // vector, not a matrix.
-         int len = 0;
-         if(ok)
-         {
-            double[] yData1 = getDoubleVectorFromProperty(hg1.getProperty("YData"));
-            double[] yData2 = getDoubleVectorFromProperty(hg2.getProperty("YData"));
-            ok = (yData1 != null) && (yData2 != null) && (yData1.length == yData2.length);
-            if(ok) len = yData1.length;
-         }
 
-         // check 'XDataMode' and 'XData' properties. If 'XData' is explicit, no need to check 'XDataMode'. If 'XData'
-         // is implicit, then expect 'XDataMode' == 'auto' (the default). Coalescing is appropriate only if the two
-         // X-vectors are both implicit, or they're both explicit, have the same length = len(YData), and are equal.
-         if(ok)
-         {
-            double[] xData1 = getDoubleVectorFromProperty(hg1.getProperty("XData"));
-            double[] xData2 = getDoubleVectorFromProperty(hg2.getProperty("XData"));
-            ok = (xData1 != null) && (xData2 != null) && Arrays.equals(xData1, xData2) && (xData1.length == len);
-            if(!ok)
-            {
-               // check for 'auto' case
-               prop1 = hg1.getProperty("XDataMode");
-               prop2 = hg2.getProperty("XDataMode");
-               boolean isAuto1 = (prop1 == null) || "auto".equals(prop1);
-               boolean isAuto2 = (prop2 == null) || "auto".equals(prop2);
-               ok = xData1 == null && xData2 == null && (isAuto1 == isAuto2);
-            }
-         }
-         
-         return(ok);
-      }
 
-      // handle 'surface' use case: 3D bar plots in a 3D graph context
-      if(plotType.equals("surface"))
-      {
-         if(!(hgAxes.is3D && hg1.isBar3D && hg2.isBar3D)) return(false);
-
-         // difference in base plane Z-coordinates must be 0.1% or less, but we have to be careful b/c the base plane Z
-         // could be zero, and we cannot divide by zero to find %-age!
-         ok = (hg1.bar3DBaseZ == hg1.bar3DBaseZ);
-         if(!ok)
-         {
-            double d =  Math.abs(hg1.bar3DBaseZ - hg2.bar3DBaseZ);
-            ok = ((d/Math.abs(hg1.bar3DBaseZ != 0 ? hg1.bar3DBaseZ : hg2.bar3DBaseZ)) <= 0.001);
-         }
-         
-         // difference in bar size must be 0.1% or less (bar size cannot be zero).
-         if(ok) ok = (Math.abs(hg1.bar3DSize - hg2.bar3DSize)/Math.abs(hg1.bar3DSize) <= 0.001);
-
-         // FaceColor: Both can be "interp" or "none", or both can be an RGB color spec. Default (implicit) value is
-         // "flat", which FypML does not support.
-         if(ok)
-         {
-            Object prop1 = hg1.getProperty("FaceColor");
-            Object prop2 = hg2.getProperty("FaceColor");
-            ok = (prop1 != null) && (prop2 != null) && prop1.equals(prop2);
-            if(!ok)
-            {
-               Color c1 = MatlabUtilities.processColorSpec(prop1);
-               Color c2 = MatlabUtilities.processColorSpec(prop2);
-               ok = (c1 != null) && (c2 != null) && c1.equals(c2);
-            }
-         }
-         
-         // FaceAlpha: Must be scalar double in [0..1]. If implicit, alpha is 1 (opaque).
-         if(ok)
-         {
-            Object prop1 = hg1.getProperty("FaceAlpha");
-            double alpha1 = 1.0;
-            if(prop1 != null)
-            {
-               double[] vec = getDoubleVectorFromProperty(prop1);
-               if(vec != null && vec.length == 1) alpha1 = vec[0];
-            }
-            Object prop2 = hg2.getProperty("FaceAlpha");
-            double alpha2 = 1.0;
-            if(prop2 != null)
-            {
-               double[] vec = getDoubleVectorFromProperty(prop2);
-               if(vec != null && vec.length == 1) alpha2 = vec[0];
-            }
-            ok = (alpha1 == alpha2);
-         }
-
-         // EdgeColor: Both can be none or RGB color spec; implicit value is black. */
-         if(ok)
-         {
-            Object prop1 = hg1.getProperty("EdgeColor");
-            Object prop2 = hg2.getProperty("EdgeColor");
-            ok = "none".equals(prop1) && "none".equals(prop2);
-            if(!ok)
-            {
-               Color c1 = (prop1==null) ? Color.BLACK : MatlabUtilities.processColorSpec(prop1);
-               Color c2 = (prop2==null) ? Color.BLACK : MatlabUtilities.processColorSpec(prop2);
-               ok = (c1 != null) && (c2 != null) && c1.equals(c2);
-            }
-         }
-
-         // EdgeAlpha: Must be scalar double in [0..1]. If implicit, alpha is 1 (opaque).
-         if(ok)
-         {
-            Object prop1 = hg1.getProperty("EdgeAlpha");
-            double alpha1 = 1.0;
-            if(prop1 != null)
-            {
-               double[] vec = getDoubleVectorFromProperty(prop1);
-               if(vec != null && vec.length == 1) alpha1 = vec[0];
-            }
-            Object prop2 = hg2.getProperty("EdgeAlpha");
-            double alpha2 = 1.0;
-            if(prop2 != null)
-            {
-               double[] vec = getDoubleVectorFromProperty(prop2);
-               if(vec != null && vec.length == 1) alpha2 = vec[0];
-            }
-            ok = (alpha1 == alpha2);
-         }
-
-         // LineStyle, LineWidth must match
-         if(ok)
-         {
-            StrokePattern sp1 = MatlabUtilities.processLineStyle(hg1);
-            StrokePattern sp2 = MatlabUtilities.processLineStyle(hg2);
-            ok = (sp1 == null && sp2 == null) || StrokePattern.equal(sp1, sp2);
-         }
-
-         if(ok) ok = Measure.equal(MatlabUtilities.processLineWidth(hg1), MatlabUtilities.processLineWidth(hg2)); 
-
-         return(ok);
-      }
-      
-      
       // do not coalesce 'graph2d.lineseries' that have 'ZData' property (3D line plot)
-      if(ok && plotType.equals("graph2d.lineseries"))
+      if(plotType.equals("graph2d.lineseries"))
          ok = (hg1.getProperty("ZData") == null) && (hg2.getProperty("ZData") == null); 
       
       // handle 'line' and 'graph2d.lineseries' use cases...
@@ -3453,13 +3452,10 @@ public class HGObject
       // is YData the same length for both 'graph2d.lineseries' objects? NOTE that we assume here that YData will only 
       // be a vector, not a matrix.
       int len = 0;
-      if(ok)
-      {
-         double[] yData1 = getDoubleVectorFromProperty(hg1.getProperty("YData"));
-         double[] yData2 = getDoubleVectorFromProperty(hg2.getProperty("YData"));
-         ok = (yData1 != null) && (yData2 != null) && (yData1.length == yData2.length);
-         if(ok) len = yData1.length;
-      }
+      double[] yData1 = getDoubleVectorFromProperty(hg1.getProperty("YData"));
+      double[] yData2 = getDoubleVectorFromProperty(hg2.getProperty("YData"));
+      ok = (yData1 != null) && (yData2 != null) && (yData1.length == yData2.length);
+      if(ok) len = yData1.length;
 
       // compare "XData/XDataMode" property of each line series. 'XData' must explicit for both or implicit for both.
       // If implicit, 'XDataMode' must be 'auto' for both; in this case, both N vector are assumed to be [1:N]. If 
@@ -3549,7 +3545,7 @@ public class HGObject
          if(prop.getClass().equals(double[].class)) 
             data = (double[]) prop;
          else if(prop.getClass().equals(Double.class))
-            data = new double[] { ((Double)prop).doubleValue() };
+            data = new double[] {(Double) prop};
       }
       return(data);
    }
@@ -3574,11 +3570,11 @@ public class HGObject
    }
    
    /** The Matlab Handle Graphics object type. */
-   private String type;
+   private final String type;
    /** The graphic object's handle. */
-   private double handle;
+   private final double handle;
    /** The graphic object's explicit properties, keyed by property name. */
-   private HashMap<String, Object> properties;
+   private final HashMap<String, Object> properties;
    /** The graphic object's child objects. */
    private List<HGObject> children;
    /** For 'axes' and 'scribe.colorbar' only: Handle of child text object representing title. */

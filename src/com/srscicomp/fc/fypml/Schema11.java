@@ -70,11 +70,11 @@ class Schema11 extends Schema10
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
     * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap11 = null;
+	private static final Map<String, SchemaElementInfo> elementMap11;
 
 	static
 	{
-		elementMap11 = new HashMap<String, SchemaElementInfo>();
+		elementMap11 = new HashMap<>();
 		
 		// (14jan2011) Added optional attribute "avg" to the "trace" element.
       elementMap11.put( EL_TRACE, new SchemaElementInfo( false, 
@@ -110,7 +110,7 @@ class Schema11 extends Schema10
    @Override
    public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap11.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap11.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -121,7 +121,7 @@ class Schema11 extends Schema10
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap11.get(elTag);
+		SchemaElementInfo info = elementMap11.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -170,7 +170,7 @@ class Schema11 extends Schema10
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {
@@ -218,7 +218,7 @@ class Schema11 extends Schema10
 	   {
 	      if(axis.getChildCount() == 0) return;
 	      BasicSchemaElement ticks = (BasicSchemaElement) axis.getChildAt(0);
-	      double intv = 0;
+	      double intv;
 	      try { intv = Double.parseDouble(ticks.getAttributeValueByName(A_INTV)); }
 	      catch(NumberFormatException nfe) { return; }
 	      

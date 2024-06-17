@@ -88,7 +88,7 @@ class Schema22 extends Schema21
    final static String A_LEVELS = "levels";
    /** Default value for the {@link #A_LEVELS} attribute of a contour plot node. */
    final static String DEFAULT_LEVELS = "";
-   /** The maximum number of different contour levels that can be specified in the {@link A_LEVELS} attribute. */
+   /** The maximum number of different contour levels that can be specified in the {@link #A_LEVELS} attribute. */
    final static int MAX_CONTOUR_LEVELS = 20;
    
    /** Display mode for contour node: color-mapped level-lines only. */
@@ -218,11 +218,11 @@ class Schema22 extends Schema21
     * This element map contains {@link SchemaElementInfo} objects for each element that is new to this schema or has a 
     * different attribute set compared to the previous schema.
     */
-   private static Map<String, SchemaElementInfo> elementMap22 = null;
+   private static final Map<String, SchemaElementInfo> elementMap22;
 
    static
    {
-      elementMap22 = new HashMap<String, SchemaElementInfo>();
+      elementMap22 = new HashMap<>();
       
       // 03aug2016: 2D graph accepts new "contour" element in place of deprecated "heat map" element
       // 14jun2018: Added new optional attribute specifying background color of data box.
@@ -299,7 +299,7 @@ class Schema22 extends Schema21
    @Override public boolean isSupportedElementTag(String elTag)
    {
       if(EL_HEATMAP.equals(elTag)) return(false);
-      return(elementMap22.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap22.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
    /**
@@ -308,7 +308,7 @@ class Schema22 extends Schema21
     */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
    {
-      SchemaElementInfo info = (SchemaElementInfo) elementMap22.get(elTag);
+      SchemaElementInfo info = elementMap22.get(elTag);
       return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
    }
 
@@ -348,7 +348,7 @@ class Schema22 extends Schema21
       String elTag = e.getTag();
       if(EL_PGRAPH.equals(elTag))
       {
-         SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+         SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
          if(!eInfo.isChildAllowed(childTag)) return(false);
          if(EL_PAXIS.equals(childTag)) return(index >= 0 && index <= 1);
          else if(EL_ZAXIS.equals(childTag)) return(index == 2);
@@ -384,7 +384,7 @@ class Schema22 extends Schema21
     * integer tokens. Each token is restricted to [0..10]; any missing tokens are set to 0.</li>
     * <li>The <i>scatter3d</i> element has optional attribute <i>dotColor</i> that is a list of 0-3 whitespace-separated
     * tokens, each of which must be parsable as an opaque, translucent or transparent RGB color as tested by 
-    * {@link #isValidColorAttributeValue_V22()}. Any missing tokens are set to opaque black.</li>
+    * {@link #isValidColorAttributeValue_V22}. Any missing tokens are set to opaque black.</li>
     * <li>The attribute <i>boxColor</i> can be a 6- or 8-digit hex string for an opaque or translucent RGB color, or the
     * value "none" (transparent black).</li>
     * <li>New attributes <i>gridontop</i> and <i>reverse</i> are boolean-valued.</li>
@@ -442,7 +442,7 @@ class Schema22 extends Schema21
          else if(A_DOTCOLOR.equals(attr))
          {
             String[] tokens = value.trim().split("\\s");
-            boolean ok = tokens.length >= 0 && tokens.length <= 3;
+            boolean ok = tokens.length <= 3;
             for(int i=0; ok && i<tokens.length; i++) ok = isValidColorAttributeValue_V22(tokens[i], true);
             return(ok);
          }
@@ -490,7 +490,7 @@ class Schema22 extends Schema21
    boolean isValidColorAttributeValue_V22(String value, boolean allowAlpha)
    {
       if(value==null) return(false);
-      boolean ok = allowAlpha ? ATTRVAL_NONE.equals(value) : false;
+      boolean ok = allowAlpha && ATTRVAL_NONE.equals(value);
       if(!ok) ok = value.matches(COLOR_REGEX);
       if(!ok) 
       {
@@ -533,7 +533,7 @@ class Schema22 extends Schema21
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

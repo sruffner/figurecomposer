@@ -39,7 +39,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNLabelEditor extends FGNEditor implements ActionListener, ItemListener, FocusListener
 {
    /** Construct the text label node properties editor. */
@@ -81,7 +80,7 @@ class FGNLabelEditor extends FGNEditor implements ActionListener, ItemListener, 
       rotateField.addActionListener(this);
       add(rotateField);
       
-      hAlignWidget = new MultiButton<TextAlign>();
+      hAlignWidget = new MultiButton<>();
       hAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_ALIGNLEFT_16, "Left");
       hAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_ALIGNCENTER_16, "Center");
       hAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_ALIGNRIGHT_16, "Right");
@@ -89,7 +88,7 @@ class FGNLabelEditor extends FGNEditor implements ActionListener, ItemListener, 
       hAlignWidget.setToolTipText("Horizontal alignment");
       add(hAlignWidget);
       
-      vAlignWidget = new MultiButton<TextAlign>();
+      vAlignWidget = new MultiButton<>();
       vAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_VALIGNTOP_16, "Top");
       vAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_VALIGNMID_16, "Middle");
       vAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_VALIGNBOT_16, "Bottom");
@@ -254,7 +253,7 @@ class FGNLabelEditor extends FGNEditor implements ActionListener, ItemListener, 
    private LabelNode getLabelNode() { return((LabelNode) getEditedNode()); }
    
    /** The custom widget within which the label's attributed text is edited. */
-   private StyledTextEditor labelEditor = null;
+   private final StyledTextEditor labelEditor;
    
    /** Text field in which optional node ID is edited. */
    private JTextField idField = null;

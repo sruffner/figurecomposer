@@ -66,11 +66,11 @@ class Schema20 extends Schema19
 	 * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
 	 * is new to this schema or has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap20 = null;
+	private static final Map<String, SchemaElementInfo> elementMap20;
 
 	static
 	{
-		elementMap20 = new HashMap<String, SchemaElementInfo>();
+		elementMap20 = new HashMap<>();
 		
 		// 17jul2015: Added 'bkg' attribute.
 		// 05aug2015: The 'size' attribute replaced by 'width' and 'height'. Both optional, with default="0.1in".
@@ -88,7 +88,7 @@ class Schema20 extends Schema19
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap20.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap20.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -97,7 +97,7 @@ class Schema20 extends Schema19
 	 */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap20.get(elTag);
+		SchemaElementInfo info = elementMap20.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -171,7 +171,7 @@ class Schema20 extends Schema19
     */
    boolean isValidColorAttributeValue(String value, boolean allowTransp)
    {
-      boolean ok = allowTransp ? ATTRVAL_NONE.equals(value) : false;
+      boolean ok = allowTransp && ATTRVAL_NONE.equals(value);
       if(!ok) ok = isValidColorAttributeValue(value);
       return(ok);
    }
@@ -195,7 +195,7 @@ class Schema20 extends Schema19
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

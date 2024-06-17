@@ -33,7 +33,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNRasterEditor extends FGNEditor implements ActionListener
 {
    /** Construct the raster node properties editor. */
@@ -56,7 +55,7 @@ class FGNRasterEditor extends FGNEditor implements ActionListener
       rngLabel = new JLabel("Observed Range...");
       add(rngLabel);
 
-      modeCombo = new JComboBox<DisplayMode>(DisplayMode.values());
+      modeCombo = new JComboBox<>(DisplayMode.values());
       modeCombo.addActionListener(this);
       modeCombo.setToolTipText("Select raster display mode");
       add(modeCombo);
@@ -324,7 +323,7 @@ class FGNRasterEditor extends FGNEditor implements ActionListener
    private JLabel rngLabel = null;
    
    /** When checked, an entry for the raster is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** The custom widget within which the raster node's title (which may contain attributed text) is edited.  */
    private StyledTextEditor titleEditor = null;

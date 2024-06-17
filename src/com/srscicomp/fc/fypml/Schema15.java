@@ -76,11 +76,11 @@ class Schema15 extends Schema14
 	 * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
 	 * is new to this schema or has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap15 = null;
+	private static final Map<String, SchemaElementInfo> elementMap15;
 
 	static
 	{
-		elementMap15 = new HashMap<String, SchemaElementInfo>();
+		elementMap15 = new HashMap<>();
 		
       // (03feb2014) New "textbox" element. The text appearing in the text box is stored as the text content of this
       // element. No children allowed.
@@ -124,7 +124,7 @@ class Schema15 extends Schema14
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap15.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap15.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -133,7 +133,7 @@ class Schema15 extends Schema14
 	 */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap15.get(elTag);
+		SchemaElementInfo info = elementMap15.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -169,7 +169,7 @@ class Schema15 extends Schema14
             
             ok = (0 <= ulx) && (0 <= uly) && (0 < w) && (0 < h);
          }
-         catch(NumberFormatException nfe) {}
+         catch(NumberFormatException ignored) {}
          
          return(ok);
       }
@@ -200,7 +200,7 @@ class Schema15 extends Schema14
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

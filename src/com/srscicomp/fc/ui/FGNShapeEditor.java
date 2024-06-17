@@ -32,7 +32,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNShapeEditor extends FGNEditor implements ActionListener, PropertyChangeListener
 {
 
@@ -46,7 +45,7 @@ class FGNShapeEditor extends FGNEditor implements ActionListener, PropertyChange
       labelEditor.setToolTipText("Enter a label for the shape; it appears centered within the shape");
       add(labelEditor);
       
-      typeCombo = new JComboBox<Marker>(Marker.values());
+      typeCombo = new JComboBox<>(Marker.values());
       typeCombo.setToolTipText("Select shape design");
       typeCombo.addActionListener(this);
       add(typeCombo);
@@ -248,7 +247,7 @@ class FGNShapeEditor extends FGNEditor implements ActionListener, PropertyChange
    private ShapeNode getShapeNode() { return((ShapeNode) getEditedNode()); }
    
    /** The custom widget within which the shape's label, which may be attributed text, is edited. */
-   private StyledTextEditor labelEditor = null;
+   private final StyledTextEditor labelEditor;
       
    /** Combo box for selecting the shape's design type. */
    private JComboBox<Marker> typeCombo = null;

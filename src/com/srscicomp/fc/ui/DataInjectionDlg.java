@@ -4,7 +4,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -65,7 +64,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class DataInjectionDlg extends JDialog implements ActionListener
 {   
    /**
@@ -136,9 +134,9 @@ public class DataInjectionDlg extends JDialog implements ActionListener
       this.dstDataNodes = figCopy.getAllPlottableDataNodes();
       this.iDstSel = 0;
       
-      this.injectedData = new ArrayList<DataSet>();
-      
-      srcLabel = new JLabel(srcFile.getName());
+      this.injectedData = new ArrayList<>();
+
+      JLabel srcLabel = new JLabel(srcFile.getName());
       changeSrcBtn = new JButton("Change...");
       changeSrcBtn.addActionListener(this);
       
@@ -164,8 +162,8 @@ public class DataInjectionDlg extends JDialog implements ActionListener
       
       JLayeredPane srcLP = new JLayeredPane();
       srcLP.setLayout(new OverlayLayout(srcLP));
-      srcLP.add(srcCanvas, new Integer(100));
-      srcLP.add(srcSelectLayer, new Integer(101));
+      srcLP.add(srcCanvas, Integer.valueOf(100));
+      srcLP.add(srcSelectLayer, Integer.valueOf(101));
       
       JPanel srcPane = new JPanel();
       srcPane.add(srcLP);
@@ -210,8 +208,8 @@ public class DataInjectionDlg extends JDialog implements ActionListener
 
       JLayeredPane dstLP = new JLayeredPane();
       dstLP.setLayout(new OverlayLayout(dstLP));
-      dstLP.add(dstCanvas, new Integer(100));
-      dstLP.add(dstSelectLayer, new Integer(101));
+      dstLP.add(dstCanvas, Integer.valueOf(100));
+      dstLP.add(dstSelectLayer, Integer.valueOf(101));
       
       JPanel dstPane = new JPanel();
       dstPane.add(dstLP);
@@ -401,12 +399,11 @@ public class DataInjectionDlg extends JDialog implements ActionListener
       JLabel lbl = src ? srcInfoLabel : dstInfoLabel;
       if(dsn != null)
       {
-         StringBuilder sb = new StringBuilder();
-         sb.append("<html><i>Title:</i> <b>").append(dsn.getTitle()).append("</b><br/>");
-         sb.append("<i>Set ID:</i> <b>").append(dsn.getDataSetID()).append("</b><br/>");
-         sb.append("<i>Format:</i> <b>").append(dsn.getDataSet().getInfo().getShortDescription(false));
-         sb.append("</b></html>");
-         lbl.setText(sb.toString());
+         String sb = "<html><i>Title:</i> <b>" + dsn.getTitle() + "</b><br/>" +
+               "<i>Set ID:</i> <b>" + dsn.getDataSetID() + "</b><br/>" +
+               "<i>Format:</i> <b>" + dsn.getDataSet().getInfo().getShortDescription(false) +
+               "</b></html>";
+         lbl.setText(sb);
       }
       else lbl.setText("No data nodes in figure!");
       
@@ -420,12 +417,11 @@ public class DataInjectionDlg extends JDialog implements ActionListener
       JLabel lbl = src ? srcInfoLabel : dstInfoLabel;
       if(dsn != null)
       {
-         StringBuilder sb = new StringBuilder();
-         sb.append("<html><i>Title:</i> <b>").append(dsn.getTitle()).append("</b><br/>");
-         sb.append("<i>Set ID:</i> <b>").append(dsn.getDataSetID()).append("</b><br/>");
-         sb.append("<i>Format:</i> <b>").append(dsn.getDataSet().getInfo().getShortDescription(false));
-         sb.append("</b></html>");
-         lbl.setText(sb.toString());
+         String sb = "<html><i>Title:</i> <b>" + dsn.getTitle() + "</b><br/>" +
+               "<i>Set ID:</i> <b>" + dsn.getDataSetID() + "</b><br/>" +
+               "<i>Format:</i> <b>" + dsn.getDataSet().getInfo().getShortDescription(false) +
+               "</b></html>";
+         lbl.setText(sb);
       }
       else lbl.setText("No data nodes in figure!");      
    }
@@ -433,9 +429,9 @@ public class DataInjectionDlg extends JDialog implements ActionListener
    private FGNPlottableData getSelectedDataNode(boolean src)
    {
       if(src)
-         return((srcDataNodes!=null && srcDataNodes.size() > 0) ? srcDataNodes.get(iSrcSel) : null);
+         return((srcDataNodes!=null && !srcDataNodes.isEmpty()) ? srcDataNodes.get(iSrcSel) : null);
       else
-         return((dstDataNodes!=null && dstDataNodes.size() > 0) ? dstDataNodes.get(iDstSel) : null);
+         return((dstDataNodes!=null && !dstDataNodes.isEmpty()) ? dstDataNodes.get(iDstSel) : null);
    }
    
    private Rectangle2D getSelectedDataNodeBounds(boolean src)
@@ -454,32 +450,30 @@ public class DataInjectionDlg extends JDialog implements ActionListener
    }
    
    /** List of all data presentation nodes in the source figure. */
-   private List<FGNPlottableData> srcDataNodes = null;
+   private List<FGNPlottableData> srcDataNodes;
    
    /** Index of data presentation node currently selected within the source figure. */
-   private int iSrcSel = -1;
+   private int iSrcSel;
    
    /** 
     * The FypML figure into which raw data sets are injected. All work is done on a copy of this figure. Only when the
     * user confirms the changes is this figure updated with the injected data. This makes it very easy to "start over"
     * or "cancel" after some data has been injected.
     */
-   private FGraphicModel originalFig = null;
+   private final FGraphicModel originalFig;
    
    /** List of all data presentation nodes in the destination figure. */
-   private List<FGNPlottableData> dstDataNodes = null;
+   private List<FGNPlottableData> dstDataNodes;
    
    /** Index of data presentation node currently selected within the destination figure. */
-   private int iDstSel = -1;
+   private int iDstSel;
    
    /** The list of data sets injected into the destination figure thus far. */
-   private List<DataSet> injectedData = null;
-   
-   
-   /** Label reflects the name of the source figure file. */
-   private JLabel srcLabel = null;
+   private final List<DataSet> injectedData;
+
+
    /** Press this button to select a different source figure. */
-   private JButton changeSrcBtn = null;
+   private final JButton changeSrcBtn;
    
    /** Canvas on which the source figure is rendered; in non-interactive mode.*/
    private Graph2DViewer srcCanvas = null;
@@ -548,7 +542,7 @@ public class DataInjectionDlg extends JDialog implements ActionListener
       @Override public void mouseMoved(MouseEvent e)
       {
          Point p = e.getPoint();
-         if(p != null) updateHighlightedDataNodeUnder(p);
+         updateHighlightedDataNodeUnder(p);
       }
       @Override public void mouseDragged(MouseEvent e) { mouseMoved(e); }
       @Override public void mouseClicked(MouseEvent e) 
@@ -651,7 +645,7 @@ public class DataInjectionDlg extends JDialog implements ActionListener
             highlightedBounds.width = highlightedBounds.height = 0;
          else
          {
-            Rectangle2D r = canvas.logicalToDevice(n.getCachedGlobalBounds());
+            Rectangle2D r = canvas.logicalToDevice(highlightedDataNode.getCachedGlobalBounds());
             if(r == null)
                highlightedBounds.width = highlightedBounds.height = 0;
             else
@@ -670,20 +664,20 @@ public class DataInjectionDlg extends JDialog implements ActionListener
        * The rounded rectangle covering the currently selected data node in the displayed figure. It is always stroked,
        * and it must be updated whenever the identity of the selected data node changes, or the bounds change.
        */
-      private RoundRectangle2D selectRR = new RoundRectangle2D.Double(0, 0, 0, 0, 10, 10);
+      private final RoundRectangle2D selectRR = new RoundRectangle2D.Double(0, 0, 0, 0, 10, 10);
 
       /** A point in the logical coordinate system of the rendered graphic (to avoid frequent heap allocations). */
-      private Point2D pLog = new Point2D.Double(0, 0);
+      private final Point2D pLog = new Point2D.Double(0, 0);
       /** The data node currently "under" the mouse and highlighted in the selection layer. */
       private FGNPlottableData highlightedDataNode = null;
       /** The bounds of the currently highlighted data node, in figure canvas coordinates. */
-      private Rectangle highlightedBounds = new Rectangle(0,0,0,0);
+      private final Rectangle highlightedBounds = new Rectangle(0,0,0,0);
 
       /** 
        * The rectangle that should be updated on each repaint cycle. When it is zero width, it is ignored and the entire
        * layer is repainted. Set to zero width after each repaint. 
        */
-      private Rectangle dirtyRect = new Rectangle(0,0,0,0);
+      private final Rectangle dirtyRect = new Rectangle(0,0,0,0);
       
       /** Dirty rectangle is filled with completely transparent black on each repaint. */
       private final Color transparentBlack = new Color(0,0,0,0);

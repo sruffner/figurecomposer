@@ -51,7 +51,7 @@ public interface IDataSrc
     * Get summary information for all data sets available from this data source: the data set identifier, format, 
     * data size and breadth, and selected other parameters. Each data set in the source must have a unique ID. If the 
     * source lacks such IDs, then it must generate them (e.g., "set1", "set2", and so on). These IDs are used to extract
-    * a particular data set from the source via {@link #getDataByID()}.
+    * a particular data set from the source via {@link #getDataByID(String)}.
     * 
     * <p>If the source implementor lacks an efficient "table of contents" mechanism, this method could take a while to 
     * execute as the entire source is scanned for IDs. Implementors MUST cache the data set info -- so that subsequent 
@@ -88,7 +88,7 @@ public interface IDataSrc
     * Change the ID of a single data set in this source.
     * @param id The ID of the affected data set.
     * @param idNew The new data set ID. This must be a valid ID string that does not duplicate the ID of any data set 
-    * already stored in the source. See {@link DataSet#isValidIDString()}.
+    * already stored in the source. See {@link DataSet#isValidIDString(String)}.
     * @return True if successful; false if the data set was not found or if the candidate ID is invalid or non-unique.
     * Also returns false if this data source is read-only, if a problem occurs while writing source, or if the source 
     * was rendered unusable by a previous catastrophic error.

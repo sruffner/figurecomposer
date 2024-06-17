@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.StringTokenizer;
 
 import com.srscicomp.common.util.Utilities;
@@ -25,8 +26,8 @@ import com.srscicomp.common.util.Utilities;
  * for each data set. The last TOC entry is followed immediately by <i>N</i> "data sections".</p>
  * 
  * <p>The file's character encoding is US-ASCII, and every line in the file ends with a carriage-return line-feed pair.
- * The implementation of the {@link #writeData()} method adheres to these rules. If a text file prepared by other means
- * fails to meet these requirements, <b>AnnotatedTextSrc</b> will be unable to read it.</p>
+ * The implementation of the {@link #writeData(DataSet, boolean)} method adheres to these rules. If a text file prepared
+ * by other means fails to meet these requirements, <b>AnnotatedTextSrc</b> will be unable to read it.</p>
  * 
  * <p>The <i>header line</i> has the form "@DN,{V},{N}". Here the tag "@DN" identifies the file as an FC annotated text 
  * data source, "{V}" is an integer string specifying the file version number, and "{N}" is an integer string indicating
@@ -39,7 +40,7 @@ import com.srscicomp.common.util.Utilities;
  * {@link DataSet.Fmt}.</p>
  * <ul>
  *    <li>ID: The data set identifier. Every data set in the file must have a different ID, and all such IDs must 
- *    satisfy the constraints imposed by {@link DataSet#isValidIDString()}.</li>
+ *    satisfy the constraints imposed by {@link DataSet#isValidIDString(String)}.</li>
  *    <li>FMT: Data format. This string token must parse as an integer in [0..7], corresponding to one of the eight
  *    recognized data formats.</li>
  *    <li>NROWS: An integer string indicating the number of rows in data matrix. For RASTER1D data, it is the total 
@@ -84,6 +85,7 @@ import com.srscicomp.common.util.Utilities;
  * 
  * @author sruffner
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 class AnnotatedTextSrc implements IDataSrc
 {
    /**
@@ -97,25 +99,21 @@ class AnnotatedTextSrc implements IDataSrc
    static boolean checkFile(File f)
    {
       if(f == null || !f.isFile()) return(false);
-      
-      BufferedReader rdr = null;
-      try
-      {
-         // create a buffered reader for reading the ascii text file one line at a time
-         rdr = new BufferedReader( new InputStreamReader( new FileInputStream(f), "us-ascii" ) );
 
+      try(BufferedReader rdr = new BufferedReader(
+            new InputStreamReader(new FileInputStream(f), StandardCharsets.US_ASCII)))
+      {
          // parse header line and TOC
          DataSetInfo[] toc = getTOC(rdr);
-         if(toc == null) return(false);
-         if(toc.length == 0) return(true);
-         
+         if(toc == null) return (false);
+         if(toc.length == 0) return (true);
+
          // next line should be the tag line for the first data section.
-         return("0:".equals(rdr.readLine()));        
-      }
-      catch(IOException ioe) { System.out.println("Got IOExc: " + ioe.getMessage()); return(false); }
-      finally
+         return ("0:".equals(rdr.readLine()));
+      } catch(IOException ioe)
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         System.out.println("Got IOExc: " + ioe.getMessage());
+         return (false);
       }
    }
    
@@ -138,7 +136,7 @@ class AnnotatedTextSrc implements IDataSrc
       if(tableOfContents == null) return(null);
       
       DataSetInfo[] info = new DataSetInfo[tableOfContents.length];
-      for(int i=0; i<info.length; i++) info[i] = tableOfContents[i];
+      System.arraycopy(tableOfContents, 0, info, 0, info.length);
       return(info);
    }
 
@@ -179,7 +177,7 @@ class AnnotatedTextSrc implements IDataSrc
       try
       {
          // create a buffered reader for reading the ascii text file one line at a time
-         rdr = new LineNumberReader( new InputStreamReader( new FileInputStream(srcPath), "us-ascii" ) );
+         rdr = new LineNumberReader( new InputStreamReader( new FileInputStream(srcPath), StandardCharsets.US_ASCII) );
          
          // skip to the beginning of the data section for the requested dataset
          for(int i=0; i<nSkip; i++) 
@@ -193,11 +191,12 @@ class AnnotatedTextSrc implements IDataSrc
       catch(IOException ioe) { lastErrorMsg = ioe.getMessage(); }
       finally
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         try { if(rdr != null) rdr.close(); } catch(IOException ignored) {}
       }
       return(ds);
    }
 
+   @SuppressWarnings("ResultOfMethodCallIgnored")
    public boolean writeData(DataSet set, boolean replace)
    {
       lastErrorMsg = "";
@@ -242,7 +241,7 @@ class AnnotatedTextSrc implements IDataSrc
       
       // construct new TOC. Whether we replace an existing data set or simply append, the new data set will be located
       // at the end of the file and the TOC.
-      DataSetInfo[] dstTOC = null;
+      DataSetInfo[] dstTOC;
       if(tableOfContents == null)
          dstTOC = new DataSetInfo[] {set.getInfo()};
       else
@@ -264,8 +263,8 @@ class AnnotatedTextSrc implements IDataSrc
       boolean ok = true;
       try
       {
-         if(srcPath.isFile()) in = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), "us-ascii" ) );
-         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), "us-ascii"));
+         if(srcPath.isFile()) in = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), StandardCharsets.US_ASCII) );
+         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.US_ASCII));
          
          // write the new header line and TOC
          putTOC(out, dstTOC);
@@ -297,7 +296,7 @@ class AnnotatedTextSrc implements IDataSrc
                   else if(i>iMatch)
                   {
                      in.readLine();
-                     out.write(Integer.toString(i-1) + ":" + CRLF);
+                     out.write((i - 1) + ":" + CRLF);
                   }
                }
                         
@@ -326,7 +325,7 @@ class AnnotatedTextSrc implements IDataSrc
             if(in != null) in.close(); 
             if(out != null) out.close();
          }
-         catch(IOException ioe) {}
+         catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -362,6 +361,7 @@ class AnnotatedTextSrc implements IDataSrc
       return(ok);
    }
 
+   @SuppressWarnings("ResultOfMethodCallIgnored")
    public boolean changeID(String id, String idNew)
    {
       lastErrorMsg = "";
@@ -419,8 +419,8 @@ class AnnotatedTextSrc implements IDataSrc
       boolean ok = true;
       try
       {
-         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), "us-ascii"));
-         in = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), "us-ascii" ) );
+         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.US_ASCII));
+         in = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), StandardCharsets.US_ASCII) );
          
          // write the new header line and TOC
          putTOC(out, dstTOC);
@@ -432,13 +432,13 @@ class AnnotatedTextSrc implements IDataSrc
          }
          
          // copy all existing data sections directly
-         for(int i=0; i<tableOfContents.length; i++)
+         for(DataSetInfo tableOfContent : tableOfContents)
          {
             int nLines = 1;
-            nLines += (tableOfContents[i].getFormat() == DataSet.Fmt.RASTER1D) ? 
-                     (1+tableOfContents[i].getDataBreadth()) : tableOfContents[i].getDataLength();
-            
-            for(int j=0; j<nLines; j++)
+            nLines += (tableOfContent.getFormat() == DataSet.Fmt.RASTER1D) ?
+                  (1 + tableOfContent.getDataBreadth()) : tableOfContent.getDataLength();
+
+            for(int j = 0; j < nLines; j++)
             {
                String line = in.readLine();
                if(line == null) throw new IOException("Unexpected EOF while copying existing data");
@@ -458,7 +458,7 @@ class AnnotatedTextSrc implements IDataSrc
             if(in != null) in.close(); 
             if(out != null) out.close();
          }
-         catch(IOException ioe) {}
+         catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -538,8 +538,8 @@ class AnnotatedTextSrc implements IDataSrc
       boolean ok = true;
       try
       {
-         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), "us-ascii"));
-         in = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), "us-ascii" ) );
+         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.US_ASCII));
+         in = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), StandardCharsets.US_ASCII) );
          
          // write the new header line and TOC
          putTOC(out, dstTOC);
@@ -567,7 +567,7 @@ class AnnotatedTextSrc implements IDataSrc
             
             // we revise the tag line for each section to ensure we get the index position right
             in.readLine();
-            out.write(Integer.toString(j) + ":" + CRLF);
+            out.write(j + ":" + CRLF);
             
             // NOTE: We have to add the CRLF back in b/c the readLine() removes it!
             for(int k=0; k<nLines; k++)
@@ -592,7 +592,7 @@ class AnnotatedTextSrc implements IDataSrc
             if(in != null) in.close(); 
             if(out != null) out.close();
          }
-         catch(IOException ioe) {}
+         catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -646,7 +646,7 @@ class AnnotatedTextSrc implements IDataSrc
       boolean ok = true;
       try
       {
-         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), "us-ascii"));
+         out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.US_ASCII));
          
          // write the new header line with an empty TOC
          putTOC(out, dstTOC);
@@ -658,7 +658,7 @@ class AnnotatedTextSrc implements IDataSrc
       }
       finally
       {
-         try { if(out != null) out.close(); } catch(IOException ioe) {}
+         try { if(out != null) out.close(); } catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -701,7 +701,7 @@ class AnnotatedTextSrc implements IDataSrc
    private final static String CRLF = "\r\n";
    
    /** The abstract pathname for the data source file. */
-   private File srcPath = null;
+   private final File srcPath;
    
    /** Source file's modification time the last time we cached TOC information extracted from it. */
    private long srcLastModified = -1;
@@ -741,7 +741,7 @@ class AnnotatedTextSrc implements IDataSrc
       try
       {
          // create a buffered reader for reading the ascii text file one line at a time
-         rdr = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), "us-ascii" ) );
+         rdr = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), StandardCharsets.US_ASCII) );
          
          // parse header line and TOC
          toc = getTOC(rdr);
@@ -750,7 +750,7 @@ class AnnotatedTextSrc implements IDataSrc
       catch(IOException ioe) { lastErrorMsg = ioe.getMessage(); }
       finally
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         try { if(rdr != null) rdr.close(); } catch(IOException ignored) {}
       }
 
       srcLastModified = modT;
@@ -778,7 +778,7 @@ class AnnotatedTextSrc implements IDataSrc
       if(!HEADERTAG.equals(tokenizer.nextToken())) return(null);
       if(!CURRVERSIONSTR.equals(tokenizer.nextToken())) return(null);
 
-      int n = 0;
+      int n;
       try { n = Integer.parseInt(tokenizer.nextToken()); } catch(NumberFormatException nfe) { return(null); }
       if(n < 0) return(null);
 
@@ -792,9 +792,9 @@ class AnnotatedTextSrc implements IDataSrc
          String id = tokenizer.nextToken().trim();
          if(!DataSet.isValidIDString(id)) return(null); 
 
-         DataSet.Fmt fmt = null;
-         int nrows = -1;
-         int ncols = -1;
+         DataSet.Fmt fmt;
+         int nrows;
+         int ncols;
          try 
          {
             fmt = DataSet.Fmt.getFormatByIntCode(Integer.parseInt(tokenizer.nextToken())); 
@@ -831,23 +831,21 @@ class AnnotatedTextSrc implements IDataSrc
     * @param writer The buffered output stream. It is assumed that the writer is positioned at the beginning of the 
     * output stream. 
     * @param toc The table of contents to be written.
-    * @return True if successful; false otherwise.
     */
    private static void putTOC(BufferedWriter writer, DataSetInfo[] toc) throws IOException
    {
       writer.write(HEADERTAG + COMMA + CURRVERSIONSTR + COMMA + toc.length + CRLF);
-      
-      for(int i=0; i<toc.length; i++)
+
+      for(DataSetInfo info : toc)
       {
-         DataSetInfo info = toc[i];
-         String line = info.getID() + COMMA + info.getFormat().getIntCode() + COMMA + info.getDataLength() + COMMA +
-               info.getDataBreadth();
-         for(int j=0; j<info.getFormat().getNumberOfParams(); j++)
+         StringBuilder line = new StringBuilder(info.getID() + COMMA + info.getFormat().getIntCode() + COMMA +
+               info.getDataLength() + COMMA + info.getDataBreadth());
+         for(int j = 0; j < info.getFormat().getNumberOfParams(); j++)
          {
-            line += COMMA + Utilities.toString(info.getParam(j), 6, -1);
+            line.append(COMMA).append(Utilities.toString(info.getParam(j), 6, -1));
          }
-         line += CRLF;
-         writer.write(line);
+         line.append(CRLF);
+         writer.write(line.toString());
       }
    }
 
@@ -862,7 +860,7 @@ class AnnotatedTextSrc implements IDataSrc
     * @param pos Zero-based index position, P, of the data set in the file. The initial tag line of the requisite data 
     * section must have the form "{P}:", where {P} is the ASCII string representation of the integer value P. The 
     * method will fail if this is not the case.
-    * @param entry Summary information for the data set requested. This includes information needed to correctly parse 
+    * @param info Summary information for the data set requested. This includes information needed to correctly parse
     * the lines in the data section and to create the {@link DataSet} object that will wrap the raw data array.
     * @return The extracted data set.
     * @throws IOException if an IO error occurs or a file format problem is detected.
@@ -870,12 +868,12 @@ class AnnotatedTextSrc implements IDataSrc
    private static DataSet getDataSet(LineNumberReader rdr, int pos, DataSetInfo info) throws IOException
    {
       // first line should be the tag line for the requested data section. If not, something is wrong.
-      String tagLine = Integer.toString(pos) + ":";
+      String tagLine = pos + ":";
       if(!tagLine.equals(rdr.readLine())) throw new IOException("Bad tag line for requested dataset");
       
       int n = info.getDataLength();
       int m = info.getDataBreadth();
-      float[] fData = null;
+      float[] fData;
       if(info.getFormat() == DataSet.Fmt.RASTER1D)
       {
          // RASTER1D is fundamentally different from the other types in how it is stored. The first line is the set of M
@@ -896,7 +894,7 @@ class AnnotatedTextSrc implements IDataSrc
             {
                int rasterlen = Integer.parseInt(tokenizer.nextToken());
                sum += rasterlen;
-               fData[i] = (int) rasterlen;
+               fData[i] = rasterlen;
             }
             if(sum != n) throw new IOException("Sum of raster lengths invalid at line " + rdr.getLineNumber());     
 
@@ -960,7 +958,7 @@ class AnnotatedTextSrc implements IDataSrc
    private static void putDataSet(BufferedWriter wrt, int pos, DataSet ds) throws IOException
    {
       // write the tag line for the data section 
-      wrt.write(Integer.toString(pos) + ":" + CRLF);
+      wrt.write(pos + ":" + CRLF);
       
       int n = ds.getDataLength();
       int m = ds.getDataBreadth();

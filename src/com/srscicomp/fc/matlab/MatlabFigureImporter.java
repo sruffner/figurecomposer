@@ -19,14 +19,14 @@ import com.srscicomp.fc.fig.FGraphicModel;
 
 /**
  * Utility that reads in a <i>Matlab</i> figure and converts it to a <i>DataNav</i> FypML figure graphic model.
- * 
+ *
  * <p>The class is not instantiated. It includes two public static methods, one that checks whether or not an arbitrary
  * file's content is consistent with that of a valid Matlab Level 5 FIG file (compatible with Matlab versions 5 and up),
  * and another that imports a Level 5 FIG file as a <i>DataNav</i> FypML figure.</p>
- * 
- * <p>CREDIT: JMatIO library by Wojciech Gradkowsky: http://sourceforge.net/projects/jmatio/files. We rely on a slightly
- * revised version of this library to read in the Handle Graphics hierarchy stored in a Matlab FIG file. The {@link 
- * com.jmatio.io.MatFileReader} class was slightly modified to skip over data elements in the FIG file representing
+ *
+ * <p>CREDIT: <a href="https://github.com/gradusnikov/jmatio">JMatIO library by Wojciech Gradkowsky</a>. We rely on a
+ * slightly revised version of this library to read in the Handle Graphics hierarchy stored in a Matlab FIG file. The
+ * {@link MatFileReader} class was slightly modified to skip over data elements in the FIG file representing
  * Matlab function handles -- these elements are NOT documented in the Mathworks MAT file format specification. We do
  * not need them for the purposes of importing a Matlab FIG file as a FypML figure.</p>
  *
@@ -52,7 +52,6 @@ public class MatlabFigureImporter
       catch(IOException ioe)
       {
          System.out.println("Unexpected IO error while reading file path:\n   " + ioe.getMessage() + "\nQUITTING!");
-         fname = null;
       }
       if(fname == null)
          System.exit(0);
@@ -67,12 +66,12 @@ public class MatlabFigureImporter
          if(fgm == null)
          {
             System.out.println("Import FAILED. Error dump:");
-            System.out.println(eBuf.toString());
+            System.out.println(eBuf);
          }
          else
          {
             System.out.println("Import OK. Tree dump:");
-            System.out.println(eBuf.toString());
+            System.out.println(eBuf);
             
             DNFigureSaveDlg.raiseConfirmSaveDialog(fgm, new File("/Users/sruffner/Desktop/imported.fyp"));
          }
@@ -141,18 +140,18 @@ public class MatlabFigureImporter
       String name = f.getName();
       if(name.length() <= 4 || !".fig".equalsIgnoreCase(name.substring(name.length()-4)))
       {
-         ebuf.append("Invalid Matlab figure file extension: " + name.substring(name.length()-3));
+         ebuf.append("Invalid Matlab figure file extension: ").append(name.substring(name.length() - 3));
          return(null);
       }
       
-      MatFileReader matReader = null;
+      MatFileReader matReader;
       try
       {
          matReader = new MatFileReader(f);
       }
       catch(IOException ioe)
       {
-         ebuf.append("An IO error occurred while reading FYP file:\n  " + ioe.getMessage());
+         ebuf.append("An IO error occurred while reading FYP file:\n  ").append(ioe.getMessage());
          return(null);
       }
       
@@ -196,21 +195,20 @@ public class MatlabFigureImporter
 
       // traverse FYP file's HG hierarchy and construct a tree of HGObjects that include only those elements of the
       // original Matlab figure that we can handle.
-      HGObject figObj = null;
+      HGObject figObj;
       try { figObj = constructHGObject(fig, 0); }
       catch(IllegalStateException ise)
       {
-         ebuf.append("Error occurred while parsing HG object hierarchy in FYP file:\n  " + ise.getMessage());
+         ebuf.append("Error occurred while parsing HG object hierarchy in FYP file:\n  ").append(ise.getMessage());
          return(null);
       }
       
       // we don't need the FIG file contents at this point. Encourage garbage collection.
+      //noinspection UnusedAssignment
       matReader = null;
       
       // convert tree of HGObjects to a FypML figure, if possible
-      FGraphicModel fgm = MatlabUtilities.matFigToFyp(figObj, 0, ebuf, true);
-      
-      return(fgm);
+      return(MatlabUtilities.matFigToFyp(figObj, 0, ebuf, true));
    }
 
    /**
@@ -260,8 +258,8 @@ public class MatlabFigureImporter
     * 
     * <p><i>DataNav</i> cannot import any possible Matlab figure; Matlab can generate many kinds of graphs that cannot
     * be reproduced in a FypML figure. While traversing and parsing a Matlab figure's Handle Graphics hierarchy, this
-    * method skips any HG object that {@link MatlabUtilities#matFigToFyp(HGObject, StringBuffer, boolean)} will be 
-    * unable to convert. Child object types are limited as follows:
+    * method skips any HG object that {@link MatlabUtilities#matFigToFyp(HGObject, double, StringBuffer, boolean)} will
+    * be unable to convert. Child object types are limited as follows:
     * <ul>
     * <li>Parent = "figure" : See {@link #FIGUREKIDS}</li>
     * <li>Parent = "axes" : See {@link #AXESKIDS}.</li>
@@ -282,16 +280,30 @@ public class MatlabFigureImporter
     */
    private static void addRelevantChildren(HGObject parent, MLStructure mlKids) throws IllegalStateException
    {
-      String[] kidTypes = null;
+      String[] kidTypes;
       String parentType = parent.getType();
-      if(parentType.equals("figure")) kidTypes = FIGUREKIDS;
-      else if(parentType.equals("axes")) kidTypes = AXESKIDS;
-      else if(parentType.equals("matlab.graphics.axis.PolarAxes")) kidTypes = POLARAXESKIDS;
-      else if(parentType.equals("scribe.colorbar")) kidTypes = COLORBARKIDS;
-      else if(parentType.equals("specgraph.barseries") || parentType.equals("specgraph.areaseries") ||
-            parentType.equals("specgraph.contourgroup")) 
+      switch(parentType)
+      {
+      case "figure":
+         kidTypes = FIGUREKIDS;
+         break;
+      case "axes":
+         kidTypes = AXESKIDS;
+         break;
+      case "matlab.graphics.axis.PolarAxes":
+         kidTypes = POLARAXESKIDS;
+         break;
+      case "scribe.colorbar":
+         kidTypes = COLORBARKIDS;
+         break;
+      case "specgraph.barseries":
+      case "specgraph.areaseries":
+      case "specgraph.contourgroup":
          kidTypes = BAR_AREAKIDS;
-      else return;
+         break;
+      default:
+         return;
+      }
       
       for(int i=0; i<mlKids.getSize(); i++)
       {
@@ -304,11 +316,8 @@ public class MatlabFigureImporter
          }
          
          boolean relevant = false;
-         if(kidTypes != null) 
-         {
-            for(int j=0; j<kidTypes.length && !relevant; j++) relevant = type.equals(kidTypes[j]);
-         }
-         
+         for(int j = 0; j < kidTypes.length && !relevant; j++) relevant = type.equals(kidTypes[j]);
+
          if(relevant) parent.addChild(constructHGObject(mlKids, i));
       }
       
@@ -317,23 +326,23 @@ public class MatlabFigureImporter
    }
 
    /** These Handle Graphic object types will be parsed if they are children of a "figure" object. */
-   private static String[] FIGUREKIDS = new String[] {
+   private static final String[] FIGUREKIDS = new String[] {
       "axes", "matlab.graphics.axis.PolarAxes", "scribe.legend", "scribe.colorbar"
    };
    /** These Handle Graphic object types will be parsed if they are children of a "axes" object. */
-   private static String[] AXESKIDS = new String[] {
+   private static final String[] AXESKIDS = new String[] {
       "graph2d.lineseries", "specgraph.errorbarseries", "specgraph.scattergroup", "histogram", "specgraph.stairseries", 
       "specgraph.barseries", "specgraph.baseline", "specgraph.areaseries", "specgraph.stemseries", 
       "graph3d.surfaceplot", "specgraph.contourgroup", "patch", "surface", "image", "line", "text"
    };
    /** These Handle Graphic object types will be parsed if they are children of a "polaraxes" object. */
-   private static String[] POLARAXESKIDS = new String[] {
+   private static final String[] POLARAXESKIDS = new String[] {
       "graph2d.lineseries", "specgraph.scattergroup", "histogram", "text"
    };
    /** These Handle Graphic object types will be parsed if they are children of a "scribe.colorbar" object. */
-   private static String[] COLORBARKIDS = new String[] {"text"};
+   private static final String[] COLORBARKIDS = new String[] {"text"};
    /** These Handle Graphic object types will be parsed if they are children of a "specgraph.barseries" object. */
-   private static String[] BAR_AREAKIDS = new String[] {"patch"};
+   private static final String[] BAR_AREAKIDS = new String[] {"patch"};
 
    /**
     * Get the value of the "type" field in the <i>n</i>-th element of a Matlab structure array defining a set of Handle
@@ -370,7 +379,7 @@ public class MatlabFigureImporter
       if(hgs != null)
       {
          MLArray handleAr = hgs.getField("handle", idx);
-         if(handleAr != null && handleAr.isDouble()) handle = ((MLDouble) handleAr).get(0).doubleValue();
+         if(handleAr != null && handleAr.isDouble()) handle = ((MLDouble) handleAr).get(0);
       }
       return(handle);
    }
@@ -436,7 +445,7 @@ public class MatlabFigureImporter
     * Get the handles assigned to the "text" children of a Matlab "axes" or "scribe.colorbar" (which is really just a 
     * special-purpose "axes") that correspond to its X-axis label, Y-axis label, or title.
     * 
-    * <p>The conversion function {@link MatlabUtilities#matFigToFyp(HGObject, StringBuffer, boolean)} needs to know
+    * <p>The conversion function {@link MatlabUtilities#matFigToFyp(HGObject, double, StringBuffer, boolean)} needs
     * these handles so that it treats those particular child objects correctly during the conversion. The handles are
     * located in the "special" field of the Matlab "axes" or "scribe.colorbar" HG object. This field should be a 
     * double-valued 4-vector containing the child handles in order: title, X-axis label, Y-axis label, Z-axis label.</p>
@@ -488,29 +497,70 @@ public class MatlabFigureImporter
    private static void processProperties(HGObject hgo, MLStructure mlProps)
    {
       // get the list of properties we support for the given HG object type. If type not supported, fail.
-      String[] relevantProps = null;
+      String[] relevantProps;
       String type = hgo.getType();
-      if(type.equals("figure")) relevantProps = FIGUREPROPS;
-      else if(type.equals("scribe.legend")) relevantProps = LEGENDPROPS;
-      else if(type.equals("scribe.colorbar")) relevantProps = COLORBARPROPS;
-      else if(type.equals("axes")) relevantProps = AXESPROPS;
-      else if(type.equals("matlab.graphics.axis.PolarAxes")) relevantProps = POLARAXESPROPS;
-      else if(type.equals("graph2d.lineseries") || type.equals("specgraph.stairseries")) 
+      switch(type)
+      {
+      case "figure":
+         relevantProps = FIGUREPROPS;
+         break;
+      case "scribe.legend":
+         relevantProps = LEGENDPROPS;
+         break;
+      case "scribe.colorbar":
+         relevantProps = COLORBARPROPS;
+         break;
+      case "axes":
+         relevantProps = AXESPROPS;
+         break;
+      case "matlab.graphics.axis.PolarAxes":
+         relevantProps = POLARAXESPROPS;
+         break;
+      case "graph2d.lineseries":
+      case "specgraph.stairseries":
          relevantProps = LINESERIESPROPS;
-      else if(type.equals("specgraph.errorbarseries")) relevantProps = EBARSERIESPROPS;
-      else if(type.equals("specgraph.scattergroup")) relevantProps = SCATTERPROPS;
-      else if(type.equals("specgraph.stemseries")) relevantProps = STEMPROPS;
-      else if(type.equals("specgraph.barseries")) relevantProps = BARSERIESPROPS;
-      else if(type.equals("specgraph.baseline")) relevantProps = BASELINEPROPS;
-      else if(type.equals("specgraph.areaseries")) relevantProps = AREASERIESPROPS;
-      else if(type.equals("specgraph.contourgroup")) relevantProps = CONTOURPROPS;
-      else if(type.equals("patch")) relevantProps = PATCHPROPS;
-      else if(type.equals("histogram")) relevantProps = HISTOGRAMPROPS;
-      else if(type.equals("graph3d.surfaceplot") || type.equals("surface") || type.equals("image")) 
+         break;
+      case "specgraph.errorbarseries":
+         relevantProps = EBARSERIESPROPS;
+         break;
+      case "specgraph.scattergroup":
+         relevantProps = SCATTERPROPS;
+         break;
+      case "specgraph.stemseries":
+         relevantProps = STEMPROPS;
+         break;
+      case "specgraph.barseries":
+         relevantProps = BARSERIESPROPS;
+         break;
+      case "specgraph.baseline":
+         relevantProps = BASELINEPROPS;
+         break;
+      case "specgraph.areaseries":
+         relevantProps = AREASERIESPROPS;
+         break;
+      case "specgraph.contourgroup":
+         relevantProps = CONTOURPROPS;
+         break;
+      case "patch":
+         relevantProps = PATCHPROPS;
+         break;
+      case "histogram":
+         relevantProps = HISTOGRAMPROPS;
+         break;
+      case "graph3d.surfaceplot":
+      case "surface":
+      case "image":
          relevantProps = SURFACEPROPS;
-      else if(type.equals("line")) relevantProps = LINEPROPS;
-      else if(type.equals("text")) relevantProps = TEXTPROPS;
-      else return;
+         break;
+      case "line":
+         relevantProps = LINEPROPS;
+         break;
+      case "text":
+         relevantProps = TEXTPROPS;
+         break;
+      default:
+         return;
+      }
       
       // find all relevant properties in the properties structure provided. Convert each property object to the
       // appropriate Java type. If a property is not found, it is assumed to be implicit.
@@ -627,9 +677,9 @@ public class MatlabFigureImporter
    }
    
    /** Imported properties of a Matlab "figure" object. */
-   private static String[] FIGUREPROPS = new String[] {"Colormap", "Name", "PaperUnits", "PaperPosition"};
+   private static final String[] FIGUREPROPS = new String[] {"Colormap", "Name", "PaperUnits", "PaperPosition"};
    /** Imported properties of a Matlab "scribe.legend" object. */
-   private static String[] LEGENDPROPS = new String[] {"TextColor", "Position", "Units", "NumColumns", "String",
+   private static final String[] LEGENDPROPS = new String[] {"TextColor", "Position", "Units", "NumColumns", "String",
          "FontName", "FontSize", "FontUnits", "FontWeight", "FontAngle", "Color", "Box", "LineWidth"};
    /** 
     * Imported properties of a Matlab "scribe.colorbar" object. <i>NOTE: This object was considered a specialized
@@ -637,7 +687,7 @@ public class MatlabFigureImporter
     * properties that are relevant. It has no 'text' children; any text label is in the 'Label' property, but its value
     * is a Matlab text object primitive and we cannot read that from a FIG file.</i>
     */
-   private static String[] COLORBARPROPS = new String[] {
+   private static final String[] COLORBARPROPS = new String[] {
       "Color", "FontAngle", "FontName", "FontSize", "FontUnits", "FontWeight", "Limits", "LineWidth", "Location", 
       "Position", "TickDir", "TickLength", "Visible", "XColor", "YColor", "XTick", "YTick", "TickDirection", "Ticks",
       "Units", "UserData"
@@ -648,7 +698,7 @@ public class MatlabFigureImporter
     * we check for both properties to decide whether or not to use 'XTickLabel'. Same for 'YTickLabel(s)Mode' and
     * for 'ZTickLabel(s)Mode'!</p>
     */
-   private static String[] AXESPROPS = new String[] {
+   private static final String[] AXESPROPS = new String[] {
       "CLim", "FontAngle", "FontName", "FontSize", "FontUnits", "FontWeight", "LabelFontSizeMultiplier", 
       "LineWidth", "GridLineStyle", "GridColor", "Position", "PlotBoxAspectRatio", 
       "PlotBoxAspectRatioMode", "DataAspectRatioMode", "TickDir", "TickLength", "Units", "Visible", "XAxisLocation", 
@@ -661,7 +711,7 @@ public class MatlabFigureImporter
    /**
     * Imported properties of a Matlab "polaraxes" object (first introduced in Matlab R2016a.
     */
-   private static String[] POLARAXESPROPS = new String[] {
+   private static final String[] POLARAXESPROPS = new String[] {
       "CLim", "Color", "FontAngle", "FontName", "FontSize", "FontUnits", "FontWeight", "LineWidth", "GridAlpha", 
       "GridColor", "GridLineStyle", "Position", "RAxisLocation", "RColor", "RDir", "RGrid", "RLim", "RTick", 
       "RTickLabel", "RTickLabelMode", "ThetaAxisUnits", "ThetaColor", "ThetaDir", "ThetaGrid", "ThetaLim", "ThetaTick", 
@@ -669,52 +719,52 @@ public class MatlabFigureImporter
       "Units", "Visible"
    };
    /** Imported properties of a Matlab "graph2d.lineseries" or "specgraph.stairseries" object. */
-   private static String[] LINESERIESPROPS = new String[] {
+   private static final String[] LINESERIESPROPS = new String[] {
       "Color", "DisplayName", "LineStyle", "LineWidth", "Marker", "MarkerEdgeColor", "MarkerFaceColor", "MarkerSize", 
       "XDataMode", "XData", "YData", "ZData"
    };
    /** Imported properties of a Matlab "specgraph.errorbarseries" object. */
-   private static String[] EBARSERIESPROPS = new String[] {
+   private static final String[] EBARSERIESPROPS = new String[] {
       "CapSize", "Color", "DisplayName", "LData", "LineStyle", "LineWidth", "Marker", "MarkerEdgeColor", 
       "MarkerFaceColor", "MarkerSize", "UData", "XDataMode", "XData", "XNegativeDelta", "XPositiveDelta", 
       "YData", "YNegativeDelta", "YPositiveDelta"
    };
    /** Imported properties of a Matlab "specgraph.scattergroup" object. */
-   private static String[] SCATTERPROPS = new String[] {
+   private static final String[] SCATTERPROPS = new String[] {
       "CData", "DisplayName", "LineWidth", "Marker", "MarkerEdgeAlpha", "MarkerEdgeColor", 
       "MarkerFaceAlpha", "MarkerFaceColor", "SizeData", "XData", "YData", "ZData"
    };
    /** Imported properties of a Matlab "specgraph.stemseries" object. */
-   private static String[] STEMPROPS = new String[] {
+   private static final String[] STEMPROPS = new String[] {
       "BaseValue", "Color", "DisplayName", "LineWidth", "LineStyle", "Marker", "MarkerEdgeColor", "MarkerFaceColor", 
       "MarkerSize", "XData", "YData", "ZData"
    };
    /** Imported properties of a Matlab "specgraph.barseries" object. */
-   private static String[] BARSERIESPROPS = new String[] {
+   private static final String[] BARSERIESPROPS = new String[] {
       "BarLayout", "BarWidth", "BaseValue", "CDataMapping", "DisplayName", "EdgeAlpha", "EdgeColor", 
       "FaceAlpha", "FaceColor", "Horizontal", "LineStyle", "LineWidth", "XDataMode", "XData", "YData"
    };
    /** Imported properties of a Matlab "specgraph.baseline" object. */
-   private static String[] BASELINEPROPS = new String[] {
+   private static final String[] BASELINEPROPS = new String[] {
       "BaseValue", "Color", "LineStyle", "LineWidth", "Visible"
    };
    /** Imported properties of a Matlab "specgraph.areaseries" object. */
-   private static String[] AREASERIESPROPS = new String[] {
+   private static final String[] AREASERIESPROPS = new String[] {
       "BaseValue", "CDataMapping", "DisplayName", "EdgeAlpha", "EdgeColor", "FaceAlpha", "FaceColor", 
       "LineStyle", "LineWidth", "XDataMode", "XData", "YData", "YCoords"
    };
    /** Imported properties of a Matlab "patch" object. */
-   private static String[] PATCHPROPS = new String[] {
+   private static final String[] PATCHPROPS = new String[] {
       "CDataMapping", "DisplayName", "EdgeColor", "FaceColor", "FaceAlpha", "Faces", "FaceVertexCData", "LineStyle", 
       "LineWidth", "UserData", "Vertices"
    };
    /** Imported properties of a Matlab "histogram" object. */
-   private static String[] HISTOGRAMPROPS = new String[] {
+   private static final String[] HISTOGRAMPROPS = new String[] {
       "BinEdges", "BinWidth", "Data", "DisplayName", "DisplayStyle", "EdgeColor", "EdgeAlpha", "FaceColor", "FaceAlpha", 
       "LineWidth", "LineStyle", "Normalization", "Orientation", "Visible"
    };
    /** Imported properties of a Matlab "specgraph.contourgroup" object, which is translated to a FypML contour node. */
-   private static String[] CONTOURPROPS = new String[] {
+   private static final String[] CONTOURPROPS = new String[] {
       "DisplayName", "Fill", "LevelList", "LineColor", "LineWidth", "LineStyle", "XData", "YData", "ZData"
    };
    /** 
@@ -725,17 +775,17 @@ public class MatlabFigureImporter
     * 3D bars, as generated by the <i>bar3()</i> function. NOTE: Not all of these properties are applicable to the 
     * different use cases.
     */
-   private static String[] SURFACEPROPS = new String[] {
+   private static final String[] SURFACEPROPS = new String[] {
       "CData", "CDataMapping", "DisplayName", "EdgeAlpha", "EdgeColor", "FaceAlpha", "FaceColor", "LineStyle", 
       "LineWidth", "XData", "YData", "ZData"
    };
    /** Imported properties of a Matlab "line" object. */
-   private static String[] LINEPROPS = new String[] {
+   private static final String[] LINEPROPS = new String[] {
       "Color", "DisplayName", "LineStyle", "LineWidth", "Marker", "MarkerEdgeColor", "MarkerFaceColor", "MarkerSize", 
       "XData", "YData"
    };
    /** Imported properties of a Matlab "text" object. */
-   private static String[] TEXTPROPS = new String[] {
+   private static final String[] TEXTPROPS = new String[] {
       "Color", "DisplayName", "FontAngle", "FontName", "FontSize", "FontUnits", "FontWeight", "HorizontalAlignment", 
       "Position", "Rotation", "String", "Units", "VerticalAlignment"
    };
@@ -810,7 +860,7 @@ public class MatlabFigureImporter
          else if(dims[0] == 1 || dims[1] == 1)
          {
             double[] d = new double[dblAr.getSize()];
-            for(int i=0; i<dblAr.getSize(); i++) d[i] = dblAr.getReal(i).doubleValue();
+            for(int i=0; i<dblAr.getSize(); i++) d[i] = dblAr.getReal(i);
             out = d;
          }
          else
@@ -822,7 +872,7 @@ public class MatlabFigureImporter
          int[] dims = sglAr.getDimensions();
          if(dims.length != 2) return(null);
          if(dims[0] == 1 && dims[1] == 1)
-            out = new Double(sglAr.getReal(0).doubleValue());
+            out = sglAr.getReal(0).doubleValue();
          else if(dims[0] == 1 || dims[1] == 1)
          {
             double[] d = new double[sglAr.getSize()];

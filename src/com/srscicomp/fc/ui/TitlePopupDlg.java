@@ -1,7 +1,6 @@
 package com.srscicomp.fc.ui;
 
 import java.awt.Container;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
@@ -141,7 +140,7 @@ class TitlePopupDlg extends JDialog implements WindowFocusListener, ActionListen
    private final static int DSPFONTSZ = 16;
    
    /** 
-    * Private constructor. Use {@link #raiseEditTitlePopup()}. 
+    * Private constructor. Use {@link #raiseEditTitlePopup(FGraphicNode, JComponent)}
     * @param owner The dialog owner. 
     */
    private TitlePopupDlg(Window owner)
@@ -446,7 +445,7 @@ class TitlePopupDlg extends JDialog implements WindowFocusListener, ActionListen
    }
    
    /** Text field in which a single-line plain-text title string is displayed and edited. */
-   private JTextField titleField = null;
+   private final JTextField titleField;
    /** Text area in which a possible multiple-line plain-text title string is displayed an edited. */
    private JTextArea titleArea = null;
    /** Scroll pane housing the text area widget. */

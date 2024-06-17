@@ -8,6 +8,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -99,14 +100,14 @@ public class DataSet implements Cloneable
       /** A 4D point set {(x,y,z,w)}. */ XYZWSET(7, 4, 4, 0);
       
       /** The ID code for this data set format, for the purposes of serializing the data set to file. */
-      private int ID;
+      private final int ID;
       
       /** Minimum breadth, or tuple length, for this data format. */
-      private int minTL;
+      private final int minTL;
       /** Maximum breadth, or tuple length, for this data format. */
-      private int maxTL;
+      private final int maxTL;
       /** Number of additional defining parameters for this data format. */
-      private int nParams;
+      private final int nParams;
       
       Fmt(int id, int minTL, int maxTL, int nParams) 
       {
@@ -196,12 +197,12 @@ public class DataSet implements Cloneable
     * A compiled regular expression that is used to validate candidate data set IDs: they must have at least one 
     * printable ASCII character that is an alphanumeric character or one of <em>$@|.<>_[](){}+-^!=</em>.
     */
-   private static Pattern idVerifier = 
-      Pattern.compile("[a-zA-Z0-9_=\\$\\@\\|\\.\\<\\>\\[\\]\\(\\)\\{\\}\\+\\-\\^\\!]+");
+   private static final Pattern idVerifier =
+      Pattern.compile("[a-zA-Z0-9_=$@|.<>\\[\\](){}+\\-^!]+");
    
    /** Used to clean illegal characters from a candidate dataset ID.*/
-   private static Matcher idCleaner = 
-      Pattern.compile("[^a-zA-Z0-9_=\\$\\@\\|\\.\\<\\>\\[\\]\\(\\)\\{\\}\\+\\-\\^\\!]+").matcher(" ");
+   private static final Matcher idCleaner =
+      Pattern.compile("[^a-zA-Z0-9_=$@|.<>\\[\\](){}+\\-^!]+").matcher(" ");
    
    /** The maximum length of a valid data set identifier string. */
    public final static int MAXIDLEN = 40;
@@ -224,15 +225,15 @@ public class DataSet implements Cloneable
     * @param compareList The list of data sets to which it is compared. These data sets are left unchanged, even if 
     * there are duplicate IDs among them.
     * @return If either argument is null, if the comparison list is empty, or if the data set already has a unique 
-    * identifier, it is returned unchanged. Otherwise, {@link #changeID()} is called to generate a new <b>DataSet</b> 
-    * instance that is identical to <b>ds</b> but has a new ID that is unique among the sets in the comparison list. The
-    * new ID is derived from the original ID, with an integer string appended to make it unique.
+    * identifier, it is returned unchanged. Otherwise, {@link #changeID(String)} is called to generate a new
+    * <b>DataSet</b> instance that is identical to <b>ds</b> but has a new ID that is unique among the sets in the
+    * comparison list. The new ID is derived from the original ID, with an integer string appended to make it unique.
     */
    public static DataSet ensureUniqueIdentifier(DataSet ds, List<DataSet> compareList)
    {
-      if(ds == null || compareList == null || compareList.size() == 0) return(ds);
+      if(ds == null || compareList == null || compareList.isEmpty()) return(ds);
       
-      HashMap<String, Object> idmap = new HashMap<String, Object>();
+      HashMap<String, Object> idmap = new HashMap<>();
       for(DataSet set : compareList) 
          if(set != null) 
             idmap.put(set.getID(), null);
@@ -240,7 +241,7 @@ public class DataSet implements Cloneable
       String origID = ds.getID();
       if(!idmap.containsKey(origID)) return(ds);
       
-      String adjID = origID;
+      String adjID;
       int origLen = origID.length();
       int n = 0;
       do
@@ -271,7 +272,7 @@ public class DataSet implements Cloneable
       if(dsInfo == null || dsInfo.length == 0) return(true);
       
       boolean unchanged = true;
-      HashMap<String, Object> idmap = new HashMap<String, Object>();
+      HashMap<String, Object> idmap = new HashMap<>();
       for(int i=0; i<dsInfo.length; i++)
       {
          String origID = dsInfo[i].getID();
@@ -283,7 +284,7 @@ public class DataSet implements Cloneable
 
          // need to alter current ID to ensure uniqueness
          unchanged = false;
-         String adjID = origID;
+         String adjID;
          int origLen = origID.length();
          int n = 0;
          do
@@ -315,9 +316,9 @@ public class DataSet implements Cloneable
    public static String ensureValidIdentifier(String id)
    {
       if(isValidIDString(id)) return(id);
-      if(id == null || id.length() == 0) return("set");
+      if(id == null || id.isEmpty()) return("set");
       id = idCleaner.reset(id).replaceAll("");
-      if(id.length() == 0) return("set");
+      if(id.isEmpty()) return("set");
       if(id.length() > MAXIDLEN) id = id.substring(0, MAXIDLEN);
       return(id);
    }
@@ -337,12 +338,12 @@ public class DataSet implements Cloneable
       id = ensureValidIdentifier(id);
       if(other == null || other.length == 0) return(id);
        
-      HashMap<String, Object> forbidden = new HashMap<String, Object>();
+      HashMap<String, Object> forbidden = new HashMap<>();
       for(DataSetInfo info : other) { if(info != null) forbidden.put(info.getID(), null); }
       
       if(!forbidden.containsKey(id)) return(id);
       
-      String adjID = id;
+      String adjID;
       int origLen = id.length();
       int n = 0;
       do
@@ -362,7 +363,7 @@ public class DataSet implements Cloneable
    /**
     * Construct a data set object.
     * 
-    * @param id The data set identifier. It must pass the requirements enforced by {@link #isValidIDString()}.
+    * @param id The data set identifier. It must pass the requirements enforced by {@link #isValidIDString(String)}.
     * @param fmt The data format. Cannot be null.
     * @param params Additional parameters. For the {@link Fmt#XYZIMG} format, this array must contain at least 4 
     * elements, <i>[x0 x1 y0 y1]</i>, defining the x- and y-coordinate ranges spanned by the data. For the two data 
@@ -408,11 +409,11 @@ public class DataSet implements Cloneable
     * Construct a data set object from a double-precision floating-point array. The method simply converts the double-
     * precision array to single-precision and calls {@link #createDataSet(String, Fmt, float[], int, int, float[])}.
     * 
-    * @param id
-    * @param fmt
-    * @param params 
-    * @param nrows 
-    * @param ncols
+    * @param id Data set identifier.
+    * @param fmt Data format.
+    * @param params Additional parameters.
+    * @param nrows Number of rows in the data.
+    * @param ncols Number of columns in the data.
     * @param dData The raw data in double-precision format. Cannot be null. Length L &ge; N*M for most data formats, 
     * L &ge; N+M for {@link Fmt#RASTER1D}. Additional elements are ignored.
     */
@@ -499,7 +500,7 @@ public class DataSet implements Cloneable
       {
          ds.hasErrorData = ranges[8] > 0;
          ds.coordRanges = new float[8];
-         for(int i=0; i<8; i++) ds.coordRanges[i] = ranges[i];
+         System.arraycopy(ranges, 0, ds.coordRanges, 0, 8);
       }
       else
          ds.computeStats();
@@ -571,7 +572,7 @@ public class DataSet implements Cloneable
          
          if(Utilities.isWellDefined(params) && (params.length>=4) && (params[0]<params[1]) && (params[2]<params[3]))
          {
-            for(int i=0; i<4; i++) ds.coordRanges[i] = params[i];
+            System.arraycopy(params, 0, ds.coordRanges, 0, 4);
          }
       }
 
@@ -579,8 +580,8 @@ public class DataSet implements Cloneable
    }
    
    /**
-    * While a data set is an immutable object, the method {@link #changeID()} will generate another data set instance 
-    * that is identical to the source instance except for the ID string. Also, it is possible to create multiple 
+    * While a data set is an immutable object, the method {@link #changeID(String)} will generate another data set
+    * instance identical to the source instance except for the ID string. Also, it is possible to create multiple
     * instances backed by the same raw data array. This method is used to check whether or not two immutable data set
     * instances are identical; the ID string may be excluded in the comparison.
     * 
@@ -596,7 +597,7 @@ public class DataSet implements Cloneable
    {
       if(ds1 == null || ds2 == null) return(false);
       if(ds1 == ds2) return(true);
-      boolean same = (ignoreID) ? true : ds1.id.equals(ds2.id);
+      boolean same = ignoreID || ds1.id.equals(ds2.id);
       if(same) same = (ds1.format == ds2.format) && (ds1.width == ds2.width) && (ds1.height == ds2.height);
       if(same && (ds1.format == Fmt.SERIES || ds1.format == Fmt.MSERIES))
          same = (ds1.dx == ds2.dx) && (ds1.x0 == ds2.x0);
@@ -616,6 +617,7 @@ public class DataSet implements Cloneable
    }
    
    /** This override simply calls {@link #equals(Object, boolean)} and includes the data set IDs in the comparison. */
+   @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
    @Override public boolean equals(Object obj) { return(equals(obj, false)); }
 
    /** This override simply calls {@link #hashCode(boolean)} and includes the ID string in the hash calculation. */
@@ -651,9 +653,7 @@ public class DataSet implements Cloneable
       { 
          if(!id.equals(other.id)) return(false);
       }
-      if(!Arrays.equals(fData, other.fData)) return(false);
-      
-      return(true);
+      return Arrays.equals(fData, other.fData);
    }
    
    /** 
@@ -711,9 +711,9 @@ public class DataSet implements Cloneable
     * single-precision floating-point. Very small and very large values will be presented in exponential notation.</b> 
     * See {@link Utilities#toString(double, int, int)}.</p>
     * 
-    * <p>This method and {@link #fromPlainText()} exist to support manual editing of a data set's raw data in a GUI
-    * text panel. Obviously, this is only practical for relatively small data sets. The simple formatted text 
-    * input/output will prove unwieldy for larger data sets!</p>
+    * <p>This method and {@link #fromPlainText(String, StringBuffer)} exist to support manual editing of a data set's
+    * raw data in a GUI text panel. Obviously, this is only practical for relatively small data sets. The simple
+    * formatted text input/output will prove unwieldy for larger data sets!</p>
     * 
     * @return This dataset's internal data array in text form, as described. Note that the set ID, format code, and any
     * additional defining parameters are NOT included in the text.
@@ -752,7 +752,7 @@ public class DataSet implements Cloneable
       if(start < 0 || start >= nTuples || start+n > nTuples)
          throw new IllegalArgumentException("Requested tuple range is out of bounds!");
       
-      StringBuffer buf = new StringBuffer(2000);
+      StringBuilder buf = new StringBuilder(2000);
       if(format == Fmt.RASTER1D) 
       {
          int k = width;
@@ -761,7 +761,7 @@ public class DataSet implements Cloneable
          {
             int nSamples = (int) fData[i];
             for(int j=0; j<nSamples; j++)
-               buf.append(Utilities.toString(fData[k+j], nSig, -1) + " ");
+               buf.append(Utilities.toString(fData[k + j], nSig, -1)).append(" ");
             k += nSamples;
             if(i < start+n-1) buf.append("\r\n");
          }
@@ -773,7 +773,7 @@ public class DataSet implements Cloneable
          for(int i=first; i<=last; i++)
          {
             if(i > first && (i % width == 0)) buf.append("\r\n");
-            buf.append(Utilities.toString(fData[i], nSig, -1) + " ");
+            buf.append(Utilities.toString(fData[i], nSig, -1)).append(" ");
          }
       }
       return(buf.toString());
@@ -811,13 +811,13 @@ public class DataSet implements Cloneable
       errMsg.delete(0, errMsg.length());
       
       // special case: an empty dataset
-      if(text == null || text.length() == 0) 
+      if(text == null || text.isEmpty())
          return(DataSet.createEmptySet(format, id, getParams()));
 
       // parse the tuples. If a parsing error occurs, abort.
       StringTokenizer st = new StringTokenizer(text, "\n");
       int nTuples = st.countTokens();
-      ArrayList<float[]> tuples = new ArrayList<float[]>(nTuples);
+      ArrayList<float[]> tuples = new ArrayList<>(nTuples);
       int minLen = Integer.MAX_VALUE;
       int maxLen = Integer.MIN_VALUE;
       int lineNo = 1;
@@ -840,7 +840,7 @@ public class DataSet implements Cloneable
       } 
       catch(Throwable t) 
       { 
-         errMsg.append("Illegal character or token on line " + lineNo);
+         errMsg.append("Illegal character or token on line ").append(lineNo);
          return(null); 
       }
 
@@ -889,7 +889,7 @@ public class DataSet implements Cloneable
          {
             float[] tuple = tuples.get(i);
             fData[i] = tuple.length;
-            for(int j=0; j<tuple.length; j++) fData[k++] = tuple[j];
+            for(float v : tuple) fData[k++] = v;
          }
       }
       else
@@ -929,7 +929,7 @@ public class DataSet implements Cloneable
     * tokens again ignored). This method handles the task of parsing a text string in this format and creating a data 
     * set object encapsulating the raw data. It is heavily used when reading in old <i>Phyplot</i> XML figure files.</p>
     * 
-    * @param id The identifier to be assigned to the new data set. It must satisfy {@link #isValidIDString()}.
+    * @param id The identifier to be assigned to the new data set. It must satisfy {@link #isValidIDString(String)}.
     * @param fmt The data set format. This can only be one of the four data set formats that were available in 
     * <i>Phyplot</i>: <b>PTSET, MSET, SERIES, MSERIES</b>.
     * @param dx The sample interval in X for a data series. Ignored if not one of the series data formats.
@@ -945,7 +945,7 @@ public class DataSet implements Cloneable
       if(!(fmt==Fmt.PTSET || fmt==Fmt.SERIES || fmt==Fmt.MSET || fmt==Fmt.MSERIES)) return(null);
       
       // special case: an empty dataset
-      if(text == null || text.length() == 0) 
+      if(text == null || text.isEmpty())
       {
          float[] params = null;
          if(fmt == Fmt.SERIES || fmt == Fmt.MSERIES)
@@ -960,7 +960,7 @@ public class DataSet implements Cloneable
       // parse the tuples. If a parsing error occurs, abort.
       StringTokenizer st = new StringTokenizer(text, ",");
       int nSamp = st.countTokens();
-      ArrayList<float[]> tuples = new ArrayList<float[]>(nSamp);
+      ArrayList<float[]> tuples = new ArrayList<>(nSamp);
       int minLen = Integer.MAX_VALUE;
       int maxLen = Integer.MIN_VALUE;
       try
@@ -970,7 +970,7 @@ public class DataSet implements Cloneable
             // 29apr2014: Allow for possibility that text content ENDS with a comma followed only by whitespace, in
             // which case we might get a zero-length tuple here.
             String strTuple = st.nextToken().trim();
-            if(strTuple.length() == 0)
+            if(strTuple.isEmpty())
             {
                if(!st.hasMoreTokens()) break;
             }
@@ -1002,12 +1002,15 @@ public class DataSet implements Cloneable
       
       float[] fData = new float[nrows*ncols];
       int k = 0;
-      for(int i=0; i<nrows; i++)
+      for(float[] tuple : tuples)
       {
-         float[] tuple = tuples.get(i);
          int j = 0;
          while(j < tuple.length && j < ncols) fData[k++] = tuple[j++];
-         while(j < ncols) { fData[k++] = 0; j++; }
+         while(j < ncols)
+         {
+            fData[k++] = 0;
+            j++;
+         }
       }
 
       // create the data set
@@ -1112,7 +1115,7 @@ public class DataSet implements Cloneable
          int nTokens = st.countTokens();
          if(nTokens < 1 || nTokens > 5 || nTokens == 4)
          {
-            if(errMsg != null) errMsg.append("Bad annotation header at line " + start);
+            if(errMsg != null) errMsg.append("Bad annotation header at line ").append(start);
             return(null);
          }
 
@@ -1130,7 +1133,7 @@ public class DataSet implements Cloneable
             }
             catch(NumberFormatException nfe)
             {
-               if(errMsg != null) errMsg.append("Bad annotation header at line " + start);
+               if(errMsg != null) errMsg.append("Bad annotation header at line ").append(start);
                return(null);
             }
          }
@@ -1162,7 +1165,7 @@ public class DataSet implements Cloneable
                fmt = Fmt.SERIES;
                maxAllowedLen = 3;
             }
-            else if((!isSampled) && isMulti)
+            else if(!isSampled)
             {
                fmt = Fmt.MSET;
                minAllowedLen = 2;
@@ -1178,7 +1181,7 @@ public class DataSet implements Cloneable
                try { params[0] = Float.parseFloat(token);}
                catch(NumberFormatException nfe) 
                {
-                  if(errMsg != null) errMsg.append("Bad annotation header at line " + start);
+                  if(errMsg != null) errMsg.append("Bad annotation header at line ").append(start);
                   return(null);
                }
             }
@@ -1188,14 +1191,15 @@ public class DataSet implements Cloneable
       // abort if ID (either default ID or the one taken from annotation header) is invalid
       if(!isValidIDString(id)) 
       {
-         if(errMsg != null) errMsg.append("Invalid dataset ID (" + id + ") for dataset starting at line " + start);
+         if(errMsg != null)
+            errMsg.append("Invalid dataset ID (").append(id).append(") for dataset starting at line ").append(start);
          return(null);
       }
 
 
       // parse all (or all remaining lines) as datum tuples. If annotation header provided, then enforce allowed range 
       // for individual tuple lengths. Abort immediately if parsing error occurs.
-      ArrayList<float[]> tuples = new ArrayList<float[]>(lines.size());
+      ArrayList<float[]> tuples = new ArrayList<>(lines.size());
       int minLen = Integer.MAX_VALUE;
       int maxLen = 0;
       for(int i = (isAnnotated ? 1:0); i < lines.size(); i++)
@@ -1206,7 +1210,7 @@ public class DataSet implements Cloneable
             int n = tupleTokenizer.countTokens();
             if(n < 1 || (isAnnotated && (n < minAllowedLen || n > maxAllowedLen)))
             {
-               if(errMsg != null) errMsg.append("Invalid tuple length " + n + " on line " + (start + i));
+               if(errMsg != null) errMsg.append("Invalid tuple length ").append(n).append(" on line ").append(start + i);
                return(null);
             }
             
@@ -1221,7 +1225,7 @@ public class DataSet implements Cloneable
          }
          catch(Throwable t)
          {
-            if(errMsg != null) errMsg.append("Parsing error at line " + (start + i));
+            if(errMsg != null) errMsg.append("Parsing error at line ").append(start + i);
             return(null);
          }
       }
@@ -1240,7 +1244,7 @@ public class DataSet implements Cloneable
                   if(minLen >= 2 && maxLen <= 6) {fmt = preferredFmts[i]; i = preferredFmts.length; }
                   break;
                case SERIES:
-                  if(minLen >= 1 && maxLen <= 3) {fmt = preferredFmts[i]; i = preferredFmts.length; }
+                  if(maxLen <= 3) {fmt = preferredFmts[i]; i = preferredFmts.length; }
                   break;
                case MSET:
                   if(minLen >= 2) {fmt = preferredFmts[i]; i = preferredFmts.length; }
@@ -1265,8 +1269,8 @@ public class DataSet implements Cloneable
             double ratio = ((double)tuples.size()) / ((double)maxLen);
             
             if(minLen >= 2 && maxLen <= 3) fmt = Fmt.PTSET;
-            else if(minLen >=1 && minLen <= 3 && maxLen >=1 && maxLen <= 3) fmt = Fmt.SERIES;
-            else if(minLen >= 2 && minLen <= 6 && maxLen >= 2 && maxLen <= 6) fmt = Fmt.PTSET;
+            else if(minLen <= 3 && maxLen >= 1 && maxLen <= 3) fmt = Fmt.SERIES;
+            else if(minLen >= 2 && minLen <= 6 && maxLen <= 6) fmt = Fmt.PTSET;
             else if(minLen == maxLen && 0.5 <= ratio && ratio <= 2) fmt = Fmt.XYZIMG;
             else if(minLen != maxLen && ratio <= 0.5) fmt = Fmt.RASTER1D;
             else if(minLen == 1) fmt = Fmt.MSERIES;
@@ -1281,8 +1285,8 @@ public class DataSet implements Cloneable
       // For XYZIMG, all tuple lengths should be the same. If not, shorter tuples are padded with Float.NaN out to the
       // max observed tuple length. For XYZSET or XYZWSET, all tuples must have length 3 or 4, resp.
       int nrows = 0;
-      int ncols = 0;
-      float[] fData = null;
+      int ncols;
+      float[] fData;
       if(fmt == Fmt.RASTER1D)
       {
          ncols = tuples.size();
@@ -1292,8 +1296,7 @@ public class DataSet implements Cloneable
          int i=ncols;
          for(float[] tuple : tuples)
          {
-            for(int j=0; j<tuple.length; j++)
-               fData[i++] = tuple[j];
+            for(float v : tuple) fData[i++] = v;
          }
       }
       else if(fmt == Fmt.XYZIMG)
@@ -1304,8 +1307,7 @@ public class DataSet implements Cloneable
          int i = 0;
          for(float[] tuple : tuples)
          {
-            for(int j=0; j<tuple.length; j++)
-               fData[i++] = tuple[j];
+            for(float v : tuple) fData[i++] = v;
             for(int j=tuple.length; j<maxLen; j++)
                fData[i++] = Float.NaN;
          }
@@ -1359,12 +1361,12 @@ public class DataSet implements Cloneable
     * bytes in the ID string, and decoding proceeds immediately with that string.</p>
     * 
     * @param text A string containing the entire contents of a data set encoded in base-64 exactly as described in 
-    * {@link #toBase64()}.
+    * {@link #toBase64(DataSet, boolean)}.
     * @return A data set object as reconstituted from the source string; null if decoding fails.
     */
    public static DataSet fromBase64(String text)
    {
-      if(text == null || text.length() == 0) return(null);
+      if(text == null || text.isEmpty()) return(null);
       
       ByteArrayInputStream bis = new ByteArrayInputStream(Base64.getMimeDecoder().decode(text));
       DataInputStream dis = new DataInputStream(bis);
@@ -1383,7 +1385,7 @@ public class DataSet implements Cloneable
          }
          byte[] idBytes = new byte[len];
          dis.readFully(idBytes);
-         String id = new String(idBytes, "us-ascii");
+         String id = new String(idBytes, StandardCharsets.US_ASCII);
          
          Fmt fmt = Fmt.getFormatByIntCode(dis.readInt());
          if(fmt == null) return(null);
@@ -1429,10 +1431,10 @@ public class DataSet implements Cloneable
          
          ds = DataSet.createDataSet(DataSetInfo.createDataSetInfo(id, fmt, nrows, ncols, params), fData, ranges);
       }
-      catch(IOException ioe) {}
+      catch(IOException ignored) {}
       finally
       {
-         if(dis != null) try { dis.close(); } catch(IOException ioe) {}
+         try { dis.close(); } catch(IOException ignored) {}
       }
       
       return(ds);
@@ -1455,7 +1457,7 @@ public class DataSet implements Cloneable
     * data set contents are stored as follows, in the order listed.
     * <ol>
     *    <li>If <i>includeRangeInfo==true</i>, the integer -1 followed by the data set's coordinate range information as
-    *    an array of 9 floating-point values: <i>x0, x1, y0, y1, z0, z1, a, b, hasError</i>. For the {@link Fmt.PTSET}
+    *    an array of 9 floating-point values: <i>x0, x1, y0, y1, z0, z1, a, b, hasError</i>. For the {@link Fmt#PTSET}
     *    and {@link Fmt#SERIES} formats, the range [a, b] is the Y-coordinate range WITHOUT accounting for any standard
     *    deviation data in the set. For the 4D {@link Fmt#XYZWSET} format, [a, b] is the coordinate range for the 4th
     *    data dimension, "W". Any coordinate range pair not applicable to the data format is set to [0 0]. The last 
@@ -1492,96 +1494,49 @@ public class DataSet implements Cloneable
       
       ByteArrayOutputStream bos = new ByteArrayOutputStream(ds.getRawDataSize()*4);
       Base64.Encoder enc = lineBreaks ? Base64.getMimeEncoder() : Base64.getEncoder();
-      DataOutputStream dos = new DataOutputStream(enc.wrap(bos));
-      
-      try
+
+      try(DataOutputStream dos = new DataOutputStream(enc.wrap(bos)))
       {
          // include coordinate range information first, if requested. Tag with integer -1 so decoder can distinguish it
          // from the integer length of the ID string.
          if(includeRangeInfo)
          {
             dos.writeInt(-1);
-            for(int i=0; i<ds.coordRanges.length; i++ ) dos.writeFloat(ds.coordRanges[i]);
+            for(int i = 0; i < ds.coordRanges.length; i++) dos.writeFloat(ds.coordRanges[i]);
             dos.writeFloat(ds.hasErrorData ? 1.0f : -1.0f);
          }
-         
-         try 
-         { 
-            byte[] idBytes = ds.id.getBytes("us-ascii"); 
+
+         try
+         {
+            byte[] idBytes = ds.id.getBytes(StandardCharsets.US_ASCII);
             dos.writeInt(idBytes.length);
             dos.write(idBytes);
-         }
-         catch(UnsupportedEncodingException uee) { throw new NeverOccursException(uee); } // us-ascii always supported
+         } catch(UnsupportedEncodingException uee)
+         {
+            throw new NeverOccursException(uee);
+         } // us-ascii always supported
 
          dos.writeInt(ds.format.getIntCode());
          if(ds.format == Fmt.SERIES || ds.format == Fmt.MSERIES)
          {
             dos.writeFloat(ds.dx);
             dos.writeFloat(ds.x0);
-         }
-         else if(ds.format == Fmt.XYZIMG)
+         } else if(ds.format == Fmt.XYZIMG)
          {
-            for(int i=0; i< 4; i++) dos.writeFloat(ds.coordRanges[i]);
+            for(int i = 0; i < 4; i++) dos.writeFloat(ds.coordRanges[i]);
          }
-         
+
          dos.writeInt(ds.width);
          dos.writeInt(ds.height);
-         for(int i=0; i<ds.fData.length; i++) dos.writeFloat(ds.fData[i]);
-         
-      }
-      catch(IOException ioe)
+         for(int i = 0; i < ds.fData.length; i++) dos.writeFloat(ds.fData[i]);
+
+      } catch(IOException ioe)
       {
          // since the underlying stream wraps a byte array, we will not get any IOException
          throw new NeverOccursException(ioe);
       }
-      finally
-      {
-         if(dos != null) try { dos.close(); } catch(IOException ioe) {}
-      }
 
       return(bos.toString());
-      
-      
-      // NOTE: This old impl uses com.srscicomp.common.util.Base64, which I removed in FC 5.1.4
-      /*
-      Base64.Encoder encoder = new Base64.Encoder(lineBreaks);
-      
-      // include coordinate range information first, if requested. Tag with integer -1 so decoder can distinguish it
-      // from the integer length of the ID string.
-      if(includeRangeInfo)
-      {
-         encoder.put(-1);
-         encoder.put(ds.coordRanges);
-         encoder.put(ds.minY_ignoreStd);
-         encoder.put(ds.maxY_ignoreStd);
-         encoder.put(ds.hasErrorData ? 1.0f : -1.0f);
-      }
-      
-      try 
-      { 
-         byte[] idBytes = ds.id.getBytes("us-ascii"); 
-         encoder.put(idBytes.length);
-         encoder.put(idBytes);
-      }
-      catch(UnsupportedEncodingException uee) { assert(false); } // us-ascii always supported by JVM 
-
-      encoder.put(ds.format.getIntCode());
-      if(ds.format == Fmt.SERIES || ds.format == Fmt.MSERIES)
-      {
-         encoder.put(ds.dx);
-         encoder.put(ds.x0);
-      }
-      else if(ds.format == Fmt.XYZIMG)
-      {
-         for(int i=0; i< 4; i++) encoder.put(ds.coordRanges[i]);
-      }
-      
-      encoder.put(ds.width);
-      encoder.put(ds.height);
-      if(ds.fData.length > 0) encoder.put(ds.fData);
-      
-      return(encoder.getOutput());
-      */
    }
    
    
@@ -1620,7 +1575,7 @@ public class DataSet implements Cloneable
    /**
     * Extract a single member set from this collection-type data set.
     * @param idx The index position of the member set to be extracted. Ignored if this set is not a collection.
-    * @returns The extracted member set, as described. Returns an empty set if <b>idx</b> is invalid.
+    * @return The extracted member set, as described. Returns an empty set if <b>idx</b> is invalid.
     */
    public DataSet extractMember(int idx) { return(extractBlock(idx, 1)); }
    
@@ -1636,7 +1591,7 @@ public class DataSet implements Cloneable
     * @param start The index position of the first member set in the block to be extracted.
     * @param n The number of sets to extract. The actual size of the block will be less than <i>n</i> if <i>start + n 
     * &gt; {@link #getNumberOfSets()}</i>. If less than 1, 1 is assumed.
-    * @returns The extracted block of member set(s), as described. Returns an empty set if <i>start</i> is not a valid 
+    * @return The extracted block of member set(s), as described. Returns an empty set if <i>start</i> is not a valid
     * index.
     */
    public DataSet extractBlock(int start, int n)
@@ -1692,12 +1647,11 @@ public class DataSet implements Cloneable
          break;
       case RASTER1D:
          w = end - start + 1;
-         h = 0;
          for(int i=start; i<= end; i++) h += (int) fData[i];
 
          dstFmt = Fmt.RASTER1D;
          extractedData = new float[w+h];
-         for(int i=start; i<= end; i++) extractedData[i-start] = fData[i];
+         if(end + 1 - start >= 0) System.arraycopy(fData, start, extractedData, 0, end + 1 - start);
          if(h > 0)
          {
             int ofs = width; for(int i=0; i<start; i++) ofs += (int) fData[i];
@@ -1827,7 +1781,7 @@ public class DataSet implements Cloneable
     * {@link #copyRawData()}. It is intended only for use when writing a data set to a data source file or stream. 
     * <i><b>It is VITAL that callers make NO CHANGES to the array contents, nor pass the array reference to untrusted 
     * code!</b></i>
-    * @returns The raw data array, possibly empty.
+    * @return The raw data array, possibly empty.
     */
    float[] getRawDataArray() { return(fData); }
    
@@ -2199,7 +2153,7 @@ public class DataSet implements Cloneable
     * <p>For sampled data series formats, the x-coordinate is <i>x0 + i*dx</i>, where <i>i</i> is the point's index 
     * position, <i>dx</i> is the sample interval, and <i>x0</i> is the initial value of x. For the other 2D data set 
     * formats, {@link Fmt#XYZSET}, and {@link Fmt#XYZWSET}, the x-coordinate is specified in the data itself. For 
-    * {@link Fmt.RASTER1D}, the individual raster samples are the x-coordinate values, and the arguments select a 
+    * {@link Fmt#RASTER1D}, the individual raster samples are the x-coordinate values, and the arguments select a
     * particular sample within a particular raster. For {@link Fmt#XYZIMG}, the index position locates a single value 
     * <i>z(x,y)</i> stored row-wise in the data array, and the corresponding X-coordinate is computed based on that 
     * position and the x-coordinate range spanned by the data (specified at construction time).</p>
@@ -2344,12 +2298,12 @@ public class DataSet implements Cloneable
       if(pos < 0 || (format != Fmt.RASTER1D && pos >= getDataSize(0))) throw new IndexOutOfBoundsException();
 
       float yStd = 0;
-      
+      int offset;
       switch(format)
       {
          case PTSET : 
          case SERIES : 
-            int offset = (format == Fmt.PTSET) ? 2 : 1;
+            offset = (format == Fmt.PTSET) ? 2 : 1;
             yStd = (offset < width) ? fData[pos*width + offset] : 0; 
             break;
          case MSET : 
@@ -2417,7 +2371,7 @@ public class DataSet implements Cloneable
    /**
     * Retrieve the Z-coordinate of a single specified point in this data set. Note that only 3D and 4D data formats 
     * have Z-coordinate data.
-    * @param pos Index of desired point. Valid values lie in [0..L-1], where L = {@link #getDataSize()}. For {@link 
+    * @param pos Index of desired point. Valid values lie in [0..L-1], where L = {@link #getDataSize(int)}. For {@link
     * Fmt#XYZIMG}, this is an index into the image matrix; for {@link Fmt#XYZSET} and {@link Fmt#XYZWSET}, it is the 
     * index position of a particular data point in the set.
     * @return The Z-coordinate value. Returns <i>NaN</i> for any 1D or 2D data format.
@@ -2439,7 +2393,7 @@ public class DataSet implements Cloneable
    /**
     * Retrieve the W-coordinate of a single specified point in this 4D data set {X,Y,Z,W}. Applicable only to the 4D
     * data set format {@link Fmt#XYZWSET}
-    * @param pos Index of desired point. Valid values lie in [0..L-1], where L = {@link #getDataSize()}.
+    * @param pos Index of desired point. Valid values lie in [0..L-1], where L = {@link #getDataSize(int)}.
     * @return The W-coordinate value. Returns <i>NaN</i> for any 1D, 2D, or 3D data format.
     * @throws IndexOutOfBoundsException if <i>pos</i> argument is invalid.
     */
@@ -2482,7 +2436,7 @@ public class DataSet implements Cloneable
     * @param colormap The colormap to be used. Each entry represents an ARGB quadruplet, with 8bits per component, the 
     * alpha component in the MSByte and the blue in the LSByte. This is the form expected by 
     * <code>BufferedImage.setRGB()</code>, which the method uses to populate the image.
-    * @returns <code>True</code> if successful. If the dataset format is not <code>DataSet.Fmt.XYZIMG</code>, if the
+    * @return <code>True</code> if successful. If the dataset format is not <code>DataSet.Fmt.XYZIMG</code>, if the
     * image buffer or colormap argument is <code>null</code>, if the image buffer is empty, if the colormap contains 
     * fewer than 16 entries, or if the data range argument is invalid, the method fails.
     */
@@ -2512,7 +2466,7 @@ public class DataSet implements Cloneable
             if(!Utilities.isWellDefined(val)) bi.setRGB(i, j, colormap[0]);
             else
             {
-               int idx = 0;
+               int idx;
                if(isLog) idx = (int) (Math.log10(val-zMin+1) * len / zRng);
                else idx = (int) (((val-zMin) * len) / zRng);
                if(idx == len) --idx;
@@ -2564,7 +2518,8 @@ public class DataSet implements Cloneable
     * pixel <i>(i,j)</i>, the colormap index I(i,j) to which the raw datum Z(i,j) would be mapped given a colormap of 
     * length N. Each pixel value will lie in the range [0..N-1]. Any ill-defined datum is mapped to index 0; otherwise, 
     * data are mapped to [1..N-1]. Thus, it generates image data very similar to that provided by {@link 
-    * DataSet#prepareImage()}, except that the pixels hold colormap indices rather than actual RGB colors.
+    * #prepareImage(BufferedImage, float[], boolean, int[])}, except that the pixels hold colormap indices rather than
+    * actual RGB colors.
     * 
     * @author sruffner
     */
@@ -2617,7 +2572,7 @@ public class DataSet implements Cloneable
             if(++iRow == height) done = true;
          }
          
-         return(new Integer(idx));
+         return(idx);
       }
 
       public void remove()

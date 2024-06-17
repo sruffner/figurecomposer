@@ -56,7 +56,6 @@ import com.srscicomp.fc.uibase.StrokePatternCombo;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 final class DrawStyleEditor extends JPanel implements ActionListener, PropertyChangeListener, ItemListener
 {
    /** 
@@ -87,7 +86,7 @@ final class DrawStyleEditor extends JPanel implements ActionListener, PropertyCh
       strokeWidthEditor.addActionListener(this);
       add(strokeWidthEditor);
       
-      strokeCapMB = new MultiButton<StrokeCap>();
+      strokeCapMB = new MultiButton<>();
       strokeCapMB.addChoice(StrokeCap.BUTT, FCIcons.V4_CAPBUTT_16, "butt");
       strokeCapMB.addChoice(StrokeCap.SQUARE, FCIcons.V4_CAPSQUARE_16, "square");
       strokeCapMB.addChoice(StrokeCap.ROUND, FCIcons.V4_CAPROUND_16, "round");
@@ -95,7 +94,7 @@ final class DrawStyleEditor extends JPanel implements ActionListener, PropertyCh
       strokeCapMB.addItemListener(this);
       add(strokeCapMB);
 
-      strokeJoinMB = new MultiButton<StrokeJoin>();
+      strokeJoinMB = new MultiButton<>();
       strokeJoinMB.addChoice(StrokeJoin.MITER, FCIcons.V4_JOINMITER_16, "miter");
       strokeJoinMB.addChoice(StrokeJoin.BEVEL, FCIcons.V4_JOINBEVEL_16, "bevel");
       strokeJoinMB.addChoice(StrokeJoin.ROUND, FCIcons.V4_JOINROUND_16, "round");

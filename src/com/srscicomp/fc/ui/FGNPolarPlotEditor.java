@@ -71,15 +71,14 @@ import com.srscicomp.fc.uibase.StyledTextEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
 {
    /** Construct the polar plot node properties editor. */
    FGNPolarPlotEditor()
    {
       super();
-      
-      tabStrip = new TabStrip(this);
+
+      TabStrip tabStrip = new TabStrip(this);
       
       tabPanel = new JPanel(new CardLayout());
       tabPanel.setOpaque(false);
@@ -256,42 +255,39 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
 
    /** The polar plot currently being displayed/edited. Null if no plot is currently loaded in the editor. */
    private PolarPlotNode polarPlot = null;
-   
-   /** Controls which component node property editor is "in front". */
-   private TabStrip tabStrip = null;
-   
-   /** 
+
+   /**
     * Container for each of the different component node property editors, arranged as different "cards", with only one 
     * visible at a time. The user selects a particular editor via the tab strip that sits above this panel.
     */
-   private JPanel tabPanel = null;
+   private final JPanel tabPanel;
    
    /** Index of the currently selected tab, determining which property editor "card" is displayed. */
    private int iSelectedTab = -1;
 
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
    /** Property editor for the polar plot node itself. It appears in the first tab of the composite editor. */
-   private PolarPlotCard polarPlotCard = new PolarPlotCard();
+   private final PolarPlotCard polarPlotCard = new PolarPlotCard();
    private final static String CARD_MAIN = "Main";
    
    /** 
     * Common property editor for the theta and radial axes. It appears in tabs 1-2 of the composite editor. 
     * It must be reconfigured on a tab switch to display the appropriate axis.
     */
-   private PolarAxisCard polarAxisCard = new PolarAxisCard();
+   private final PolarAxisCard polarAxisCard = new PolarAxisCard();
    private final static String CARD_PAXIS = "PAxis";
    
    /** 
     * Property editor for the the polar plot's color bar. It appears in tab 3 of the composite editor. It
     * includes support for adding, removing and editing any tick sets associated with the color bar.
     */
-   private FGNGraphAxisCard colorBarCard = new FGNGraphAxisCard();
+   private final FGNGraphAxisCard colorBarCard = new FGNGraphAxisCard();
    private final static String CARD_CBAR = "Color Bar";
    
    /** Property editor for the legend node. It appears in tab 4 of the composite editor. */
-   private FGNLegendCard legendCard = new FGNLegendCard();
+   private final FGNLegendCard legendCard = new FGNLegendCard();
    private final static String CARD_LEGEND = "Legend";
    
    /** The tab labels for the tab strip (they never change). */
@@ -344,7 +340,7 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
          titleEditor.addActionListener(this);
          p.add(titleEditor);
          
-         hAlignWidget = new MultiButton<TextAlign>();
+         hAlignWidget = new MultiButton<>();
          hAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_ALIGNLEFT_16, "Left");
          hAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_ALIGNCENTER_16, "Center");
          hAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_ALIGNRIGHT_16, "Right");
@@ -534,7 +530,8 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
          wEditor.setMeasure(polarPlot.getWidth());
          hEditor.setMeasure(polarPlot.getHeight());
 
-         boolean isMultiSel = polarPlot.getGraphicModel().isMultiNodeSelection();
+         FGraphicModel fgm = polarPlot.getGraphicModel();
+         boolean isMultiSel = (fgm != null) && fgm.isMultiNodeSelection();
          scalePctField.setEnabled(!isMultiSel);
         
          textStyleEditor.loadGraphicNode(polarPlot);
@@ -643,7 +640,11 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
          else if(src == scalePctField)
          {
             boolean enaScale = (scalePctField.getValue().intValue() != 100);
-            if(enaScale) enaScale = !polarPlot.getGraphicModel().isMultiNodeSelection();
+            if(enaScale)
+            {
+               FGraphicModel fgm = polarPlot.getGraphicModel();
+               enaScale = (fgm == null) || !fgm.isMultiNodeSelection();
+            }
             rescaleBtn.setEnabled(enaScale);
             rescaleFontsBtn.setEnabled(enaScale);
          }
@@ -667,7 +668,7 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
       private StyledTextEditor titleEditor = null;
 
       /** When checked, the polar graph's title is rendered (unless title string is empty). */
-      private JCheckBox showTitleChk = null;
+      private final JCheckBox showTitleChk;
       
       /** Multiple-choice button widget for editing the H alignment of polar graph's title WRT its bounding box. */
       private MultiButton<TextAlign> hAlignWidget = null;
@@ -727,7 +728,7 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
     * <li>A text field to display/edit the grid divisions for the current axis. The divisions are displayed as comma-
     * separated tokens as: "S/E/M,N0,N1,...", where the special token S/E/M defines regularly spaced grid divisions of
     * size M starting at S and not exceeding E, and the remaining tokens specify custom grid divisions. S,E,M,N0, etc
-    * are all floating-point tokens. See also {@link PolarAxisNode#setGridDivisionsFromString()}.</li>
+    * are all floating-point tokens. See also {@link PolarAxisNode#setGridDivisionsFromString(String, boolean)}.</li>
     * <li>A text field to specify a list of custom grid labels, comma-separated. The labels are applied in the order
     * listed. If there are two few, they are reused; if too many, the extras are ignored. If blank, the standard
     * numerical labels are used.</li>
@@ -830,10 +831,10 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
          p.add(gapEditor);
          
          LabelFormat[] fmts = LabelFormat.values();
-         formatCB = new JComboBox<LabelFormat>(fmts);
+         formatCB = new JComboBox<>(fmts);
          formatCB.setRenderer(new DefaultListCellRenderer() {
-            @Override public Component getListCellRendererComponent(JList<? extends Object> list, Object value, 
-                  int index, boolean isSelected, boolean cellHasFocus)
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                                    int index, boolean isSelected, boolean cellHasFocus)
             {
                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                String s = (value instanceof LabelFormat) ? ((LabelFormat)value).getGUILabel() : "";
@@ -1054,7 +1055,7 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
       private boolean isEditingTheta;
       
       /** Numeric text field edits the axis range start. */
-      private NumericTextField startField = null;
+      private final NumericTextField startField;
 
       /** Numeric text field edits the axis range end. */
       private NumericTextField endField = null;

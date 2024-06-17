@@ -4,12 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 
 /**
  * <b>DeprecatedBinarySrc</b> reads and writes files containing <i>FigureComposer</i>-compatible datasets stored in a 
@@ -42,7 +42,7 @@ import java.nio.channels.FileChannel;
  * data set formats supported in <i>FigureComposer</i> and enumerated in {@link DataSet.Fmt}.</p>
  * <ul>
  *    <li>Bytes 39-0: ID string, null-terminated and padded if the ID is less than 40 characters long. Single-byte 
- *    ASCII characters. Must satisfy the constraints defined by {@link DataSet#isValidIDString()}.</li>
+ *    ASCII characters. Must satisfy the constraints defined by {@link DataSet#isValidIDString(String)}.</li>
  *    <li>Bytes 43-40: (int) Data format code. See {@link DataSet.Fmt} for the set of recognized values.</li>
  *    <li>Bytes 47-44: (int) Number of rows in data matrix. See {@link DataSet#getDataLength()}.</li>
  *    <li>Bytes 51-48: (int) Number of columns in data matrix. See {@link DataSet#getDataBreadth()}.</li>
@@ -67,6 +67,7 @@ import java.nio.channels.FileChannel;
  * 
  * @author sruffner
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 class DeprecatedBinarySrc implements IDataSrc
 {
    /**
@@ -80,46 +81,42 @@ class DeprecatedBinarySrc implements IDataSrc
    static boolean checkFile(File f)
    {
       if(f == null || !f.isFile()) return(false);
-      
-      FileInputStream fis = null;
-      try
+
+      try(FileInputStream fis = new FileInputStream(f))
       {
-         fis = new FileInputStream(f);
          FileChannel in = fis.getChannel();
-         
+
          ByteBuffer bb = ByteBuffer.allocate(TOCENTRYSZ);
          bb.order(ByteOrder.LITTLE_ENDIAN);
-         
+
          // read in and check 16-byte header, adjust for endianness, get number of datasets stored in file
          bb.limit(HEADERSZ);
-         if(HEADERSZ != in.read(bb)) return(false);
+         if(HEADERSZ != in.read(bb)) return (false);
          if(bb.getInt(0) != HEADERTAG_LE)
          {
-            if(bb.getInt(0) != HEADERTAG_BE) return(false);
+            if(bb.getInt(0) != HEADERTAG_BE) return (false);
             bb.order(ByteOrder.BIG_ENDIAN);
          }
          int n = bb.getInt(4);
-         if(n < 0) return(false);
-         if(bb.getLong(8) != 0) return(false);
-         
+         if(n < 0) return (false);
+         if(bb.getLong(8) != 0) return (false);
+
          // if there are no datasets in file, there's nothing more to check!
-         if(n == 0) return(true);
-         
+         if(n == 0) return (true);
+
          // read in and check first TOC entry
          bb.clear();
-         if(TOCENTRYSZ != in.read(bb)) return(false);
+         if(TOCENTRYSZ != in.read(bb)) return (false);
          bb.position(0);
          TOCEntry entry = getTOCEntry(bb);
-         if(entry == null) return(false);
-         
+         if(entry == null) return (false);
+
          long minFileSz = entry.fileOffset + entry.getDataSizeInBytes() + 4;  // 4 for the data section index tag!
-         return(in.size() >= minFileSz);
-         
+         return (in.size() >= minFileSz);
       }
-      catch(IOException ioe) { return(false); }
-      finally
+      catch(IOException ioe)
       {
-         try { if(fis != null) fis.close(); } catch(IOException ioe) {}
+         return (false);
       }
    }
    
@@ -183,7 +180,7 @@ class DeprecatedBinarySrc implements IDataSrc
       catch(IOException ioe) { lastErrorMsg = ioe.getMessage(); }
       finally
       {
-         try{ if(fis != null) fis.close(); } catch(IOException ioe) {}
+         try{ if(fis != null) fis.close(); } catch(IOException ignored) {}
       }
       return(ds);
    }
@@ -233,7 +230,7 @@ class DeprecatedBinarySrc implements IDataSrc
       // construct new TOC. Whether we replace an existing dataset or simply append, new dataset will be located at the 
       // end of the file and the TOC. If appending, note that file offsets are adjusted to account for an additional 
       // entry in TOC! 
-      TOCEntry[] dstTOC = null;
+      TOCEntry[] dstTOC;
       if(tableOfContents == null)
       {
          dstTOC = new TOCEntry[1];
@@ -244,7 +241,7 @@ class DeprecatedBinarySrc implements IDataSrc
          int n = (replace && iMatch >= 0) ? tableOfContents.length : tableOfContents.length + 1;
          dstTOC = new TOCEntry[n];
          
-         long offset = HEADERSZ + n*TOCENTRYSZ;
+         long offset = HEADERSZ + (long) n *TOCENTRYSZ;
          int j = 0;
          for(int i=0; i<tableOfContents.length; i++)
          {
@@ -302,39 +299,43 @@ class DeprecatedBinarySrc implements IDataSrc
          
          // copy all existing data sections directly. If we're replacing an existing dataset, we have to omit that --
          // which complicates things...
-         if(tableOfContents != null && !(replace && iMatch >= 0))
+         if(in != null)
          {
-            long start = HEADERSZ + TOCENTRYSZ*tableOfContents.length;
-            long count = in.size() - start;
-            in.transferTo(start, count, out);
-         }
-         else if(tableOfContents != null)
-         {
-            // copy all data sections up to the one being removed
-            long start = HEADERSZ + TOCENTRYSZ*tableOfContents.length;
-            long count = tableOfContents[iMatch].fileOffset;
-            count -= start;
-            in.transferTo(start, count, out);
-         
-            // copy all data sections after the one being removed (if any). For these, we must fix the 4-byte integer at
-            // the beginning of the section that reflects the datasets ordinal position in the TOC!
-            if(iMatch < tableOfContents.length-1)
+            if(tableOfContents != null && !(replace && iMatch >= 0))
             {
-               start = tableOfContents[iMatch].fileOffset + tableOfContents[iMatch].getDataSizeInBytes() + 4;
-               count = in.size() - start;
+               long start = HEADERSZ + (long) TOCENTRYSZ *tableOfContents.length;
+               long count = in.size() - start;
                in.transferTo(start, count, out);
-               
-               for(int i=iMatch; i<dstTOC.length-1; i++)
+            }
+            else if(tableOfContents != null)
+            {
+               // copy all data sections up to the one being removed
+               long start = HEADERSZ + (long) TOCENTRYSZ *tableOfContents.length;
+               long count = tableOfContents[iMatch].fileOffset;
+               count -= start;
+               in.transferTo(start, count, out);
+
+               // copy all data sections after the one being removed (if any). For these, we must fix the 4-byte integer
+               // at the beginning of the section that reflects the datasets ordinal position in the TOC!
+               if(iMatch < tableOfContents.length-1)
                {
-                  out.position(dstTOC[i].fileOffset);
-                  
-                  bb.limit(4);
-                  bb.putInt(i);
-                  bb.position(0);
-                  if(4 != out.write(bb)) throw new IOException("Unexpected error while writing data section");
-                  bb.clear();
+                  start = tableOfContents[iMatch].fileOffset + tableOfContents[iMatch].getDataSizeInBytes() + 4;
+                  count = in.size() - start;
+                  in.transferTo(start, count, out);
+
+                  for(int i=iMatch; i<dstTOC.length-1; i++)
+                  {
+                     out.position(dstTOC[i].fileOffset);
+
+                     bb.limit(4);
+                     bb.putInt(i);
+                     bb.position(0);
+                     if(4 != out.write(bb)) throw new IOException("Unexpected error while writing data section");
+                     bb.clear();
+                  }
                }
             }
+
          }
 
          // now write the data section for the added data set
@@ -367,8 +368,8 @@ class DeprecatedBinarySrc implements IDataSrc
       }
       finally
       {
-         try { if(fis != null) fis.close(); } catch(IOException ioe) {}
-         try { if(fos != null) fos.close(); } catch(IOException ioe) {}
+         try { if(fis != null) fis.close(); } catch(IOException ignored) {}
+         try { if(fos != null) fos.close(); } catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -500,7 +501,7 @@ class DeprecatedBinarySrc implements IDataSrc
          }
          
          // copy all existing data sections directly
-         long start = HEADERSZ + TOCENTRYSZ*tableOfContents.length;
+         long start = HEADERSZ + (long) TOCENTRYSZ *tableOfContents.length;
          long count = in.size() - start;
          in.transferTo(start, count, out);
       }
@@ -511,8 +512,8 @@ class DeprecatedBinarySrc implements IDataSrc
       }
       finally
       {
-         try { if(fis != null) fis.close(); } catch(IOException ioe) {}
-         try { if(fos != null) fos.close(); } catch(IOException ioe) {}
+         try { if(fis != null) fis.close(); } catch(IOException ignored) {}
+         try { if(fos != null) fos.close(); } catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -639,11 +640,11 @@ class DeprecatedBinarySrc implements IDataSrc
          }
          
          // copy all data sections up to the one being removed
-         long start = 0;
-         long count = 0;
+         long start;
+         long count;
          if(iRemove > 0)
          {
-            start = HEADERSZ + TOCENTRYSZ*tableOfContents.length;
+            start = HEADERSZ + (long) TOCENTRYSZ *tableOfContents.length;
             count = (iRemove==tableOfContents.length-1) ? in.size() : tableOfContents[iRemove].fileOffset;
             count -= start;
             in.transferTo(start, count, out);
@@ -676,8 +677,8 @@ class DeprecatedBinarySrc implements IDataSrc
       }
       finally
       {
-         try { if(fis != null) fis.close(); } catch(IOException ioe) {}
-         try { if(fos != null) fos.close(); } catch(IOException ioe) {}
+         try { if(fis != null) fis.close(); } catch(IOException ignored) {}
+         try { if(fos != null) fos.close(); } catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -753,7 +754,7 @@ class DeprecatedBinarySrc implements IDataSrc
       }
       finally
       {
-         try { if(fos != null) fos.close(); } catch(IOException ioe) {}
+         try { if(fos != null) fos.close(); } catch(IOException ignored) {}
       }
       
       // file successfully written. If we wrote to a temp file, now delete old file and move temp to its place. If 
@@ -800,7 +801,7 @@ class DeprecatedBinarySrc implements IDataSrc
    private final static int CHUNKSZ = 1024 * 16;
    
    /** The abstract pathname for the data source file. */
-   private File srcPath = null;
+   private final File srcPath;
    
    /** A soft reference to the byte buffer allocated and used for file IO operations. */
    private SoftReference<ByteBuffer> softBB = null;
@@ -833,7 +834,7 @@ class DeprecatedBinarySrc implements IDataSrc
       if(bb == null)
       {
          bb = ByteBuffer.allocate(CHUNKSZ);
-         softBB = new SoftReference<ByteBuffer>(bb);
+         softBB = new SoftReference<>(bb);
       }
       bb.clear();
       bb.order((byteOrder != null) ? byteOrder : ByteOrder.nativeOrder());
@@ -912,7 +913,7 @@ class DeprecatedBinarySrc implements IDataSrc
       catch(IOException ioe) { lastErrorMsg = ioe.getMessage(); }
       finally
       {
-         try { if(fis != null) fis.close(); } catch(IOException ioe) {}
+         try { if(fis != null) fis.close(); } catch(IOException ignored) {}
       }
       
       if(ok)
@@ -936,18 +937,13 @@ class DeprecatedBinarySrc implements IDataSrc
     */
    private static TOCEntry getTOCEntry(ByteBuffer bb)
    {
-      String id = null;
       if(bb.remaining() < TOCENTRYSZ) return(null);
       byte[] idBytes = new byte[IDLEN+1];
       idBytes[IDLEN] = (byte) '\0';
       bb.get(idBytes, 0, IDLEN);
-      try
-      {
-         id = new String(idBytes, "US-ASCII");
-         id = id.trim();
-         if(!DataSet.isValidIDString(id)) return(null); 
-      }
-      catch(UnsupportedEncodingException uee) { return(null); }
+      String id = new String(idBytes, StandardCharsets.US_ASCII);
+      id = id.trim();
+      if(!DataSet.isValidIDString(id)) return(null);
 
       DataSet.Fmt fmt = DataSet.Fmt.getFormatByIntCode(bb.getInt());
       if(fmt == null) return(null);
@@ -980,16 +976,11 @@ class DeprecatedBinarySrc implements IDataSrc
       if(bb.remaining() < TOCENTRYSZ) return(false);
       
       byte[] idBytes = new byte[IDLEN];
-      for(int i=0; i<IDLEN; i++) idBytes[i] = (byte)0;
-      
+
       DataSetInfo info = entry.info;
-      try
-      { 
-         byte[] id = info.getID().getBytes("US-ASCII");
-         for(int i=0; i<id.length && i<IDLEN; i++) idBytes[i] = id[i];
-      } 
-      catch(UnsupportedEncodingException uee) { return(false); }
-      
+      byte[] id = info.getID().getBytes(StandardCharsets.US_ASCII);
+      for(int i=0; i<id.length && i<IDLEN; i++) idBytes[i] = id[i];
+
       bb.put(idBytes);
       bb.putInt(info.getFormat().getIntCode());
       bb.putInt(info.getDataLength());

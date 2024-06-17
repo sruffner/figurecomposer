@@ -18,7 +18,6 @@ import javax.swing.SwingUtilities;
  *
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class WrapLayout extends FlowLayout
 {
    /**

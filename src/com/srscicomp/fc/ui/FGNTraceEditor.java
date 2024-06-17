@@ -48,7 +48,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNTraceEditor extends FGNEditor implements TabStripModel, ActionListener
 {
 
@@ -69,7 +68,7 @@ class FGNTraceEditor extends FGNEditor implements TabStripModel, ActionListener
       dsEditor = new FGNPlottableDSCard();
       add(dsEditor);
 
-      modeCombo = new JComboBox<TraceNode.DisplayMode>(TraceNode.DisplayMode.values());
+      modeCombo = new JComboBox<>(TraceNode.DisplayMode.values());
       modeCombo.addActionListener(this);
       modeCombo.setToolTipText("Select trace display mode");
       add(modeCombo);
@@ -350,7 +349,7 @@ class FGNTraceEditor extends FGNEditor implements TabStripModel, ActionListener
    private JPanel tabContent = null;
    
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
    /** 
     * Notifies any change listeners that the list of tabs has changed in some way -- including the identity of the 
@@ -438,7 +437,7 @@ class FGNTraceEditor extends FGNEditor implements TabStripModel, ActionListener
    private TraceNode getTraceNode() { return((TraceNode) getEditedNode()); }
    
    /** When checked, an entry for the data trace is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** The custom widget within which the trace node's title (which may contain attributed text) is edited.  */
    private StyledTextEditor titleEditor = null;

@@ -63,15 +63,14 @@ import com.srscicomp.fc.uibase.StyledTextEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNGraphEditor extends FGNEditor implements TabStripModel
 {
    /** Construct the graph node properties editor. */
    FGNGraphEditor()
    {
       super();
-      
-      tabStrip = new TabStrip(this);
+
+      TabStrip tabStrip = new TabStrip(this);
       
       tabPanel = new JPanel(new CardLayout());
       tabPanel.setOpaque(false);
@@ -256,39 +255,36 @@ class FGNGraphEditor extends FGNEditor implements TabStripModel
 
    /** The graph currently being displayed/edited. Null if no graph is currently loaded in the editor. */
    private GraphNode graph = null;
-   
-   /** Controls which component node property editor is "in front". */
-   private TabStrip tabStrip = null;
-   
-   /** 
+
+   /**
     * Container for each of the different component node property editors, arranged as different "cards", with only one 
     * visible at a time. The user selects a particular editor via the tab strip that sits above this panel.
     */
-   private JPanel tabPanel = null;
+   private final JPanel tabPanel;
    
    /** Index of the currently selected tab, determining which property editor "card" is displayed. */
    private int iSelectedTab = -1;
 
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
    /** Property editor for the graph node itself. It appears in the first tab of the composite graph node editor. */
-   private GraphCard graphCard = new GraphCard();
+   private final GraphCard graphCard = new GraphCard();
    private final static String CARD_MAIN = "Main";
    
    /** 
     * Common property editor for the 2D graph's X,Y axes and color bar. It appears in tabs 1-3 of the composite graph 
     * node editor. It must be reconfigured on a tab switch to display the appropriate node.
     */
-   private FGNGraphAxisCard axisCard = new FGNGraphAxisCard();
+   private final FGNGraphAxisCard axisCard = new FGNGraphAxisCard();
    private final static String CARD_AXIS = "Axis";
    
    /** Property editor for the legend node. It appears in tab 4 of the composite graph node editor. */
-   private FGNLegendCard legendCard = new FGNLegendCard();
+   private final FGNLegendCard legendCard = new FGNLegendCard();
    private final static String CARD_LEGEND = "Legend";
    
    /** Property editor for the graph's grid-line nodes. It appears in tab 5 of the composite graph node editor. */
-   private GridCard gridCard = new GridCard();
+   private final GridCard gridCard = new GridCard();
    private final static String CARD_GRID = "Grid";
    
    /** The tab labels for the tab strip (they never change). */
@@ -343,7 +339,7 @@ class FGNGraphEditor extends FGNEditor implements TabStripModel
          titleEditor.addActionListener(this);
          p.add(titleEditor);
          
-         hAlignWidget = new MultiButton<TextAlign>();
+         hAlignWidget = new MultiButton<>();
          hAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_ALIGNLEFT_16, "Left");
          hAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_ALIGNCENTER_16, "Center");
          hAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_ALIGNRIGHT_16, "Right");
@@ -366,12 +362,12 @@ class FGNGraphEditor extends FGNEditor implements TabStripModel
          idField.addFocusListener(this);
          p.add(idField);
 
-         coordSysCombo = new JComboBox<GraphNode.CoordSys>(GraphNode.CoordSys.values());
+         coordSysCombo = new JComboBox<>(GraphNode.CoordSys.values());
          coordSysCombo.setToolTipText("Select the coordinate system type");
          coordSysCombo.addActionListener(this);
          p.add(coordSysCombo);
          
-         quadMB = new MultiButton<GraphNode.Layout>();
+         quadMB = new MultiButton<>();
          quadMB.addChoice(GraphNode.Layout.QUAD1, FCIcons.V4_QUAD1, "1st quad");
          quadMB.addChoice(GraphNode.Layout.QUAD2, FCIcons.V4_QUAD2, "2nd quad");
          quadMB.addChoice(GraphNode.Layout.QUAD3, FCIcons.V4_QUAD3, "3rd quad");
@@ -596,7 +592,8 @@ class FGNGraphEditor extends FGNEditor implements TabStripModel
          hEditor.setMeasure(graph.getHeight());
          rotateField.setValue(graph.getRotate());
 
-         boolean isMultiSel = graph.getGraphicModel().isMultiNodeSelection();
+         FGraphicModel fgm = graph.getGraphicModel();
+         boolean isMultiSel = (fgm != null) && fgm.isMultiNodeSelection();
          scalePctField.setEnabled(!isMultiSel);
         
          textStyleEditor.loadGraphicNode(graph);
@@ -716,7 +713,11 @@ class FGNGraphEditor extends FGNEditor implements TabStripModel
          else if(src == scalePctField)
          {
             boolean enaScale = (scalePctField.getValue().intValue() != 100);
-            if(enaScale) enaScale = !graph.getGraphicModel().isMultiNodeSelection();
+            if(enaScale)
+            {
+               FGraphicModel fgm = graph.getGraphicModel();
+               enaScale = (fgm == null) || !fgm.isMultiNodeSelection();
+            }
             rescaleBtn.setEnabled(enaScale);
             rescaleFontsBtn.setEnabled(enaScale);
          }
@@ -740,7 +741,7 @@ class FGNGraphEditor extends FGNEditor implements TabStripModel
       private StyledTextEditor titleEditor = null;
 
       /** When checked, the graph's title is rendered (unless title string is empty). */
-      private JCheckBox showTitleChk = null;
+      private final JCheckBox showTitleChk;
       
       /** Multiple-choice button widget for editing the H alignment of graph's title WRT its bounding box. */
       private MultiButton<TextAlign> hAlignWidget = null;
@@ -897,7 +898,7 @@ class FGNGraphEditor extends FGNEditor implements TabStripModel
 
       
       /** Check box toggles the show/hide state of the graph's horizontal (or circular) grid lines. */
-      private JCheckBox showHChk = null;
+      private final JCheckBox showHChk;
       /** Self-contained editor handles the draw style properties for the graph's primary axis grid lines. */
       private DrawStyleEditor hDrawStyleEditor = null;
       /** Check box toggles the show/hide state of the graph's vertical (or radial) grid lines. */

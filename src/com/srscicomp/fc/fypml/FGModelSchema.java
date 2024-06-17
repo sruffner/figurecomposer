@@ -151,155 +151,21 @@ public class FGModelSchema implements ISimpleXMLContentProvider
       }
       finally
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         try { if(rdr != null) rdr.close(); } catch(IOException ignored) {}
       }
       if(!ok) System.exit(0);
-      
-      BufferedWriter wrt = null;
-      try 
-      { 
-         wrt = new BufferedWriter(new FileWriter(outFile));
+
+      try(BufferedWriter wrt = new BufferedWriter(new FileWriter(outFile)))
+      {
          staxWrapper.writeContent(wrt, schema, false);
          System.out.println(" : Read and write back succeeded. BYE!");
       }
-      catch(Exception e) 
-      { 
-         System.out.println(" ---> Unable to write FypML:\n      " + e.getMessage()); 
-         ok = false;
-      }
-      finally
-      {
-         try { if(wrt != null) wrt.close(); } catch(IOException ioe) {}
-      }
-
-      System.exit(0);
-      
-     /*
-      System.out.println("Figure document schema migrator starting up...");
-      
-      BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-      
-      // get full path to figure file
-      String input = null;
-      System.out.print("\nEnter full path for FypML file to migrate > ");
-      boolean ok = true;
-      try
-      {
-         input = in.readLine().trim();
-      }
-      catch(IOException ioe)
-      {
-         System.out.println(" ---> Unexpected IO error while reading input. QUITTING!");
-         ok = false;
-      }
-      if(!ok) System.exit(0);
-      
-      File f = new File(input);
-      ok = FGModelSchema.isFigureModelXMLFile(f);
-      if(!ok)
-      {
-         System.out.println(" ---> Specified file does not exist or is not a valid FypML file. QUITTING!");
-         System.exit(0);
-      }
-      int currVersion = FGModelSchema.getSchemaVersion(f);
-      System.out.println(" : File has FypML schema version = " + currVersion);
-      if(currVersion == FGModelSchema.getCurrentSchemaVersion())
-      {
-         System.out.println(" : This file conforms to the latest schema version. DONE.");
-         System.exit(0);
-      }
-      
-      System.out.print("\nEnter target schema # > ");
-      try
-      {
-         input = in.readLine().trim();
-      }
-      catch(IOException ioe)
-      {
-         System.out.println(" ---> Unexpected IO error while reading input. QUITTING!");
-         ok = false;
-      }
-      if(!ok) System.exit(0);
-
-      int tgtVersion = -1;
-      try { tgtVersion = Integer.parseInt(input); }
-      catch(NumberFormatException nfe) { ok = false; }
-      if(ok) ok = tgtVersion > currVersion && tgtVersion <= FGModelSchema.getCurrentSchemaVersion();
-      if(!ok)
-      {
-         System.out.println(" ---> Not a valid target schema version for the migrator. QUITTING");
-         System.exit(0);
-      }
-      
-      System.out.print("\nEnter full path for migrated file > ");
-      try
-      {
-         input = in.readLine().trim();
-      }
-      catch(IOException ioe)
-      {
-         System.out.println(" ---> Unexpected IO error while reading input. QUITTING!");
-         ok = false;
-      }
-      if(!ok) System.exit(0);
-      if(!input.endsWith(".fyp"))
-      {
-         System.out.println(" : NOTE -- appending .fyp to output file path...");
-         input = input + ".fyp";
-      }
-      
-      Reader rdr = null;
-      ISchema schema = null;
-      try
-      {
-         rdr = new BufferedReader(new FileReader(f));
-         
-         // attempt to parse the content
-         XPPWrapper xppWrapper = new XPPWrapper();
-         schema = (ISchema) xppWrapper.parseContent(rdr, new FGModelSchema());
-
-         // if migration is necessary, do so by chaining from one version to the next until we reach the current version
-         int v = schema.getVersion();
-         while(v < tgtVersion)
-         {
-            ISchema nextSchema = FGModelSchema.getSchemaByVersionNumber(v+1);
-            nextSchema.migrateFromPreviousSchema(schema);
-            schema = nextSchema;
-            ++v;
-         }
-      }
       catch(Exception e)
       {
-         System.out.println(" ---> Unable to migrate/parse source FypML:\n      " + e.getMessage());
-         ok = false;
-      }
-      finally
-      {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
-      }
-      if(!ok) System.exit(0);
-      
-      File outFile = new File(input);
-      BufferedWriter wrt = null;
-      try 
-      { 
-         wrt = new BufferedWriter(new FileWriter(outFile));
-         XPPWrapper xpp = new XPPWrapper();
-         xpp.writeContent(wrt, schema, false);
-         System.out.println(" : Migration successful. BYE!");
-      }
-      catch(Exception e) 
-      { 
-         System.out.println(" ---> Unable to write migrated FypML:\n      " + e.getMessage()); 
-         ok = false;
-      }
-      finally
-      {
-         try { if(wrt != null) wrt.close(); } catch(IOException ioe) {}
+         System.out.println(" ---> Unable to write FypML:\n      " + e.getMessage());
       }
 
       System.exit(0);
-      */
    }
    
    /** 
@@ -324,7 +190,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
    {
       ISchema schema = getSchemaByVersionNumber(CURRENTSCHEMAVERSION);
       try { schema.setRootElement(schema.createElement(schema.getRootTag()), false); }
-      catch(XMLException xe) {}
+      catch(XMLException ignored) {}
       return(schema);
    }
    
@@ -336,21 +202,14 @@ public class FGModelSchema implements ISimpleXMLContentProvider
     */
    public static int getSchemaVersion(File f) 
    {
-      int version = -1;
-      FileReader r = null;
-      try 
-      { 
-         r = new FileReader(f);
-         version = FGModelSchema.getSchemaVersion(r); 
+      int version;
+      try(FileReader r = new FileReader(f))
+      {
+         version = FGModelSchema.getSchemaVersion(r);
       }
       catch(Exception e)
       {
          version = -1;
-      }
-      finally
-      {
-         try { if(r != null) r.close(); }
-         catch(IOException ioe) {}
       }
 
       return(version);
@@ -382,10 +241,10 @@ public class FGModelSchema implements ISimpleXMLContentProvider
          int v = FGModelSchema.getSchemaVersion(rdr);
          ok = (v>0 && v <=getCurrentSchemaVersion());   // version 0 files lacked the processing instruction!
       }
-      catch(Throwable t) {}
+      catch(Throwable ignored) {}
       finally
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         try { if(rdr != null) rdr.close(); } catch(IOException ignored) {}
       }
       
       return(ok);
@@ -401,7 +260,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
    public static List<DataSetInfo> getDataSetInfo(ISchema doc, StringBuffer errBuf)
    {
       if(doc == null) throw new IllegalArgumentException("Null document!");
-      List<DataSetInfo> info = new ArrayList<DataSetInfo>();
+      List<DataSetInfo> info = new ArrayList<>();
       try
       {
          BasicSchemaElement fig = (BasicSchemaElement) doc.getRootElement();
@@ -417,11 +276,11 @@ public class FGModelSchema implements ISimpleXMLContentProvider
             boolean isV7 = "true".equals(eSet.getAttributeValueByName(FGModelSchema.A_V7));
             if(using == null)
             {
-               DataSet ds = null;
+               DataSet ds;
                if(isV7)
                {
                   float dx = 1;
-                  try { dx = Float.parseFloat(eSet.getAttributeValueByName(FGModelSchema.A_DX)); } catch(Throwable t) {}
+                  try { dx = Float.parseFloat(eSet.getAttributeValueByName(FGModelSchema.A_DX)); } catch(Throwable ignored) {}
                   DataSet.Fmt dsFmt = DataSet.Fmt.getFormatByName(fmt);
                   ds = DataSet.fromCommaSeparatedTuples(id, dsFmt, dx, eSet.getTextContent());
                }
@@ -470,7 +329,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
    public static List<String> getDataSetIDAndFormat(ISchema doc, StringBuffer errBuf)
    {
       if(doc == null) throw new IllegalArgumentException("Null document!");
-      List<String> out = new ArrayList<String>();
+      List<String> out = new ArrayList<>();
       try
       {
          BasicSchemaElement fig = (BasicSchemaElement) doc.getRootElement();
@@ -516,7 +375,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
          JSONObject jsonSchema = FGModelSchema.toJSON(srcDoc);
          doc = FGModelSchema.fromJSON(jsonSchema);
       }
-      catch(JSONException jse) {}
+      catch(JSONException ignored) {}
       if(doc == null) return(null);
       
       String emsg = null;
@@ -535,11 +394,11 @@ public class FGModelSchema implements ISimpleXMLContentProvider
             boolean isV7 = "true".equals(eSet.getAttributeValueByName(FGModelSchema.A_V7));
             if(using == null)
             {
-               DataSet ds = null;
+               DataSet ds;
                if(isV7)
                {
                   float dx = 1;
-                  try { dx = Float.parseFloat(eSet.getAttributeValueByName(FGModelSchema.A_DX)); } catch(Throwable t) {}
+                  try { dx = Float.parseFloat(eSet.getAttributeValueByName(FGModelSchema.A_DX)); } catch(Throwable ignored) {}
                   DataSet.Fmt dsFmt = DataSet.Fmt.getFormatByName(fmt);
                   ds = DataSet.fromCommaSeparatedTuples(id, dsFmt, dx, eSet.getTextContent());
                }
@@ -706,20 +565,14 @@ public class FGModelSchema implements ISimpleXMLContentProvider
     */
    public static String toXML(ISchema schema, File f)
    {
-      String errDesc = null;
-      BufferedWriter wrt = null;
-      try 
-      { 
-         wrt = new BufferedWriter(new FileWriter(f));
-         errDesc = toXML(schema, wrt); 
-      }
-      catch(IOException ioe) 
-      { 
-         errDesc = "Unable to write DataNav XML:\n" + ioe.getMessage(); 
-      }
-      finally
+      String errDesc;
+      try(BufferedWriter wrt = new BufferedWriter(new FileWriter(f)))
       {
-         try { if(wrt != null) wrt.close(); } catch(IOException ioe) {}
+         errDesc = toXML(schema, wrt);
+      }
+      catch(IOException ioe)
+      {
+         errDesc = "Unable to write DataNav XML:\n" + ioe.getMessage();
       }
       
       return(errDesc);
@@ -732,7 +585,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
     * 
     * @param schema A <i>DataNav</i> figure graphic XML document, conforming to the current or an older schema version.
     * If schema migration is necessary, this document will be emptied in the process -- do not reuse!
-    * @param writer. The stream writer to which the XML document is written. The writer is <b>NOT</b> closed after the 
+    * @param writer The stream writer to which the XML document is written. The writer is <b>NOT</b> closed after the
     * operation is completed.
     * @return Null if operation succeeds; else a brief message explaining the error that occurred.
     */
@@ -787,7 +640,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
       }
       finally
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         try { if(rdr != null) rdr.close(); } catch(IOException ignored) {}
       }
       
       return(schema);
@@ -903,7 +756,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
 		int nSchema = 0;
 		StaxWrapper staxParser = new StaxWrapper();
 		String procInst = staxParser.getProcessingInstruction(r, Schema0Constants.EL_FYP);
-		if(procInst.length() > 0) nSchema = getSchemaVersionFromPI(procInst);
+		if(!procInst.isEmpty()) nSchema = getSchemaVersionFromPI(procInst);
 
 		return(nSchema);
 	}
@@ -918,7 +771,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
 	private static int getSchemaVersionFromPI(String procInst)
 	{
 	   int nSchema = -1;
-	   if(procInst != null && procInst.length() > 0)
+	   if(procInst != null && !procInst.isEmpty())
 	   {
          int n1 = procInst.indexOf("schemaVersion");
          if(n1 > -1) 
@@ -928,7 +781,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
             if(n1 > 0 && n2 > -1 && n1 < n2)
             {
                try { nSchema = Integer.parseInt( procInst.substring(n1, n2) ); }
-               catch(NumberFormatException nfe) { nSchema = -1; }
+               catch(NumberFormatException ignored) {}
             }
          }
 	   }

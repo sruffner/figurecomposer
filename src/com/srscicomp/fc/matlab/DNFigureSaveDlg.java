@@ -24,7 +24,6 @@ import com.srscicomp.fc.fig.FGraphicModel;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class DNFigureSaveDlg extends JDialog implements ActionListener
 {
    /**

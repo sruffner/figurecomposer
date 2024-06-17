@@ -145,11 +145,11 @@ class Schema21 extends Schema20
     * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
     * is new to this schema or has a different attribute set compared to the previous schema.
     */
-   private static Map<String, SchemaElementInfo> elementMap21 = null;
+   private static final Map<String, SchemaElementInfo> elementMap21;
 
    static
    {
-      elementMap21 = new HashMap<String, SchemaElementInfo>();
+      elementMap21 = new HashMap<>();
       
       // (12jan2016) Figure element can parent any number of 3D graph objects.
       elementMap21.put( EL_FIGURE, new SchemaElementInfo( false, 
@@ -217,7 +217,7 @@ class Schema21 extends Schema20
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap21.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap21.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
    /**
@@ -226,7 +226,7 @@ class Schema21 extends Schema20
     */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
    {
-      SchemaElementInfo info = (SchemaElementInfo) elementMap21.get(elTag);
+      SchemaElementInfo info = elementMap21.get(elTag);
       return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
    }
 
@@ -272,7 +272,7 @@ class Schema21 extends Schema20
          return(EL_SYMBOL.equals(childTag) && index == 0);
       else if(EL_GRAPH3D.equals(elTag))
       {
-         SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+         SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
          if(!eInfo.isChildAllowed(childTag)) return(false);
          if(EL_AXIS.equals(childTag)) return(index >=0 && index <= 2);
          else if(EL_GRIDLINE.equals(childTag)) return(index >= 3 && index <= 5);
@@ -306,7 +306,7 @@ class Schema21 extends Schema20
     * <li>The <i>mode</i> attribute of the new <i>scatter3d</i> element is an enumerated attribute with the same choices
     * as for the 2D scatter plot display mode: {@link #MODE_SCATTER_CHOICES}.</li>
     * <li>The <i>bkg</i> attribute of the new <i>scatter3d</i> element defines any of 3 types of background fills. See
-    * {@link #isValidBkgFillAttributeValue()}.</li>
+    * {@link #isValidBkgFillAttributeValue}.</li>
     * <li>The <i>baseline</i> attribute of a <i>scatter3d</i> element is an unrestricted floating-point value.</li>
     * <li>The <i>limit</i> attribute for the new <i>surface</i> element is an integer-valued attribute restricted to the
     * range [{@link #MIN_LIMIT}, {@link #MAX_LIMIT}].</li>
@@ -362,7 +362,7 @@ class Schema21 extends Schema20
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

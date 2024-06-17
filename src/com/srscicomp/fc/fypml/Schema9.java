@@ -120,7 +120,7 @@ class Schema9 extends Schema8
    {
       int n = ADORN7_CHOICES.length;
       ADORN9_CHOICES = new String[n+4];
-      for(int i=0; i<n; i++) ADORN9_CHOICES[i] = ADORN7_CHOICES[i];
+      System.arraycopy(ADORN7_CHOICES, 0, ADORN9_CHOICES, 0, n);
       ADORN9_CHOICES[n] = ADORN_DART;
       ADORN9_CHOICES[n+1] = ADORN_REV_DART;
       ADORN9_CHOICES[n+2] = ADORN_KITE;
@@ -133,11 +133,11 @@ class Schema9 extends Schema8
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
     * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap9 = null;
+	private static final Map<String, SchemaElementInfo> elementMap9;
 
 	static
 	{
-		elementMap9 = new HashMap<String, SchemaElementInfo>();
+		elementMap9 = new HashMap<>();
 		
       // The new "zaxis" element is always the child of a graph.
       elementMap9.put( EL_GRAPH, 
@@ -175,7 +175,7 @@ class Schema9 extends Schema8
    @Override
    public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap9.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap9.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -186,7 +186,7 @@ class Schema9 extends Schema8
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap9.get(elTag);
+		SchemaElementInfo info = elementMap9.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -238,7 +238,7 @@ class Schema9 extends Schema8
       String elTag = e.getTag();
       if(EL_GRAPH.equals(elTag))
       {
-         SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+         SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
          if(!eInfo.isChildAllowed(childTag)) return(false);
          if(EL_AXIS.equals(childTag)) return(index == 0 || index == 1);
          else if(EL_ZAXIS.equals(childTag)) return(index == 2);
@@ -248,7 +248,7 @@ class Schema9 extends Schema8
       }
       else if(EL_AXIS.equals(elTag))
       {
-         SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+         SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
          return(eInfo.isChildAllowed(childTag));
       }
       return super.isValidChildAtIndex(e, childTag, index);
@@ -311,7 +311,7 @@ class Schema9 extends Schema8
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

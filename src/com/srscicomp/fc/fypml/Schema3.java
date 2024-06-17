@@ -52,11 +52,11 @@ class Schema3 extends Schema2
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
 	 * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap3 = null;
+	private static final Map<String, SchemaElementInfo> elementMap3;
 
 	static
 	{
-		elementMap3 = new HashMap<String, SchemaElementInfo>();
+		elementMap3 = new HashMap<>();
 
 		// new element class -- the 'multiSet' element
 		elementMap3.put( EL_MULTISET, 
@@ -125,7 +125,7 @@ class Schema3 extends Schema2
    @Override
 	public boolean isSupportedElementTag(String elTag)
 	{
-      return(elementMap3.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap3.containsKey(elTag) || super.isSupportedElementTag(elTag));
 	}
 
 	/**
@@ -135,7 +135,7 @@ class Schema3 extends Schema2
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap3.get(elTag);
+		SchemaElementInfo info = elementMap3.get(elTag);
 		return((info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -156,7 +156,7 @@ class Schema3 extends Schema2
 		if(EL_SHAPE.equals(elTag)) 
 			return(true);
 		else if(EL_MULTISET.equals(elTag))
-			return(children.size() > 0 && EL_EBAR.equals(((BasicSchemaElement) children.get(0)).getTag()));
+			return((!children.isEmpty()) && EL_EBAR.equals(((BasicSchemaElement) children.get(0)).getTag()));
 
 		return(super.hasRequiredChildren(e));
 	}
@@ -218,7 +218,7 @@ class Schema3 extends Schema2
    {
       if(EL_MULTISET.equals(e.getTag()))
       {
-         if(text == null || text.length() == 0) return(true);
+         if(text == null || text.isEmpty()) return(true);
 
          StringTokenizer st = new StringTokenizer(text, ",");
 
@@ -229,7 +229,7 @@ class Schema3 extends Schema2
             
             // 29apr2014: Allow for possibility that text content ENDS with a comma followed only by whitespace, in
             // which case we might get a zero-length tuple here.
-            if(tuple.length() == 0) return(!st.hasMoreTokens());
+            if(tuple.isEmpty()) return(!st.hasMoreTokens());
 
             StringTokenizer tupleTokenizer = new StringTokenizer(tuple);
             int nTokens = tupleTokenizer.countTokens();
@@ -270,11 +270,11 @@ class Schema3 extends Schema2
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
 		// update the content of the old schema in place...
-		Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+		Stack<BasicSchemaElement> elementStack = new Stack<>();
 		elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
 		while(!elementStack.isEmpty())
 		{
-			BasicSchemaElement e = (BasicSchemaElement) elementStack.pop();
+			BasicSchemaElement e = elementStack.pop();
 			String elTag = e.getTag();
 
 			// migrate the element object's schema info
@@ -286,7 +286,7 @@ class Schema3 extends Schema2
 			if(EL_POINTSET.equals(elTag) || EL_SERIES.equals(elTag) || EL_FUNCTION.equals(elTag))
 			{
 				String title = e.getAttributeValueByName(A_TITLE);
-				if(title == null || title.length() == 0)
+				if(title == null || title.isEmpty())
 					e.setAttributeValueByName(A_HIDE, "true");
 			}
 

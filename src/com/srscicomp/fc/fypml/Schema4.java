@@ -65,11 +65,11 @@ class Schema4 extends Schema3
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
 	 * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap4 = null;
+	private static final Map<String, SchemaElementInfo> elementMap4;
 
 	static
 	{
-		elementMap4 = new HashMap<String, SchemaElementInfo>();
+		elementMap4 = new HashMap<>();
 
 		// new element class: the 'symbol' element
 		elementMap4.put( EL_SYMBOL, 
@@ -147,7 +147,7 @@ class Schema4 extends Schema3
    @Override
 	public boolean isSupportedElementTag(String elTag)
 	{
-      return(elementMap4.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap4.containsKey(elTag) || super.isSupportedElementTag(elTag));
 	}
 
    /**
@@ -157,7 +157,7 @@ class Schema4 extends Schema3
    @Override
    public SchemaElementInfo getSchemaElementInfo(String elTag)
    {
-      SchemaElementInfo info = (SchemaElementInfo) elementMap4.get(elTag);
+      SchemaElementInfo info = elementMap4.get(elTag);
       return((info==null) ? super.getSchemaElementInfo(elTag) : info);
    }
 
@@ -181,7 +181,7 @@ class Schema4 extends Schema3
 		if(EL_SYMBOL.equals(elTag)) 
 			return(true);
 		else if(EL_FUNCTION.equals(elTag))
-			return(children.size() > 0 && EL_SYMBOL.equals(((BasicSchemaElement) children.get(0)).getTag()));
+			return((!children.isEmpty()) && EL_SYMBOL.equals(((BasicSchemaElement) children.get(0)).getTag()));
 		else if(EL_POINTSET.equals(elTag) || EL_MULTISET.equals(elTag) || EL_SERIES.equals(elTag))
 			return(children.size() > 1 && 
 				EL_SYMBOL.equals(((BasicSchemaElement) children.get(0)).getTag()) &&
@@ -270,7 +270,7 @@ class Schema4 extends Schema3
 		String oldDocDefSymbolSize = oldRoot.getAttributeValueByName(A_SYMBOLSIZE);
 
 		// update the content of the old schema in place...
-		Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+		Stack<BasicSchemaElement> elementStack = new Stack<>();
 		elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
 		while(!elementStack.isEmpty())
 		{
@@ -422,10 +422,10 @@ class Schema4 extends Schema3
 	}
 
 	/** A hash map of those adorments supported in schema version 4 that are not vertically symmetric. */
-	static HashMap<String, String> mapNotVSAdornments = null;
+	static final HashMap<String, String> mapNotVSAdornments;
 	static 
 	{
-		mapNotVSAdornments = new HashMap<String, String>();
+		mapNotVSAdornments = new HashMap<>();
 		mapNotVSAdornments.put( ADORN_LFTRIANGLE, null );
 		mapNotVSAdornments.put( ADORN_RTTRIANGLE, null );
 		mapNotVSAdornments.put( ADORN_LFISOTRIANGLE, null );

@@ -180,11 +180,11 @@ class Schema6 extends Schema5
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
     * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap6 = null;
+	private static final Map<String, SchemaElementInfo> elementMap6;
 
 	static
 	{
-		elementMap6 = new HashMap<String, SchemaElementInfo>();
+		elementMap6 = new HashMap<>();
 
       // revised element map entry for the 'figure' element, which now includes the new "ref" element
       elementMap6.put( EL_FIGURE, 
@@ -249,7 +249,7 @@ class Schema6 extends Schema5
 	public boolean isSupportedElementTag(String elTag)
 	{
       if(EL_POINTSET.equals(elTag) || EL_SERIES.equals(elTag) || EL_MULTISET.equals(elTag)) return(false);
-      else return(elementMap6.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      else return(elementMap6.containsKey(elTag) || super.isSupportedElementTag(elTag));
 	}
 
    /**
@@ -260,7 +260,7 @@ class Schema6 extends Schema5
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap6.get(elTag);
+		SchemaElementInfo info = elementMap6.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -378,7 +378,7 @@ class Schema6 extends Schema5
    {
       if(EL_SET.equals(e.getTag()))
       {
-         if(text == null || text.length() == 0) return(true);
+         if(text == null || text.isEmpty()) return(true);
 
          StringTokenizer st = new StringTokenizer(text, ",");
          while(st.hasMoreTokens())
@@ -387,7 +387,7 @@ class Schema6 extends Schema5
             
             // 29apr2014: Allow for possibility that text content ENDS with a comma followed only by whitespace, in
             // which case we might get a zero-length tuple here.
-            if(tuple.length() == 0) return(!st.hasMoreTokens());
+            if(tuple.isEmpty()) return(!st.hasMoreTokens());
 
             StringTokenizer tupleTokenizer = new StringTokenizer(tuple);
             if(tupleTokenizer.countTokens() < 1) return(false);
@@ -441,7 +441,7 @@ class Schema6 extends Schema5
       BasicSchemaElement refNode = (BasicSchemaElement) createElement(EL_REF);
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {
@@ -462,7 +462,7 @@ class Schema6 extends Schema5
                   skipVal = Integer.parseInt(skip);
                   dxVal = (dx != null) ? Double.parseDouble(dx) : 1;
                }
-               catch(NumberFormatException nfe) {}
+               catch(NumberFormatException ignored) {}
 
                if(skipVal != 1)
                {
@@ -508,7 +508,6 @@ class Schema6 extends Schema5
             set.setTextContent(e.getTextContent(), false);
 
             // determine what the value for the "type" attribute should be. Note that "polyline" is the implicit value.
-            typeAttrVal = null;
             if(wasMultiSet) typeAttrVal = DISPMODE_MULTI;
             else if(wasSeries)
             {
@@ -541,7 +540,7 @@ class Schema6 extends Schema5
          // element converted had been a "series".
          if(isDataEl)
          {
-            if(srcAttrVal != null) e.setAttributeValueByName(A_SRC, srcAttrVal);
+            e.setAttributeValueByName(A_SRC, srcAttrVal);
             if(xoffAttrVal != null) e.setAttributeValueByName(A_XOFF, xoffAttrVal);
             if(typeAttrVal != null) e.setAttributeValueByName(A_TYPE, typeAttrVal);
             else e.removeAttributeByName(A_TYPE);

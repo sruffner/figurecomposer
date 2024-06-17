@@ -63,7 +63,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 final class TextStyleEditor extends JPanel implements ActionListener, PropertyChangeListener, ItemListener
 {
    /** Construct the text style properties editor. */
@@ -81,7 +80,7 @@ final class TextStyleEditor extends JPanel implements ActionListener, PropertyCh
       fontFamilyBtn.addPropertyChangeListener(FontFamilyButton.FONTFAMILY_PROPERTY, this);
       add(fontFamilyBtn);
       
-      fontStyleMB = new MultiButton<FontStyle>();
+      fontStyleMB = new MultiButton<>();
       fontStyleMB.addChoice(FontStyle.PLAIN, FCIcons.V4_FSPLAIN_16, "Plain");
       fontStyleMB.addChoice(FontStyle.ITALIC, FCIcons.V4_FSITALIC_16, "Italic");
       fontStyleMB.addChoice(FontStyle.BOLD, FCIcons.V4_FSBOLD_16, "Bold");
@@ -95,13 +94,13 @@ final class TextStyleEditor extends JPanel implements ActionListener, PropertyCh
       fontSizeField.addActionListener(this);
       add(fontSizeField);
       
-      altFontCombo = new JComboBox<GenericFont>(GenericFont.values());
+      altFontCombo = new JComboBox<>(GenericFont.values());
       altFontCombo.setToolTipText("Generic font");
       altFontCombo.setPrototypeDisplayValue(GenericFont.SERIF);
       altFontCombo.addActionListener(this);
       add(altFontCombo);
       
-      psFontCombo = new JComboBox<PSFont>(PSFont.values());
+      psFontCombo = new JComboBox<>(PSFont.values());
       psFontCombo.setToolTipText("Postscript font");
       psFontCombo.setPrototypeDisplayValue(PSFont.HELVETICA);
       psFontCombo.addActionListener(this);
@@ -216,13 +215,15 @@ final class TextStyleEditor extends JPanel implements ActionListener, PropertyCh
       {
          GenericFont gf = (GenericFont) altFontCombo.getSelectedItem();
          editedNode.setAltFont(gf);
-         altFontCombo.setToolTipText(String.format("Generic font: %s", gf.toString()));
+         if(gf != null)
+            altFontCombo.setToolTipText(String.format("Generic font: %s", gf));
       }
       else if(src == psFontCombo)
       {
          PSFont psf = (PSFont) psFontCombo.getSelectedItem();
          editedNode.setPSFont(psf);
-         psFontCombo.setToolTipText(String.format("Postscript font: %s", psf.toString()));
+         if(psf != null)
+            psFontCombo.setToolTipText(String.format("Postscript font: %s", psf));
       }
       else if(src == restoreBtn)
          restorePopup.show(restoreBtn, 5, 5);
@@ -276,7 +277,7 @@ final class TextStyleEditor extends JPanel implements ActionListener, PropertyCh
    //
    
    /** Compact custom button widget uses a pop-up panel to edit the text fill color. */
-   private RGBColorPicker textColorPicker = null;
+   private final RGBColorPicker textColorPicker;
 
    /** Compact custom button widget uses a pop-up panel to change the font family selection. */
    private FontFamilyButton fontFamilyBtn = null;
@@ -311,7 +312,7 @@ final class TextStyleEditor extends JPanel implements ActionListener, PropertyCh
 
    /** 
     * TODO: Make this a static resource shared by all instances of TextStyleEditor???
-    * Helper method for {@link #construct()}. It creates the pop-up menu attached to the <i>Restore style
+    * Helper method for constructor. It creates the pop-up menu attached to the <i>Restore style
     * defaults</i> button.
     */
    private void createRestoreBtnPopup()

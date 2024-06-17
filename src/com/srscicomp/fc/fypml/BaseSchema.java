@@ -45,11 +45,11 @@ class BaseSchema implements Schema0Constants, ISchema
     * value retrieved is a <code>SchemaElementInfo</code> object that provides some schema validation information for 
     * the corresponding element.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap = null;
+	private static final Map<String, SchemaElementInfo> elementMap;
 
 	static 
 	{
-		elementMap = new HashMap<String, SchemaElementInfo>();
+		elementMap = new HashMap<>();
 
 		String[] rootAttrs = new String[] {A_FONT, A_PSFONT, A_SUBSTFONT, A_FONTSIZE, A_FONTSTYLE, A_FILLCOLOR, 
 			A_STROKEWIDTH, A_STROKECOLOR, A_SYMBOL, A_SYMBOLSIZE, A_CAP, A_CAPSIZE, A_MID, 
@@ -227,7 +227,7 @@ class BaseSchema implements Schema0Constants, ISchema
 		root.validate(true);
 	}
 
-	public SchemaElementInfo getSchemaElementInfo(String elTag) { return((SchemaElementInfo) elementMap.get(elTag)); }
+	public SchemaElementInfo getSchemaElementInfo(String elTag) { return elementMap.get(elTag); }
 
    /**
     * Is the specified element tag correct for the root element in this schema? The root tag in <code>BaseSchema</code> 
@@ -296,11 +296,9 @@ class BaseSchema implements Schema0Constants, ISchema
 			if(commaPos < 0 || (commaPos != value.lastIndexOf(','))) return(false);
 
 			// the comma-separated substrings cannot be all whitespace
-			if(value.substring(0,commaPos).trim().length() == 0) return(false);
-			if(value.substring(commaPos+1).trim().length() == 0) return(false);
-
-			return(true);
-		}
+			if(value.substring(0, commaPos).trim().isEmpty()) return(false);
+         return !value.substring(commaPos + 1).trim().isEmpty();
+      }
 		else if(A_FILLCOLOR.equals(attr) || A_STROKECOLOR.equals(attr))
 			return(isValidColorAttributeValue(value));
 		else if(A_LOC.equals(attr) || A_P0.equals(attr) || A_P1.equals(attr))
@@ -404,10 +402,10 @@ class BaseSchema implements Schema0Constants, ISchema
 	 */
 	boolean isValidEnumAttributeValue(String value, String[] choices)
 	{
-		if(choices != null) for(int i=0; i<choices.length; i++) 
-		{
-			if(choices[i].equals(value)) return(true);
-		}
+		if(choices != null) for(String choice : choices)
+      {
+         if(choice.equals(value)) return (true);
+      }
 		return(false);
 	}
 
@@ -421,7 +419,7 @@ class BaseSchema implements Schema0Constants, ISchema
 	 */
 	boolean isValidFloatAttributeValue(String value, double minVal, double maxVal)
 	{
-		boolean ok = true;
+		boolean ok;
 		try 
 		{
 			double d = Double.parseDouble(value);
@@ -462,7 +460,7 @@ class BaseSchema implements Schema0Constants, ISchema
 	 * @param allowPct If set, then "%" units are permitted.
 	 * @param allowUser If set, then "u" units are permitted.
 	 * @return True if test value is valid for a measure attribute and satisfies the above constraints.
-	 * @see {@link #isValidMeasureAttributeValue(String, boolean, boolean)}
+	 * @see #isValidMeasureAttributeValue(String, boolean, boolean)
 	 */
 	boolean isValidMeasureAttributeValue(String value, boolean allowNeg, boolean allowPct, boolean allowUser)
 	{
@@ -482,14 +480,14 @@ class BaseSchema implements Schema0Constants, ISchema
 	{
 		if(attrVal==null || !attrVal.matches(MEASURE_REGEX))
 			throw new IllegalArgumentException("Expected valid value for a floating-pt measure!");
-		for(int i=0; i < MEASURE_TOKENS.length; i++) 
-		{
-			int unitIndex = attrVal.indexOf(MEASURE_TOKENS[i]);
-			if(unitIndex > 0)
-			{
-				return(Double.parseDouble(attrVal.substring(0,unitIndex)));
-			}
-		}
+      for(String measureToken : MEASURE_TOKENS)
+      {
+         int unitIndex = attrVal.indexOf(measureToken);
+         if(unitIndex > 0)
+         {
+            return (Double.parseDouble(attrVal.substring(0, unitIndex)));
+         }
+      }
 		throw new IllegalArgumentException( "Expected valid value for a floating-pt measure!" );
 	}
 
@@ -548,7 +546,7 @@ class BaseSchema implements Schema0Constants, ISchema
 		// if repeats are not allowed, keep track of what we've parsed thus far
 		boolean noRepeats = !allowRepeats;
 		Map<String, String> valuesThusFar = null;
-		if(noRepeats) valuesThusFar = new HashMap<String, String>();
+		if(noRepeats) valuesThusFar = new HashMap<>();
 		
 		boolean ok = true;
 		try
@@ -609,21 +607,21 @@ class BaseSchema implements Schema0Constants, ISchema
 	{
 		// first, make sure that child is allowed at all -- this check is done for all elements
 		String elTag = e.getTag();
-		SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+		SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
 		if(!eInfo.isChildAllowed(childTag)) return(false);
 
 		// enforce restrictions on an axis element
 		if(EL_AXIS.equals(elTag))
 		{
-			List existingChildren = e.getElementContent();
+			List<ISimpleXMLElement> existingChildren = e.getElementContent();
 
 			// first, find out how many tick sets are already defined
 			int nTicks = 0;
-			for(int i=0; i<existingChildren.size(); i++)
-			{
-				BasicSchemaElement child = (BasicSchemaElement) existingChildren.get(i);
-				if(EL_TICKS.equals(child.getTag())) ++nTicks;
-			}
+         for(ISimpleXMLElement existingChild : existingChildren)
+         {
+            BasicSchemaElement child = (BasicSchemaElement) existingChild;
+            if(EL_TICKS.equals(child.getTag())) ++nTicks;
+         }
 
 			// if child is a tick set, make sure it is among the first N children or will be inserted immediately 
 			// after those N children, where N is the # of tick sets already contained in the axis element.  If it is 
@@ -682,7 +680,7 @@ class BaseSchema implements Schema0Constants, ISchema
 		// validate content of a pointSet or series element
 		if(EL_POINTSET.equals(elTag) || EL_SERIES.equals(elTag))
 		{
-			if(text == null || text.length() == 0) return(true);
+			if(text == null || text.isEmpty()) return(true);
 
 			int nMinTupleSize = EL_POINTSET.equals(elTag) ? 2 : 1;
 			int nMaxTupleSize = EL_POINTSET.equals(elTag) ? 6 : 3;
@@ -694,7 +692,7 @@ class BaseSchema implements Schema0Constants, ISchema
 
 				// 29apr2014: Allow for possibility that text content ENDS with a comma followed only by whitespace, in
 				// which case we might get a zero-length tuple here.
-				if(tuple.length() == 0) return(!st.hasMoreTokens());
+				if(tuple.isEmpty()) return(!st.hasMoreTokens());
 
 				StringTokenizer tupleTokenizer = new StringTokenizer(tuple);
 				int nTokens = tupleTokenizer.countTokens();

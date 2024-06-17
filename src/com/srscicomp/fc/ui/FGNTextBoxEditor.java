@@ -48,7 +48,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNTextBoxEditor extends FGNEditor implements ActionListener, ItemListener, PropertyChangeListener,
       FocusListener
 {
@@ -119,7 +118,7 @@ class FGNTextBoxEditor extends FGNEditor implements ActionListener, ItemListener
       clipChk.addActionListener(this);
       add(clipChk);
 
-      hAlignWidget = new MultiButton<TextAlign>();
+      hAlignWidget = new MultiButton<>();
       hAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_ALIGNLEFT_16, "Left");
       hAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_ALIGNCENTER_16, "Center");
       hAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_ALIGNRIGHT_16, "Right");
@@ -127,7 +126,7 @@ class FGNTextBoxEditor extends FGNEditor implements ActionListener, ItemListener
       hAlignWidget.setToolTipText("Horizontal alignment");
       add(hAlignWidget);
       
-      vAlignWidget = new MultiButton<TextAlign>();
+      vAlignWidget = new MultiButton<>();
       vAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_VALIGNTOP_16, "Top");
       vAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_VALIGNMID_16, "Middle");
       vAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_VALIGNBOT_16, "Bottom");
@@ -373,7 +372,7 @@ class FGNTextBoxEditor extends FGNEditor implements ActionListener, ItemListener
     * Text content is edited within this custom widget, which allows user to change font style or text color anywhere
     * in the content, add superscripts or subscripts, and underline portions of the text.
     */
-   private StyledTextEditor contentEditor = null;
+   private final StyledTextEditor contentEditor;
    
    /** Text field in which optional node ID is edited. */
    private JTextField idField = null;

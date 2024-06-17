@@ -173,7 +173,6 @@ import com.srscicomp.fc.matlab.MatlabFigureImporter;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class FCChooser extends JPanel implements ActionListener, ListSelectionListener, DocumentListener, MouseListener,
       ComponentListener
 {
@@ -1424,9 +1423,9 @@ public class FCChooser extends JPanel implements ActionListener, ListSelectionLi
    //
    
    private static final Matcher LEGALFILENAMEMATCHER =
-      Pattern.compile("[^\\u0000-\\u001f\"\\\\?\\<\\>\\*\\|\\:/]+").matcher("test");
+      Pattern.compile("[^\\u0000-\\u001f\"\\\\?<>*|:/]+").matcher("test");
    private static final Matcher ILLEGALBASENAMEMATCHER =
-      Pattern.compile("com[1-9]{1}|lpt[1-9]{1}|con|nul|prn|clock\\$").matcher("test");
+      Pattern.compile("com[1-9]|lpt[1-9]|con|nul|prn|clock\\$").matcher("test");
    
    /**
     * Is the specified filename valid? 

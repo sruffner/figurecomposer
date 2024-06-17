@@ -29,8 +29,6 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.print.PageFormat;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -195,11 +193,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       // the standard Undo/Cut/Copy/Paste/Del operations -- so we need to disable the analogous focus node-related
       // operations.
       KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-      focusManager.addPropertyChangeListener(new PropertyChangeListener() {
-         @Override public void propertyChange(PropertyChangeEvent e)
-         {
-            if("focusOwner".equals(e.getPropertyName())) refreshActions();
-         }
+      focusManager.addPropertyChangeListener(e -> {
+         if("focusOwner".equals(e.getPropertyName())) refreshActions();
       });
       
       refreshActions();
@@ -219,7 +214,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       if((id == EventID.PATHCACHE || id == EventID.PATHRENAME))
       {
          boolean changed = false;
-         List<Tab> toBeRemoved = new ArrayList<Tab>();
+         List<Tab> toBeRemoved = new ArrayList<>();
          for(Tab tab : openFigures) if(tab.src != null && !tab.src.isFile())
          {
             if(id == EventID.PATHRENAME && Utilities.filesEqual(tab.src, fp1))
@@ -234,14 +229,14 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             changed = true;
          }
          
-         if(toBeRemoved.size() > 0)
+         if(!toBeRemoved.isEmpty())
          {
             Tab selectedTab = openFigures.get(iCurrentFig);
             for(Tab tab : toBeRemoved) openFigures.remove(tab);
             iCurrentFig = openFigures.indexOf(selectedTab);
             if(iCurrentFig == -1) 
             {
-               if(openFigures.size() == 0)
+               if(openFigures.isEmpty())
                   initWithBlankFigure();
                else
                {
@@ -350,9 +345,9 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          // go through list of figures and accumulate the figures (and file destinations) to be saved before exit. In
          // any figure has never been saved, we'll have to request a file path from the user.
          FCChooser chooser = FCChooser.getInstance();
-         List<FGraphicModel> figsToSave = new ArrayList<FGraphicModel>();
-         List<File> dstFiles = new ArrayList<File>();
-         List<Integer> tabIndices = new ArrayList<Integer>();
+         List<FGraphicModel> figsToSave = new ArrayList<>();
+         List<File> dstFiles = new ArrayList<>();
+         List<Integer> tabIndices = new ArrayList<>();
          String[] options = new String[] {"Cancel", "Save none", "Save all", "No", "Yes"};
          boolean saveRemaining = false;
          for(int i=0; i<openFigures.size(); i++)
@@ -363,13 +358,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             
             if(saveRemaining)
             {
-               tabIndices.add(new Integer(i));
+               tabIndices.add(i);
                figsToSave.add(tab.fig);
                
                // if the figure has never been saved, request a file path from user. If user cancels, then abort exit.
                if(tab.src == null)
                {
-                  if(!chooser.saveFigure(this, tab.fig, tab.src, false, true)) return(false);
+                  if(!chooser.saveFigure(this, tab.fig, null, false, true)) return(false);
                   else tab.src = chooser.getSelectedFile();
                }
                dstFiles.add(tab.src);
@@ -388,13 +383,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                break;
             else if(choice == 2 || choice == 4)
             {
-               tabIndices.add(new Integer(i));
+               tabIndices.add(i);
                figsToSave.add(tab.fig);
                
                // if the figure has never been saved, request a file path from user. If user cancels, then abort exit.
                if(tab.src == null)
                {
-                  if(!chooser.saveFigure(this, tab.fig, tab.src, false, true)) return(false);
+                  if(!chooser.saveFigure(this, tab.fig, null, false, true)) return(false);
                   else tab.src = chooser.getSelectedFile();
                }
                dstFiles.add(tab.src);
@@ -405,7 +400,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          
          // save all the figures that user wanted saved. If an error occurs, then update figure tabs to reflect the
          // files that were saved, and abort application exit.
-         if(figsToSave.size() > 0)
+         if(!figsToSave.isEmpty())
          {
             int nSaved = chooser.saveAllFigures(this, figsToSave, dstFiles);
             if(nSaved < figsToSave.size())
@@ -507,7 +502,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     * special case, the "hot keys" associated with any edit- or view-related actions are dispatched here (but not the
     * file-related actions, as these are not available in this special configuration).</p>
     * 
-    * @param ks A key stroke.
+    * @param e The key event.
     * @return True if the specified key stroke was processed as a "hot key" for a figure composer action.
     */
    @Override public boolean dispatchKeyEvent(KeyEvent e)
@@ -700,7 +695,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     */
    List<File> getAllOpenFigureFiles()
    {
-      List<File> filesOpen = new ArrayList<File>();
+      List<File> filesOpen = new ArrayList<>();
       for(Tab tab : openFigures) if(tab.src != null) filesOpen.add(tab.src);
       return(filesOpen);
    }
@@ -721,16 +716,16 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     * decrementing its Z-order. Not associated with a tool button.
     */
    private final static KeyStroke DECZ_HOTKEY = 
-         KeyStroke.getKeyStroke(KeyEvent.VK_UP, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+         KeyStroke.getKeyStroke(KeyEvent.VK_UP, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
    /** 
     * Hot key combination: Command-Down or Control-Down. Decrements focus node position in sibling list, thereby 
     * decrementing its Z-order. Not associated with a tool button.
     */
    private final static KeyStroke INCZ_HOTKEY = 
-         KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+         KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
    
    /** Delegate handles task of backing up open figures on a background thread, "in case disaster strikes". */
-   private AutoSaver autoSaver = new AutoSaver();
+   private final AutoSaver autoSaver = new AutoSaver();
    
    /** Canvas on which the currently selected figure is rendered; in non-interactive mode.*/
    private Graph2DViewer figCanvas = null;
@@ -759,7 +754,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
    private WSFigBrowser figBrowser = null;
    
    /** List of all figures currently open. */
-   private List<Tab> openFigures = new ArrayList<Tab>();
+   private final List<Tab> openFigures = new ArrayList<>();
    
    /** Index or tab position of the open figure that is currently selected for display and editing. */
    private int iCurrentFig = -1;
@@ -768,15 +763,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     * Figure loading worker threads in progress. Upon completion, back on the event dispatch thread, the thread object
     * removes itself from this list.
     */
-   private List<FigureLoader> loadersInProgress = new ArrayList<FigureLoader>();
-   
-   /** 
-    * Flag set when figure composer is configured in single-figure mode. In this mode, the component is NOT installed in
-    * the application frame window; instead, it is housed in a modal dialog. NOTE that the figure composer cannot be put
-    * in this mode if it is the current view controller!
-    */
-   private boolean inSingleFigureMode = false;
-   
+   private final List<FigureLoader> loadersInProgress = new ArrayList<>();
+
    /** Construct the figure composer UI. */
    private void construct()
    {
@@ -822,8 +810,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       // assemble the layers: figure canvas covered by mouse interaction layer
       JLayeredPane layers = new JLayeredPane();
       layers.setLayout(new OverlayLayout(layers));
-      layers.add(figCanvas, new Integer(100));
-      layers.add(mouseLayer, new Integer(101));
+      layers.add(figCanvas, Integer.valueOf(100));
+      layers.add(mouseLayer, Integer.valueOf(101));
       
       // put canvas in a panel with a horizontal ruler along the bottom and vertical ruler along left edge
       hRuler = new Ruler(true);
@@ -884,20 +872,17 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
    
    /** Tool button for the "Open Recent" action; we keep a reference so we can raise a pop-up menu next to it. */
    private JButton openRecentBtn = null;
-   
-   /** Portion of tools pane panel exposing the file-related actions. */
-   private JPanel fileOpsToolPanel = null;
-   
-   /** 
+
+   /**
     * Construct the figure composer's tool bar panel, initially in the {@link #TOOLS_FULL} state, including a short
     * label for each button in the panel. Takes no action if tool bar panel has already been created.
     */
    private void createToolsPanel()
    {
       if(toolsPanel != null) return;
-      toolButtons = new ArrayList<AbstractButton>();
-      
-      fileOpsToolPanel = new TBPanel();
+      toolButtons = new ArrayList<>();
+
+      JPanel fileOpsToolPanel = new TBPanel();
       fileOpsToolPanel.setLayout(new BoxLayout(fileOpsToolPanel, BoxLayout.LINE_AXIS));
       
       fileOpsToolPanel.add(Box.createHorizontalStrut(8));  // some blank space for vertical rule on left edge
@@ -1207,7 +1192,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     * as a tool bar-like action button container for the four tool bars comprising the figure composer's tools panel.
     * @author sruffner
     */
-   private class TBPanel extends JPanel
+   private static class TBPanel extends JPanel
    {
       @Override protected void paintComponent(Graphics g)
       {
@@ -1257,13 +1242,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       FCWorkspace ws = FCWorkspace.getInstance();
       List<File> filesOpen = ws.getLastOpenFigures();
       File fileLast = ws.getLastSelectedFigure();
-      if(filesOpen.size() == 0)
+      if(filesOpen.isEmpty())
       {
          File mruFile = ws.getMostRecentFile(false);
          if(mruFile != null) filesOpen.add(mruFile);
       }
       
-      if(filesOpen.size() == 0)
+      if(filesOpen.isEmpty())
       {
          initWithBlankFigure();
          return;
@@ -1535,10 +1520,10 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
    {
       if(actions != null) return;
       
-      actions = new HashMap<FCActionType, FCAction>();
+      actions = new HashMap<>();
       
       // The typical menu shortcut modifier key. Typically the <i>Command</i> key or the <i>Control</i> key.
-      int accMod = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+      int accMod = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
       
       // NOTE that the tooltips for the file-related actions never change, so their tooltips (including the hot key
       // mnemnoic if the action has a hot key assigned) are set here. The tooltips for the edit actions and the cursor
@@ -1867,7 +1852,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       actions.put(FCActionType.VIEW_TOGGLEWSFIG, fca);
 
       fca = new FCAction(FCActionType.VIEW_TOGGLEMODE, "Scale-to-fit", null, null);
-      fca.putValue(FCAction.SELECTED_KEY, new Boolean(true));
+      fca.putValue(FCAction.SELECTED_KEY, Boolean.TRUE);
       actions.put(FCActionType.VIEW_TOGGLEMODE, fca);
 
       fca = new FCAction(FCActionType.VIEW_TOGGLEPRINTPREVIEW, "Print preview", 
@@ -1892,7 +1877,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     */
    private static FGNodeType getNodeTypeForInsertAction(FCActionType type)
    {
-      FGNodeType nodeType = null;
+      FGNodeType nodeType;
       switch(type)
       {
       case ADD_LABEL : nodeType = FGNodeType.LABEL; break;
@@ -1926,7 +1911,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       // is keyboard focus on a text component? If so the standard edit operations cut/copy/paste apply to the
       // text component and NOT to the current focus node, so we need to disable the corres. node-related edit ops!
       Component c = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-      focusOnTextComponent = JTextComponent.class.isInstance(c);
+      focusOnTextComponent = (c instanceof JTextComponent);
       
       for(FCAction fca : actions.values()) fca.refreshState();
    }
@@ -2032,7 +2017,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
        * @param type The action type ID.
        * @param name The action command name.
        * @param accel The keyboard shortcut, or "hot key", associated with this action. Null if there is none.
-       * @param hotKeyMnemonic The mnemonic for the keyboard shortcut; null if there is no shortcut.
+       * @param accelMnemonic The mnemonic for the keyboard shortcut; null if there is no shortcut.
        */
       FCAction(FCActionType type, String name, KeyStroke accel, String accelMnemonic)
       {
@@ -2054,7 +2039,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          FGraphicModel currFig = getSelectedFigureModel();
          FGraphicNode sel = (currFig == null || currFig.isMultiNodeSelection()) ? null : currFig.getSelectedNode();
          File currFile = getSelectedFigureFile();
-         FGraphicModel[] figs = null;
+         FGraphicModel[] figs;
          
          switch(type)
          {
@@ -2094,7 +2079,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          case FILE_EXPALL_JPG :
          case FILE_EXPALL_PNG :
          case FILE_EXPALL_SVG :
-            if(openFigures.size() == 0) return;
+            if(openFigures.isEmpty()) return;
             figs = new FGraphicModel[openFigures.size()];
             File[] files = new File[openFigures.size()];
             for(int i=0; i<openFigures.size(); i++)
@@ -2205,12 +2190,12 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                FGNAlign align;
                switch(type)
                {
-               case ALIGN_LEFT : align = FGNAlign.LEFT; break;
                case ALIGN_RIGHT : align = FGNAlign.RIGHT; break;
                case ALIGN_BOTTOM : align = FGNAlign.BOTTOM; break;
                case ALIGN_TOP : align = FGNAlign.TOP; break;
                case ALIGN_HCENTER : align = FGNAlign.HCENTER; break;
                case ALIGN_VCENTER : align = FGNAlign.VCENTER; break;
+               case ALIGN_LEFT :
                default: align = FGNAlign.LEFT; break;
                }
                currFig.alignCurrentSelection(align);
@@ -2284,7 +2269,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          FGraphicNode sel = fig == null ? null : fig.getSelectedNode();
          String nodeTypeName = (sel == null) ? "" : sel.getNodeType().getNiceName().toLowerCase();
          boolean isMultiSel = (fig != null) && fig.isMultiNodeSelection();
-         
+
          switch(type)
          {
          case FILE_NEW :
@@ -2310,19 +2295,17 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          case FILE_PAGESETUP : 
          case FILE_PRINT : 
          case FILE_PRINTALL :
-            // most file-related actions are disabled when figure composer is configured to edit the figure template of
-            // a hub navigation view. Otherwise, they are always enabled, and the tool tip never changes
-            setEnabled(!inSingleFigureMode);
+            // most file-related actions are always enabled, and the tool tip never changes
+            setEnabled(true);
             return;
 
          case FILE_DUPE:
-            setEnabled(canDuplicateSelectedFigure() && !inSingleFigureMode);
+            setEnabled(canDuplicateSelectedFigure());
             return;
 
          case FILE_INJECTDATA :
-            // this command is available only when NOT editing a navigation view template AND the current figure has
-            // at least one data presentation node. Tooltip never changes.
-            setEnabled( (fig != null) && !(inSingleFigureMode || fig.getAllPlottableDataNodes().isEmpty()) );
+            // this command is available only when the current figure has at least one data presentation node
+            setEnabled( (fig != null) && !(fig.getAllPlottableDataNodes().isEmpty()) );
             return;
          
          case ALIGN_LEFT :
@@ -2361,7 +2344,9 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                {
                   FGNodeType pasteType = FGraphicModel.getClipboardContentType();
                   ena = canInsertNode(pasteType);
-                  if(ena) tip = "Paste " + pasteType.getNiceName().toLowerCase() + " from clipboard";
+                  if(ena)
+                     tip = String.format("Paste %s from clipboard",
+                           (pasteType != null) ? pasteType.getNiceName().toLowerCase() : "");
                }
             }
             break;
@@ -2382,12 +2367,11 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             ena = tip != null;
             break;
          case EDIT_EXTDATA :
-            ena = (!isMultiSel) && (!focusOnTextComponent) && (sel != null) && (sel instanceof FGNPlottableData);
+            ena = (!isMultiSel) && (!focusOnTextComponent) && (sel instanceof FGNPlottableData);
             if(ena) tip = "Copy raw data from this plottable node into clipboard";
             break;
          case EDIT_INJDATA :
-            ena = (lastDSCopied != null) && (!isMultiSel) && (!focusOnTextComponent) && (sel != null) && 
-               (sel instanceof FGNPlottableData);
+            ena = (lastDSCopied != null) && (!isMultiSel) && (!focusOnTextComponent) && (sel instanceof FGNPlottableData);
             if(ena) ena = ((FGNPlottableData) sel).isSupportedDataFormat(lastDSCopied.getFormat());
             if(ena) 
                tip = "Inject raw data from clipboard: " + lastDSCopied.getInfo().getShortDescription(false);
@@ -2403,39 +2387,39 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             break;
          case VIEW_TOOLBAR_HIDE:
             tip = "Hide toolbar buttons";
-            putValue(SELECTED_KEY, new Boolean(TOOLS_HIDDEN.equals(toolsPanelState)));
+            putValue(SELECTED_KEY, TOOLS_HIDDEN.equals(toolsPanelState));
             break;
          case VIEW_TOOLBAR_COMPACT:
             tip = "Show compact toolbar buttons";
-            putValue(SELECTED_KEY, new Boolean(TOOLS_COMPACT.equals(toolsPanelState)));
+            putValue(SELECTED_KEY, TOOLS_COMPACT.equals(toolsPanelState));
             break;
          case VIEW_TOOLBAR_FULL:
             tip = "Show toolbar buttons with labels";
-            putValue(SELECTED_KEY, new Boolean(TOOLS_FULL.equals(toolsPanelState)));
+            putValue(SELECTED_KEY, TOOLS_FULL.equals(toolsPanelState));
             break;
          case VIEW_TOGGLETREE : 
             tip = "Show or hide the figure's node tree";
-            putValue(SELECTED_KEY, new Boolean(figureTreeView.isVisible()));
+            putValue(SELECTED_KEY, figureTreeView.isVisible());
             break;
          case VIEW_TOGGLERULERS : 
             tip = "Show or hide the figure canvas rulers";
-            putValue(SELECTED_KEY, new Boolean(areRulersShown()));
+            putValue(SELECTED_KEY, areRulersShown());
             break;
          case VIEW_SPECIALCHARS :
             tip = "Show or hide the special characters map";
-            putValue(SELECTED_KEY, new Boolean(figureTreeView.isCharacterMapperVisible()));
+            putValue(SELECTED_KEY, figureTreeView.isCharacterMapperVisible());
             break;
          case VIEW_TOGGLEWSFIG : 
             tip = "Show or hide the workspace figures browser";
-            putValue(SELECTED_KEY, new Boolean(figBrowser.isVisible()));
+            putValue(SELECTED_KEY, figBrowser.isVisible());
             break;
         case VIEW_TOGGLEMODE : 
             tip = "Enable or disable scaled-to-fit display mode";
-            putValue(SELECTED_KEY, new Boolean(figCanvas.isScaleToFitOn()));
+            putValue(SELECTED_KEY, figCanvas.isScaleToFitOn());
             break;
          case VIEW_TOGGLEPRINTPREVIEW : 
             tip = "Turn print preview mode on or off";
-            putValue(SELECTED_KEY, new Boolean(figCanvas.isPrintPreviewEnabled()));
+            putValue(SELECTED_KEY, figCanvas.isPrintPreviewEnabled());
             break;
          case VIEW_RESETZOOM : 
             ena = !figCanvas.isScaleToFitOn();
@@ -2458,7 +2442,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       /** This action's unique command ID/type. */
       private final FCActionType type;
       /** If a keyboard accelerator is associated with the action, this is the hot key's mnemonic (for tool tips). */
-      private String hotKeyMnemonic = null;
+      private final String hotKeyMnemonic;
    }
 
    /**
@@ -2498,8 +2482,9 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          return;
       }
       
-      // pasting a single node: get its node type from the clipboard
+      // pasting a single node: get its node type from the clipboard. Abort if nothing to paste
       if(isPaste) insertType = FGraphicModel.getClipboardContentType();
+      if(insertType == null) return;
       
       // check which insert locations are valid; if neither is valid, abort.
       boolean asChild = sel.canInsert(insertType);
@@ -2520,8 +2505,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                null, options, options[2]);
          
          if(choice == 1) asChild = false;
-         else if(choice == 2) asSib = false;
-         else return;  // user cancelled
+         else if(choice == 0)
+            return;  // user cancelled
       }
       
       // complete the operation
@@ -2556,7 +2541,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       if(focus != null && focus.isComponentNode()) focus = focus.getParent();
       
       return((focus != null && focus.canInsert(insertType)) || 
-                  (focus.getParent() != null && focus.getParent().canInsert(insertType)));
+                  (focus != null && focus.getParent() != null && focus.getParent().canInsert(insertType)));
    }
 
    /**
@@ -2646,7 +2631,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       FCChooser chooser = FCChooser.getInstance();
       
       // create a new empty, unsaved figure; create a duplicate of the current figure, or open a figure from file
-      FGraphicModel modelOpened = null;
+      FGraphicModel modelOpened;
       File fileOpened = null;
       if(fcaType == FCActionType.FILE_NEW)
          modelOpened = new FGraphicModel();
@@ -2735,7 +2720,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       
       // remember which tab was selected. It may get removed, or its position may change.
       Tab selectedTab = openFigures.get(iCurrentFig);
-      List<Tab> tabsToRemove = new ArrayList<Tab>();
+      List<Tab> tabsToRemove = new ArrayList<>();
       if(type == FCActionType.FILE_CLOSEUNMOD)
       {
          for(Tab tab : openFigures) if(!tab.modified) tabsToRemove.add(tab);
@@ -2747,30 +2732,30 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          // for the particular type of close action, get the indices of the figure tabs to be closed. We do it this
          // way because, for FILE_CLOSEHIDDEN and FILE_CLOSEALLBUTCURR, there tab index range to check could be broken
          // into two pieces. 
-         List<Integer> tabsToClose = new ArrayList<Integer>();
+         List<Integer> tabsToClose = new ArrayList<>();
          int first;
          switch(type)
          {
          case FILE_CLOSEALL :
          case FILE_CLOSEALLBUTCURR :
-            for(int i=0; i<openFigures.size(); i++) tabsToClose.add(new Integer(i));
-            if(type == FCActionType.FILE_CLOSEALLBUTCURR) tabsToClose.remove(new Integer(iCurrentFig));
+            for(int i=0; i<openFigures.size(); i++) tabsToClose.add(i);
+            if(type == FCActionType.FILE_CLOSEALLBUTCURR) tabsToClose.remove(Integer.valueOf(iCurrentFig));
             break;
          case FILE_CLOSEVIS :
             first = tabStrip.getIndexOfFirstVisibleTab();
-            for(int i=0; i<tabStrip.getNumVisibleTabs(); i++) tabsToClose.add(new Integer(first+i));
+            for(int i=0; i<tabStrip.getNumVisibleTabs(); i++) tabsToClose.add(first + i);
             break;
          case FILE_CLOSEHIDDEN :
             first = tabStrip.getIndexOfFirstVisibleTab();
-            for(int i=0; i<first; i++) tabsToClose.add(new Integer(i));
+            for(int i=0; i<first; i++) tabsToClose.add(i);
             first += tabStrip.getNumVisibleTabs();
-            for(int i=first; i<openFigures.size(); i++) tabsToClose.add(new Integer(i));
+            for(int i=first; i<openFigures.size(); i++) tabsToClose.add(i);
             break;
          case FILE_CLOSELEFT:
-            for(int i=0; i<iCurrentFig; i++) tabsToClose.add(new Integer(i));
+            for(int i=0; i<iCurrentFig; i++) tabsToClose.add(i);
             break;
          case FILE_CLOSERIGHT:
-            for(int i=iCurrentFig+1; i<openFigures.size(); i++) tabsToClose.add(new Integer(i));
+            for(int i=iCurrentFig+1; i<openFigures.size(); i++) tabsToClose.add(i);
             break;
          default :  // should never get here!
             break;
@@ -2779,9 +2764,9 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          // go through list of figures and accumulate the figures (and file destinations) to be saved before exit. In
          // any figure has never been saved, we'll have to request a file path from the user.
          FCChooser chooser = FCChooser.getInstance();
-         List<FGraphicModel> figsToSave = new ArrayList<FGraphicModel>();
-         List<File> dstFiles = new ArrayList<File>();
-         List<Integer> tabIndices = new ArrayList<Integer>();
+         List<FGraphicModel> figsToSave = new ArrayList<>();
+         List<File> dstFiles = new ArrayList<>();
+         List<Integer> tabIndices = new ArrayList<>();
          String[] options = new String[] {"Cancel", "Save none", "Save all", "No", "Yes"};
          boolean saveRemaining = false;
          boolean dontSaveRemaining = false;
@@ -2828,7 +2813,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                // if the figure has never been saved, request a file path from user. If user cancels, then abort exit.
                if(tab.src == null)
                {
-                  if(!chooser.saveFigure(this, tab.fig, tab.src, false, true)) return;
+                  if(!chooser.saveFigure(this, tab.fig, null, false, true)) return;
                   else tab.src = chooser.getSelectedFile();
                }
                dstFiles.add(tab.src);
@@ -2839,7 +2824,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          
          // save all the figures that user wanted saved. If an error occurs, then update figure tabs to reflect the
          // files that were saved, and abort the multi-file close operation
-         if(figsToSave.size() > 0)
+         if(!figsToSave.isEmpty())
          {
             int nSaved = chooser.saveAllFigures(this, figsToSave, dstFiles);
             for(int i=0; i<nSaved; i++)
@@ -2885,7 +2870,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     */
    private void prepareMRUFileMenu(boolean standalone)
    {
-      JPopupMenu popup = null;
+      JPopupMenu popup;
       if(standalone) popup = new JPopupMenu();
       else
       {
@@ -2900,9 +2885,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          else return;
       }
 
-      for(int i=0; i<mru.size(); i++)
+      for(File f : mru)
       {
-         File f = mru.get(i);
          JMenuItem mi = new JMenuItem(f.getName() + " (" + f.getAbsolutePath() + ")");
          mi.setActionCommand("file:" + f.getAbsolutePath());
          mi.addActionListener(popupMenuHandler);
@@ -2921,17 +2905,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     * Delegate handles user selection from the pop-up menu associated with the "Open Recent" tool bar button, or the 
     * subordinate menu associated with the "Open Recent" menu item in the "File" menu.
     */
-   private ActionListener popupMenuHandler = new ActionListener()
-   {
-      @Override public void actionPerformed(ActionEvent e)
+   private final ActionListener popupMenuHandler = e -> {
+      String cmd = e.getActionCommand();
+      if(cmd.startsWith("file:"))
       {
-         String cmd = e.getActionCommand();
-         if(cmd.startsWith("file:"))
-         {
-            String path = cmd.substring(5).trim();
-            File f = new File(path);
-            if(f.isFile()) openFigure(f);
-         }
+         String path = cmd.substring(5).trim();
+         File f = new File(path);
+         if(f.isFile()) openFigure(f);
       }
    };
    
@@ -3068,7 +3048,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
    private void initWithBlankFigure()
    {
       openFigures.clear();
-      openFigures.add(new Tab(new FGraphicModel(), (File)null));
+      openFigures.add(new Tab(new FGraphicModel(), null));
       iCurrentFig = 0;
       loadSelectedFigure();
    }
@@ -3080,9 +3060,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     * @return The currently selected figure model.
     */
    private FGraphicModel getSelectedFigureModel() 
-   { 
-      FGraphicModel fgm = openFigures.get(iCurrentFig).fig;
-      return(fgm); 
+   {
+      return(openFigures.get(iCurrentFig).fig);
    }
    
    /** The selected figure can be duplicated unless it is a brand-new empty figure that has never been saved. */
@@ -3124,7 +3103,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
    }
    
    /** List of all tab strip model change listeners registered with the figure composer. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
    
    @Override public void addChangeListener(ChangeListener l) { if(l != null) tabListeners.add(ChangeListener.class, l); }
    @Override public void removeChangeListener(ChangeListener l) 
@@ -3178,16 +3157,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
    {
       if(tabPos < 0 || tabPos >= getNumTabs()) return;
       openFigures.remove(tabPos);
-      if(openFigures.size() == 0)
+      if(openFigures.isEmpty())
          initWithBlankFigure();
       else if(iCurrentFig >= tabPos)
       {
          boolean removedSelectedFig = (tabPos == iCurrentFig);
-         if(iCurrentFig >= tabPos)
-         {
-            --iCurrentFig;
-            if(iCurrentFig < 0) iCurrentFig = 0;
-         }
+         --iCurrentFig;
+         if(iCurrentFig < 0) iCurrentFig = 0;
          if(removedSelectedFig) loadSelectedFigure();
       }
       fireStateChanged();
@@ -3324,8 +3300,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       }
       
       private final Cursor cursor;
-   };
-   
+   }
+
    /**
     * Helper class implements a transparent layer that renders node selection and other highlights on top of the figure 
     * canvas and animates a number of mouse-related interactive gestures:
@@ -3889,12 +3865,9 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             // if user right-clicks on a selected nodes and more than one node is currently selected, make that
             // node the focus of the current selection
             FGraphicModel fig = getSelectedFigureModel();
-            FGraphicNode n = null;
-            if(p != null)
-            {
-               figCanvas.deviceToLogical(p.x, p.y, pLog);
-               n = fig.findSmallestNodeUnder(pLog);
-            }
+            FGraphicNode n;
+            figCanvas.deviceToLogical(p.x, p.y, pLog);
+            n = fig.findSmallestNodeUnder(pLog);
             if(n != null && n.getNodeType() != FGNodeType.FIGURE && selectedNodes.contains(n) &&
                   n != fig.getFocusForSelection())
                fig.setFocusForSelection(n);
@@ -3908,19 +3881,16 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             FGraphicModel fig = getSelectedFigureModel();
             if(fig != null)
             {
-               FGraphicNode n = null;
-               if(p != null)
-               {
-                  figCanvas.deviceToLogical(p.x, p.y, pLog);
-                  n = fig.findSmallestNodeUnder(pLog);
-               }
+               FGraphicNode n;
+               figCanvas.deviceToLogical(p.x, p.y, pLog);
+               n = fig.findSmallestNodeUnder(pLog);
                if(n == null) return;
                
                if((!showSelection) && selectedNodes.contains(n))
                   showSelectionOverlay(true);
 
-               int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-               if((e.getModifiers() & ctrlCmdMask) == ctrlCmdMask)
+               int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+               if((e.getModifiersEx() & ctrlCmdMask) == ctrlCmdMask)
                {
                   // toggle select state of the node clicked
                   if(!fig.isSelectedNode(n)) fig.reviseSelection(n, null);
@@ -3940,9 +3910,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          }
          else if(e.getClickCount() == 1 && enaZoomOnClick)
          {
-            boolean magnify = isBtn1;
             boolean wasScaleToFit = figCanvas.isScaleToFitOn();
-            figCanvas.zoomAndPanTo(e.getX(), e.getY(), magnify);
+            figCanvas.zoomAndPanTo(e.getX(), e.getY(), isBtn1);
             updateCursorPositionOnRulers(true, e.getX(), e.getY());
             
             // if canvas was scaled to fit before the scale adjustment, it will be no longer be in that mode after. So 
@@ -4105,7 +4074,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                }
                else
                {
-                  cue = "" + rDev.width + "x" + rDev.height + " at [" + rDev.x + "," + rDev.y + "]";
+                  cue = rDev.width + "x" + rDev.height + " at [" + rDev.x + "," + rDev.y + "]";
                   Rectangle2D bounds = dragShape.getBounds2D();
                   cueBounds.setFrame(bounds.getCenterX()-100, bounds.getMinY()-70, 200, 100);
                   
@@ -4224,8 +4193,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                   boolean replaceSel = true;
                   if(e != null)
                   { 
-                     int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-                     if((e.getModifiers() & ctrlCmdMask) == ctrlCmdMask) replaceSel = false;
+                     int ctrlCmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+                     if((e.getModifiersEx() & ctrlCmdMask) == ctrlCmdMask) replaceSel = false;
                   }
                   fig.reviseSelection(nodes, replaceSel ? fig.getSelectedNodes(null) : null);
                }
@@ -4376,7 +4345,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             // a small label drawn on the interaction layer. The label is drawn above the cursor position, centered
             // horizontally. Note hysteresis of roughly 5 device pixels before label is updated.
             ImageNode img = (ImageNode) selNode;
-            if(cue == null || p.distance(cueBounds.getCenterX(), cueBounds.getCenterY()) > 5)
+            if((img != null) && (cue == null || p.distance(cueBounds.getCenterX(), cueBounds.getCenterY()) > 5))
             {
                if(dirtyRect.isEmpty()) dirtyRect.setFrame(cueBounds);
                else Rectangle.union(cueBounds, dirtyRect, dirtyRect);
@@ -4501,12 +4470,11 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             
             // paint the current selection highlight
-            if(showSelection && selectionShapes.size() > 0)
+            if(showSelection && !selectionShapes.isEmpty())
             {
                g2.setColor(translucentSteelBlue);
-               for(int i=0; i<selectionShapes.size(); i++)
+               for(Shape selShape : selectionShapes)
                {
-                  Shape selShape = selectionShapes.get(i);
                   if(selShape == null) continue;
                   g2.fill(selShape);
                }
@@ -4629,14 +4597,14 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
        * The list of nodes currently selected in the figure. Only a few operations are enabled when multiple nodes
        * are selected.
        */
-      private List<FGraphicNode> selectedNodes = new ArrayList<FGraphicNode>();
+      private final List<FGraphicNode> selectedNodes = new ArrayList<>();
       
       /**
        * The shapes covering the currently selected nodes in the figure, in figure canvas device coordinates. Any shapes
        * in this list are always painted, unless the {@link #showSelection} flag is cleared. This list must be updated 
        * whenever the figure's current selection changes, or the boundary of a selected node changes.
        */
-      private List<Shape> selectionShapes = new ArrayList<Shape>();
+      private final List<Shape> selectionShapes = new ArrayList<>();
       
       /** 
        * Shape representing the resize outline for the current singly-seleced node. Null if node cannot be interactively
@@ -4682,7 +4650,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
        */
       private Shape dragShape = null;
       /** During a drag-to-select gesture, this is the current selection rectangle in rendered figure coordinates. */
-      private Rectangle2D dragSelectRLog = new Rectangle2D.Double();
+      private final Rectangle2D dragSelectRLog = new Rectangle2D.Double();
       
       /** 
        * For multi-node move-by-drag only: In this scenario, the dragged shape is an unconnected collection of the 
@@ -4716,23 +4684,23 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
        * The rectangle bounding the current cue label -- so it can be erased whenever it is updated. The cue string is
        * centered both horizontally and vertically about the center of this rectangle.
        */
-      private Rectangle2D cueBounds = new Rectangle2D.Double();
+      private final Rectangle2D cueBounds = new Rectangle2D.Double();
       /** A buffer in which the drag resize cue is prepared. */
-      private StringBuffer cueBuffer = new StringBuffer();
+      private final StringBuffer cueBuffer = new StringBuffer();
       /** Paints the cue string. */
-      private StringPainter strPainter = null;
+      private final StringPainter strPainter;
       
       /** 
        * The rectangle that should be updated on each repaint cycle. When it is zero width, it is ignored and the entire
        * layer is repainted. Set to zero width after each repaint. 
        */
-      private Rectangle dirtyRect = new Rectangle(0,0,0,0);
+      private final Rectangle dirtyRect = new Rectangle(0,0,0,0);
       /** A point in rendered figure coordinates (to avoid frequent heap allocations). */
-      private Point2D pLog = new Point2D.Double(0, 0);
+      private final Point2D pLog = new Point2D.Double(0, 0);
       /** Another point in rendered figure coordinates (to avoid frequent heap allocations). */
-      private Point2D pLog2 = new Point2D.Double(0, 0);
+      private final Point2D pLog2 = new Point2D.Double(0, 0);
       /** A rectangle in figure canvas device pixels, for general use (to avoid frequent heap allocations). */
-      private Rectangle rDev = new Rectangle(0,0,0,0);
+      private final Rectangle rDev = new Rectangle(0,0,0,0);
 
       private final Color transparentBlack = new Color(0,0,0,0);
       private final Color translucentWhite = new Color(255,255,255,192);
@@ -4946,7 +4914,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                else if(p1 >= span) { p0 = span - 54; p1 = span; }
             }
             
-            cursorOn = ena;
+            cursorOn = true;
          }
          else
          {
@@ -4991,7 +4959,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             g2.scale(1, -1);
             for(Integer tick : majorTicks.keySet())
             {
-               int tickDev = tick.intValue();
+               int tickDev = tick;
                if(isHoriz)
                   tickLabelPainter.setTextAndLocation(majorTicks.get(tick), tickDev, -15);
                else
@@ -5020,9 +4988,6 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                g2.fill(cursorLabelR);
 
                cursorLabelPainter.setTextAndLocation(String.format("%.2f", cursorLog), 26, -9);
-               g2.scale(1, -1);
-               cursorLabelPainter.render(g2, null);
-               g2.scale(1, -1);
             }
             else
             {
@@ -5041,10 +5006,10 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                g2.fill(cursorLabelR);
 
                cursorLabelPainter.setTextAndLocation(String.format("%.2f", cursorLog), 9, -26);
-               g2.scale(1, -1);
-               cursorLabelPainter.render(g2, null);
-               g2.scale(1, -1);
             }
+            g2.scale(1, -1);
+            cursorLabelPainter.render(g2, null);
+            g2.scale(1, -1);
          }
          finally
          {
@@ -5055,13 +5020,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       /** True for a horizontal ruler, false for vertical orientation. */
       private final boolean isHoriz;
       /** Renders any tick mark labels on the ruler. */
-      private StringPainter tickLabelPainter = null;
+      private final StringPainter tickLabelPainter;
       /** Renders the coordinate label on the cursor position indicator. */
-      private StringPainter cursorLabelPainter = null;
+      private final StringPainter cursorLabelPainter;
       /** Fixed path that renders the arrow for the cursor position indicator. */
-      private GeneralPath cursorArrow = null;
+      private final GeneralPath cursorArrow;
       /** Fixed path that renders a rounded rectangular background for the coordinate label of the cursor indicator. */
-      private RoundRectangle2D cursorLabelR = null;
+      private final RoundRectangle2D cursorLabelR;
       
       /** Current position of cursor indicator in ruler's device pixels (0 if cursor indicator is turned off). */
       private int cursorDev = 0;
@@ -5071,12 +5036,12 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       private boolean cursorOn = false;
       
       /** A single polyline path that renders the ruler line and its current set of major and minor tick marks. */
-      private GeneralPath tickPath = new GeneralPath();
+      private final GeneralPath tickPath = new GeneralPath();
       /** Ruler's current major tick mark labels, keyed by the tick mark position in pixels along ruler's length. */
-      private HashMap<Integer, String> majorTicks = new HashMap<Integer, String>();
+      private final HashMap<Integer, String> majorTicks = new HashMap<>();
       
       /** A general-purpose point, to avoid frequent re-allocations. */
-      private Point2D ptLog = new Point2D.Double();
+      private final Point2D ptLog = new Point2D.Double();
       
       /**
        * Prepare the polyline path that renders the ruler line with its major and minor tick marks. Also prepares the
@@ -5163,7 +5128,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                else if(majDivLog >= 0.1) label = String.format("%.1f", curr);
                else label = String.format("%.2f", curr);
                
-               majorTicks.put(new Integer(tick), label);
+               majorTicks.put(tick, label);
                
                if(isHoriz)
                {
@@ -5249,7 +5214,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
 
       @Override protected FGraphicModel doInBackground() throws Exception
       {
-         FGraphicModel model = null;
+         FGraphicModel model;
          StringBuffer sb = new StringBuffer();
          if(FCFileType.getFileType(figSrcFile) == FCFileType.FYP)
          {
@@ -5272,7 +5237,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          if(!isCancelled())
          {
             FGraphicModel model = null;
-            try{ model = get(); } catch(Exception e) {}
+            try{ model = get(); } catch(Exception ignored) {}
             
             boolean isMatFig = (FCFileType.getFileType(figSrcFile) == FCFileType.FIG);
 
@@ -5322,7 +5287,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
                      FigComposer.this.fireStateChanged();
                   }
                }
-               else if(model != null && (tgtTab.loading || (tgtTab.syncing && !tgtTab.fig.isModified())))
+               else if(tgtTab.loading || tgtTab.syncing && !tgtTab.fig.isModified())
                {
                   
                   // if we loaded figure from a Matlab FIG file, mark the model as modified -- since we've never saved
@@ -5339,7 +5304,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       }
 
       /** The figure source file processed by this figure loader. */
-      private File figSrcFile = null;
+      private final File figSrcFile;
       
       /** The source file's last-modified time just prior to loading the figure from it (FypML files only). */
       private long srcLastMod = -1;
@@ -5457,7 +5422,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          forceAutosaveUpdate = false;
          
          // de-register any figures that the user has closed since we last checked
-         List<Integer> removeIDs = new ArrayList<Integer>();
+         List<Integer> removeIDs = new ArrayList<>();
          for(Integer id : entries.keySet())
          {
             boolean found = false;
@@ -5470,7 +5435,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             if(!found) removeIDs.add(id);
          }
          for(Integer id : removeIDs) entries.remove(id);
-         needUpdate = (removeIDs.size() > 0);
+         if(!removeIDs.isEmpty())
+            needUpdate = true;
          
          // next check list of currently open figures for any changes in the source file paths
          for(Tab tab : openFigures)
@@ -5495,8 +5461,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             {
                if(!tab.loading)
                {
-                  tgtID = new Integer(nextEntryID++);
-                  Entry e = new Entry(tgtID.intValue(), tab.src, now, tab.fig.getModifyCount());
+                  tgtID = nextEntryID++;
+                  Entry e = new Entry(tgtID, tab.src, now, tab.fig.getModifyCount());
                   entries.put(tgtID, e);
                   tab.autoSaveID = tgtID;
                   needUpdate = true;
@@ -5537,7 +5503,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          // start worker thread to perform the necessary update of the auto-saver state
          if(needUpdate)
          {
-            HashMap<Integer, Entry> currState = new HashMap<Integer, Entry>();
+            HashMap<Integer, Entry> currState = new HashMap<>();
             for(Integer key : entries.keySet())
             {
                Entry e = entries.get(key);
@@ -5561,6 +5527,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
        * any are found, it is assumed that a previous instance of the application crashed and recovery is needed -- see
        * {@link #isRestoreFromCrashNeeded()} </p>
        */
+      @SuppressWarnings("ResultOfMethodCallIgnored")
       void initialize()
       {
          if(initialized) return;
@@ -5593,7 +5560,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
 
          }
          catch(JSONException jse) { throw new NeverOccursException(jse); }
-         catch(IOException ioe) {}
+         catch(IOException ignored) {}
          
          if(lock == null)
          {
@@ -5608,16 +5575,18 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          File[] files = dir.listFiles();
          if(isFirstInit)
          {
-            for(File f : files) if(FCFileType.getFileType(f) == FCFileType.FYP)
-            {
-               restoreNeeded = true;
-               break;
-            }
+            if(files != null)
+               for(File f : files) if(FCFileType.getFileType(f) == FCFileType.FYP)
+                  {
+                     restoreNeeded = true;
+                     break;
+                  }
          }
          if(!restoreNeeded)
          {
-            for(File f : files) if(!Utilities.filesEqual(f, lockFN))
-               f.delete();
+            if(files != null)
+               for(File f : files) if(!Utilities.filesEqual(f, lockFN))
+                  f.delete();
          }
          
          isFirstInit = false;
@@ -5664,6 +5633,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
        * the auto-save directory are removed -- except for the lock file that mediates exclusive access to the 
        * directory --, and the exclusive file lock is then released.
        */
+      @SuppressWarnings({"BusyWait", "ResultOfMethodCallIgnored"})
       void shutDown()
       {
          pause();
@@ -5678,7 +5648,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          long tStart = System.currentTimeMillis();
          while(workerInProgress != null && (System.currentTimeMillis()-tStart < 2000))
          {
-            try{ Thread.sleep(20); } catch(InterruptedException ie) {}
+            try{ Thread.sleep(20); } catch(InterruptedException ignored) {}
          }
          if(workerInProgress != null)
          {
@@ -5692,8 +5662,9 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          if(dir.isDirectory())
          {
             File[] files = dir.listFiles();
-            for(File f : files) if(!Utilities.filesEqual(f, fLock))
-               f.delete();
+            if(files != null)
+               for(File f : files) if(!Utilities.filesEqual(f, fLock))
+                  f.delete();
          }
          
          // release the lock file that guards access to auto-save directory; but don't delete it.
@@ -5702,7 +5673,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             if(lock != null) lock.release();
             if(lockFile != null) lockFile.close();
          }
-         catch(IOException ioe) {}
+         catch(IOException ignored) {}
          
          lock = null;
          lockFile = null;
@@ -5730,14 +5701,11 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          // if a crash recovery is still in progress, do NOT resume. Once that recovery task has finished, it will
          // invoke this method to resume normal auto-save updates.
          if(workerInProgress != null && workerInProgress.isRecoveryTask) return;
-         
-         if(timer == null) timer = new Timer(TIMERPERMS, this);
+
+         if(timer == null) timer = new Timer(2000, this);
          timer.start();
       }
-      
-      /** The timer period, in ms, for the auto-saver's Swing timer. */
-      private final int TIMERPERMS = 2000;
-      
+
       /** Directory within user's workspace directory in which all auto-saved figure files are stored. */
       private final String AUTOSAVEDIR = "autosave";
       /** 
@@ -5791,7 +5759,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       private int ticksUntilCheck = 10;
       
       /** Current auto-saved entries, keyed by unique integer ID. */
-      private HashMap<Integer, Entry> entries = new HashMap<Integer, Entry>();
+      private final HashMap<Integer, Entry> entries = new HashMap<>();
       
       /** Integer ID to assign to the auto-saver's next new entry. */
       private int nextEntryID = 0;
@@ -5814,7 +5782,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          }
          
          /** The unique ID that was assigned to the figure by the auto-saver. */
-         private int id;
+         private final int id;
          /** The original source file from which figure was read. Null for a figure that has never been saved. */
          private File origSrc;
          private long tStamp;
@@ -5852,13 +5820,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             JSONUtilities.writeJSONArray(f, jsonAr, true);
             ok = true;
          }
-         catch(Exception exc) {}
+         catch(Exception ignored) {}
          
          return(ok);
       }
       
       /**
-       * The inverse of {@link #writeAutosaveStateFile()}. 
+       * The inverse of {@link #writeAutosaveStateFile(HashMap, File)}.
        * @param f The JSON-formatted file that contains the persisted auto-saver's state.
        * @return The auto-saver's state as read from the file, or null if operation failed. Each entry will contain the
        * auto-save ID and source path of each auto-saved figure. If a figure was never explicitly saved by the user,
@@ -5866,7 +5834,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
        */
       private HashMap<Integer, Entry> readAutosaveStateFile(File f)
       {
-         HashMap<Integer, Entry> state = new HashMap<Integer, Entry>();
+         HashMap<Integer, Entry> state = new HashMap<>();
          boolean ok = false;
          try
          {
@@ -5874,10 +5842,10 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             if((jsonAr.length() % 2) != 0) throw new JSONException("Invalid content in auto-save state file");
             for(int i=0; i<jsonAr.length(); i+=2)
             {
-               Integer id = new Integer(jsonAr.getInt(i));
+               int id = jsonAr.getInt(i);
                String path = jsonAr.getString(i+1);
                File src = null;
-               if(path.length() > 0)
+               if(!path.isEmpty())
                {
                   src = new File(path);
                   if(!src.isFile()) src = null;
@@ -5886,7 +5854,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             }
             ok = true;
          }
-         catch(Exception e) {}
+         catch(Exception ignored) {}
          
          return(ok ? state : null);
       }
@@ -5928,6 +5896,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             this.saveID = saveID;
          }
          
+         @SuppressWarnings("ResultOfMethodCallIgnored")
          @Override protected Object doInBackground() throws Exception
          {
             // special case: recovering from a crash at application start-up
@@ -5952,7 +5921,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             // if there is a figure to be auto-saved, save it
             if(fgm  != null && saveID != null)
             {
-               File f = new File(dir, TMPFILEBASE + saveID.toString() + ".fyp");
+               File f = new File(dir, TMPFILEBASE + saveID + ".fyp");
                figSaveOK = (null == FGModelSchemaConverter.toXML(fgm, f));
             }
             if(isCancelled()) return(null);
@@ -6025,6 +5994,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             }
          }
          
+         @SuppressWarnings("ResultOfMethodCallIgnored")
          private void doCrashRecovery()
          {
             // step 1: read the auto-save state file. If read fails, the "prior" auto-save state will be empty, so we'll
@@ -6034,12 +6004,12 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             File dir = new File(ws.getWorkspaceHome(), AUTOSAVEDIR);
             File stateFile = new File(dir, AUTOSAVESTATEFILE);
             if(stateFile.isFile()) priorState = readAutosaveStateFile(stateFile);
-            if(priorState == null) priorState = new HashMap<Integer, Entry>();
+            if(priorState == null) priorState = new HashMap<>();
             
             // step 2: check workspace for the list of "last open" figure files. Typically, most or all of these will be
             // among the set of auto-saved figures...
             List<File> filesOpen = ws.getLastOpenFigures();
-            if(filesOpen.size() == 0)
+            if(filesOpen.isEmpty())
             {
                File mruFile = ws.getMostRecentFile(false);
                if(mruFile != null) filesOpen.add(mruFile);
@@ -6047,8 +6017,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
 
             // step 3: load "last open" figures. If any figure was auto-saved, try to load its auto-saved version first.
             // If that fails, load it from the original file.
-            recoveredFigs = new ArrayList<FGraphicModel>();
-            pathsForRecoveredFigs = new ArrayList<File>();
+            recoveredFigs = new ArrayList<>();
+            pathsForRecoveredFigs = new ArrayList<>();
             for(File f : filesOpen)
             {
                FGraphicModel fig = null;
@@ -6108,12 +6078,13 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             // step 5: delete contents of auto-save directory (except the lock file)
             File fLock = new File(dir, AUTOSAVELOCKFILE);
             File[] files = dir.listFiles();
-            for(File f : files) if(!Utilities.filesEqual(f, fLock))
-               f.delete();
+            if(files != null)
+               for(File f : files) if(!Utilities.filesEqual(f, fLock))
+                  f.delete();
          }
          
          /** Flag set for a crash recovery task, as opposed to a normal auto-save update task. */
-         private boolean isRecoveryTask = false;
+         private final boolean isRecoveryTask;
          /** Flag set during crash recovery task IF at least one auto-saved figure was successfully recovered. */
          private boolean recoveryOK = false;
          /** List of figures loaded during a crash recovery task. */

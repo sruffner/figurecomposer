@@ -46,7 +46,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNFunctionEditor extends FGNEditor implements TabStripModel, ActionListener, FocusListener
 {
 
@@ -269,7 +268,7 @@ class FGNFunctionEditor extends FGNEditor implements TabStripModel, ActionListen
    private JPanel tabContent = null;
    
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
    /** 
     * Notifies any change listeners that the list of tabs has changed in some way -- including the identity of the 
@@ -365,7 +364,7 @@ class FGNFunctionEditor extends FGNEditor implements TabStripModel, ActionListen
    private StyledTextEditor titleEditor = null;
 
    /** When checked, an entry for the function is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** Self-contained editor handles the node's text style properties. */
    private TextStyleEditor textStyleEditor = null;

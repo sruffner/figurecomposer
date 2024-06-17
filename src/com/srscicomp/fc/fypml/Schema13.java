@@ -48,11 +48,11 @@ class Schema13 extends Schema12
 	 * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
 	 * is new to this schema or has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap13 = null;
+	private static final Map<String, SchemaElementInfo> elementMap13;
 
 	static
 	{
-		elementMap13 = new HashMap<String, SchemaElementInfo>();
+		elementMap13 = new HashMap<>();
 		
       // (22mar2013) Replaced attribute "auto" with "autorange" the "graph" element. Optional. Default value is "none".
       elementMap13.put( EL_GRAPH, new SchemaElementInfo( false, 
@@ -71,7 +71,7 @@ class Schema13 extends Schema12
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap13.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap13.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -80,7 +80,7 @@ class Schema13 extends Schema12
 	 */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap13.get(elTag);
+		SchemaElementInfo info = elementMap13.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -119,7 +119,7 @@ class Schema13 extends Schema12
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

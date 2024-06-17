@@ -69,15 +69,14 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNGraph3DEditor extends FGNEditor implements TabStripModel
 {
    /** Construct the 3D graph node properties editor. */
    FGNGraph3DEditor()
    {
       super();
-      
-      tabStrip = new TabStrip(this);
+
+      TabStrip tabStrip = new TabStrip(this);
       
       tabPanel = new JPanel(new CardLayout());
       tabPanel.setOpaque(false);
@@ -243,7 +242,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
    
    private FGNEditor getEditorForTab(int i)
    {
-      FGNEditor editor = null;
+      FGNEditor editor;
       switch(i)
       {
       case 0 : editor = mainCard; break;
@@ -269,43 +268,40 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
 
    /** The 3D graph currently being displayed/edited. Null if no graph is currently loaded in the editor. */
    private Graph3DNode graph3d = null;
-   
-   /** Controls which component node property editor is "in front". */
-   private TabStrip tabStrip = null;
-   
-   /** 
+
+   /**
     * Container for each of the different component node property editors, arranged as different "cards", with only one 
     * visible at a time. The user selects a particular editor via the tab strip that sits above this panel.
     */
-   private JPanel tabPanel = null;
+   private final JPanel tabPanel;
    
    /** Index of the currently selected tab, determining which property editor "card" is displayed. */
    private int iSelectedTab = -1;
 
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
    /** Property editor for the 3D graph node itself. It appears in the first tab of the composite editor. */
-   private MainCard mainCard = new MainCard();
+   private final MainCard mainCard = new MainCard();
    private final static String CARD_MAIN = "Main";
    
    /** Property editor for the 3D graph's backdrop. It appears in the second tab of the composite editor. */
-   private BackDropCard backDropCard = new BackDropCard();
+   private final BackDropCard backDropCard = new BackDropCard();
    private final static String CARD_BACK = "Backdrop";
    
    /** 
     * Common property editor for the three graph axes. It appears in tabs 2-4 of the composite 3D graph node editor. It 
     * must be reconfigured on a tab switch to display the appropriate axis.
     */
-   private Axis3DCard axis3dCard = new Axis3DCard();
+   private final Axis3DCard axis3dCard = new Axis3DCard();
    private final static String CARD_AXIS = "Axis";
    
    /** Property editor for the color bar node. It appears in tab 5 of the composite 3D graph node editor. */
-   private FGNGraphAxisCard colorBarCard = new FGNGraphAxisCard();
+   private final FGNGraphAxisCard colorBarCard = new FGNGraphAxisCard();
    private final static String CARD_CBAR = "Color Bar";
    
    /** Property editor for the legend node. It appears in tab 6 of the composite 3D graph node editor. */
-   private FGNLegendCard legendCard = new FGNLegendCard();
+   private final FGNLegendCard legendCard = new FGNLegendCard();
    private final static String CARD_LEGEND = "Legend";
    
    /** The tab labels for the tab strip (they never change). */
@@ -353,7 +349,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
          titleEditor.addActionListener(this);
          p.add(titleEditor);
          
-         hAlignWidget = new MultiButton<TextAlign>();
+         hAlignWidget = new MultiButton<>();
          hAlignWidget.addChoice(TextAlign.LEADING, FCIcons.V4_ALIGNLEFT_16, "Left");
          hAlignWidget.addChoice(TextAlign.CENTERED, FCIcons.V4_ALIGNCENTER_16, "Center");
          hAlignWidget.addChoice(TextAlign.TRAILING, FCIcons.V4_ALIGNRIGHT_16, "Right");
@@ -657,7 +653,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       private StyledTextEditor titleEditor = null;
 
       /** When checked, the graph's title is rendered (unless title string is empty). */
-      private JCheckBox showTitleChk = null;
+      private final JCheckBox showTitleChk;
       
       /** Multiple-choice button widget for editing the H alignment of graph's title WRT its bounding box. */
       private MultiButton<TextAlign> hAlignWidget = null;
@@ -717,7 +713,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       {
          JLabel styleLabel = new JLabel("Backdrop Style: " );
          add(styleLabel);
-         backDropCombo = new JComboBox<Graph3DNode.BackDrop>(Graph3DNode.BackDrop.values());
+         backDropCombo = new JComboBox<>(Graph3DNode.BackDrop.values());
          backDropCombo.addActionListener(this);
          add(backDropCombo);
          
@@ -844,7 +840,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       }
 
       /** Combo box selects the 3D graph's backdrop style. */
-      private JComboBox<Graph3DNode.BackDrop> backDropCombo = null;
+      private final JComboBox<Graph3DNode.BackDrop> backDropCombo;
       
      /** Self-contained editor handles the draw style properties for the 3D graph's XY backplane. */
       private DrawStyleEditor xyDrawStyleEditor = null;
@@ -878,7 +874,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
     * properties of a single 3D tick set node. <b><i>Note that the 3D axis and tick set nodes are somewhat different
     * than their 2D counterparts.</i></b></p>
     * 
-    * <p>To change the type of axis loaded and edited here, call {@link #loadAxis()}.</p>
+    * <p>To change the type of axis loaded and edited here, call {@link #loadAxis(Graph3DNode.Axis)}.</p>
     * @author sruffner
     */
    private class Axis3DCard extends FGNEditor implements ActionListener, TabStripModel
@@ -886,7 +882,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       /** Construct the 3D graph axis properties editor. */
       Axis3DCard()
       {
-         tabStrip = new TabStrip(this);
+         TabStrip tabStrip = new TabStrip(this);
          add(tabStrip);
          
          addTickSetBtn = new JButton(FCIcons.V4_ADD_22);
@@ -926,7 +922,8 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       {
          if(graph3d != null && axis3d != null && e.getSource() == addTickSetBtn)
          {
-            boolean ok = axis3d.getGraphicModel().insertNode(axis3d, FGNodeType.TICKS3D, -1);
+            FGraphicModel fgm = axis3d.getGraphicModel();
+            boolean ok = (fgm != null) && fgm.insertNode(axis3d, FGNodeType.TICKS3D, -1);
             if(ok) setSelectedTab(getNumTabs()-1);
          }
       }
@@ -1052,7 +1049,8 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       {
          if(axis3d != null && tabPos > 0)
          {
-            if(axis3d.getGraphicModel().deleteNode(axis3d.getChildAt(tabPos-1)))
+            FGraphicModel fgm = axis3d.getGraphicModel();
+            if(fgm != null && axis3d.getGraphicModel().deleteNode(axis3d.getChildAt(tabPos-1)))
             {
                if(tabPos == iSelectedTab) setSelectedTab(tabPos-1);
                else fireStateChanged();
@@ -1083,22 +1081,20 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       private int iSelectedTab = -1;
       
       /** List of all change listeners registered with the tab strip model. */
-      private EventListenerList tabListeners = new EventListenerList();
+      private final EventListenerList tabListeners = new EventListenerList();
 
-      /** First tab shows the axis properties; then there's one tab for each tick mark set defined on the axis. */
-      private TabStrip tabStrip = null;
       /** Clicking this button will append a new tick set node to the axis. */
-      private JButton addTickSetBtn = null;
+      private final JButton addTickSetBtn;
      /** The container for the properties editor currently selected via the tab strip. Uses a card layout. */
       private JPanel contentPanel = null;
       
       /** The properties editor for any 3D graph axis node. */
-      private Basic3DAxisCard xyzAxisCard = new Basic3DAxisCard();
+      private final Basic3DAxisCard xyzAxisCard = new Basic3DAxisCard();
       /** The card ID assigned to the basic 3D axis properties editor. */
       private final static String CARD_XYZAXIS = "XYZ Axis";
       
       /** The properties editor for a 3D tick mark set. */
-      private Ticks3DCard ticks3DCard = new Ticks3DCard();
+      private final Ticks3DCard ticks3DCard = new Ticks3DCard();
       /** The card ID assigned to the 3D tick mark set properties editor. */
       private final static String CARD_TICKS = "Ticks";
    }
@@ -1122,7 +1118,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
     * </ul>
     * 
     * <p>The editor can be reloaded to display the properties of any of the 3D graph's axes. To load a different 3D
-    * axis node, call {@link #setEditedAxis()}.</p>
+    * axis node, call {@link #setEditedAxis(Graph3DNode.Axis)}.</p>
     * 
     * @author sruffner
     */
@@ -1379,7 +1375,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       private Graph3DNode.Axis whichAxis;
       
       /** Numeric text field edits the axis range start. */
-      private NumericTextField startField = null;
+      private final NumericTextField startField;
 
       /** Numeric text field edits the axis range end. */
       private NumericTextField endField = null;
@@ -1422,8 +1418,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
     * Helper class implements a subordinate node properties editor that appears in a tab of the {@link Axis3DCard} and
     * displays/edits the properties of a {@link Ticks3DNode}:
     * <ul>
-    * <li>A text field for entering the tick mark locations in one of three forms as described by {@link 
-    * Ticks3DNode#setTickMarkSpec()}.</li>
+    * <li>Numeric text fields for entering the tick mark range and internval.</li>
     * <li>A text field for entering custom tick mark labels as a comma-separated string (optional).</li>
     * <li>Custom text fields specifying the measured length of each tick, and the gap between the end of a tick and the
     * bounds of the corresponding tick label.</li>
@@ -1434,7 +1429,8 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
     * </ul>
     * 
     * <p>{@link Axis3DCard} uses a single instance of <b>Ticks3DCard</b> to edit the properties of any tick set node
-    * defined on the 3D graph axis, invoking {@link #loadTickSet()} to load a different tick set into the editor.</p>
+    * defined on the 3D graph axis, invoking {@link #loadTickSet(Ticks3DNode)} to load a different tick set into the
+    * editor.</p>
     * 
     * @author sruffner
     */
@@ -1518,7 +1514,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
          gapEditor.addActionListener(this);
          p.add(gapEditor);
          
-         tickOriMB = new MultiButton<TickSetNode.Orientation>();
+         tickOriMB = new MultiButton<>();
          tickOriMB.addChoice(TickSetNode.Orientation.OUT, FCIcons.V4_TICKOUT_16, "outward");
          tickOriMB.addChoice(TickSetNode.Orientation.IN, FCIcons.V4_TICKIN_16, "inward");
          tickOriMB.addChoice(TickSetNode.Orientation.THRU, FCIcons.V4_TICKTHRU_16, "bisecting");
@@ -1527,10 +1523,10 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
          p.add(tickOriMB);
 
          LabelFormat[] fmts = LabelFormat.values();
-         formatCB = new JComboBox<LabelFormat>(fmts);
+         formatCB = new JComboBox<>(fmts);
          formatCB.setRenderer(new DefaultListCellRenderer() {
-            @Override public Component getListCellRendererComponent(JList<? extends Object> list, Object value, 
-                  int index, boolean isSelected, boolean cellHasFocus)
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                                    int index, boolean isSelected, boolean cellHasFocus)
             {
                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                String s = (value instanceof LabelFormat) ? ((LabelFormat)value).getGUILabel() : "";
@@ -1705,7 +1701,6 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
             ticks.setCustomTickLabelsFromCommaSeparatedList(s);
             String adj = ticks.getCustomTickLabelsAsCommaSeparatedList();
             if(!adj.equals(s)) customLabelsField.setText(adj);
-            ok = true;
          }
          else if(LOGTICKCMD.equals(cmd))
          {
@@ -1728,7 +1723,7 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       private Ticks3DNode ticks = null;
       
       /** Numeric text field edits the tick set range start. */
-      private NumericTextField startField = null;
+      private final NumericTextField startField;
 
       /** Numeric text field edits the tick set range end. */
       private NumericTextField endField = null;

@@ -43,15 +43,14 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * <p>The bottom portion of the editor panel is occupied by a three-page tabbed pane for editing the graphical styling 
  * of the box plots. The <i>Box</i> tab holds a {@link DrawStyleEditor}, which displays and edits the box plot node's 
  * draw styles -- these govern the appearance of the "box" portion of each box plot. The <i>Whiskers</i> tab is a
- * {@link FGNEBarCard}, which encapsulates widgets for editing the properties of the box plot element's component {@link
- * ErrorBarNode}, governing the appearance of the box plot whiskers. Finally, the <i>Outliers</i> tab is a {@link 
- * FGNSymbolCard}, which encapsulates widgets for editing all properties of the component {@link SymbolNode}, governing
- * the appearance of the symbols marking the locations of any outlier data in the box plots. We use {@link TabStrip} to 
- * implement the tabbed-pane interface.</p>
+ * {@link FGNEBarCard}, which encapsulates widgets for editing the properties of the box plot element's component that
+ * governs the appearance of the box plot whiskers. Finally, the <i>Outliers</i> tab is a {@link FGNSymbolCard}, which
+ * encapsulates widgets for editing all properties of the component {@link SymbolNode}, governing the appearance of the
+ * symbols marking the locations of any outlier data in the box plots. We use {@link TabStrip} to implement the
+ * tabbed-pane interface.</p>
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNBoxPlotEditor extends FGNEditor implements TabStripModel, ActionListener
 {
 
@@ -72,7 +71,7 @@ class FGNBoxPlotEditor extends FGNEditor implements TabStripModel, ActionListene
       dsEditor = new FGNPlottableDSCard();
       add(dsEditor);
 
-      modeCombo = new JComboBox<BoxPlotNode.DisplayMode>(BoxPlotNode.DisplayMode.values());
+      modeCombo = new JComboBox<>(BoxPlotNode.DisplayMode.values());
       modeCombo.addActionListener(this);
       modeCombo.setToolTipText("Select display mode");
       add(modeCombo);
@@ -285,7 +284,7 @@ class FGNBoxPlotEditor extends FGNEditor implements TabStripModel, ActionListene
    private JPanel tabContent = null;
    
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
    /** 
     * Notifies any change listeners that the list of tabs has changed in some way -- including the identity of the 
@@ -344,7 +343,7 @@ class FGNBoxPlotEditor extends FGNEditor implements TabStripModel, ActionListene
    private BoxPlotNode getBoxPlotNode() { return((BoxPlotNode) getEditedNode()); }
    
    /** When checked, an entry for the data trace is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** The custom widget within which the box plot node's title (which may contain attributed text) is edited.  */
    private StyledTextEditor titleEditor = null;
@@ -393,7 +392,7 @@ class FGNBoxPlotEditor extends FGNEditor implements TabStripModel, ActionListene
     * The editor includes a widget to specify the violin plot width and an embedded {@link DrawStyleEditor} that 
     * exposes the violin's draw styles.
     */
-   class ViolinCard extends JPanel implements ActionListener
+   static class ViolinCard extends JPanel implements ActionListener
    {
       /** Construct the violin plot style properties editor. */
       ViolinCard()
@@ -461,7 +460,7 @@ class FGNBoxPlotEditor extends FGNEditor implements TabStripModel, ActionListene
       private ViolinStyleNode violin = null;
 
       /** Customized component for editing the violin plot's width. */
-      private MeasureEditor widthEditor = null;
+      private final MeasureEditor widthEditor;
       
       /** Self-contained editor handles the node's draw style properties. */
       private DrawStyleEditor drawStyleEditor = null;

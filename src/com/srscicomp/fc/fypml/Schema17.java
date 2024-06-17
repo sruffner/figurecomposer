@@ -66,11 +66,11 @@ class Schema17 extends Schema16
 	 * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
 	 * is new to this schema or has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap17 = null;
+	private static final Map<String, SchemaElementInfo> elementMap17;
 
 	static
 	{
-		elementMap17 = new HashMap<String, SchemaElementInfo>();
+		elementMap17 = new HashMap<>();
 		
       // (19jan2015) A new data presentation element, the bar plot.
       elementMap17.put( EL_BAR, new SchemaElementInfo( true, 
@@ -104,7 +104,7 @@ class Schema17 extends Schema16
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap17.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap17.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -113,7 +113,7 @@ class Schema17 extends Schema16
 	 */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap17.get(elTag);
+		SchemaElementInfo info = elementMap17.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -155,7 +155,7 @@ class Schema17 extends Schema16
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

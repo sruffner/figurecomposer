@@ -180,11 +180,11 @@ class Schema8 extends Schema7
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
     * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap8 = null;
+	private static final Map<String, SchemaElementInfo> elementMap8;
 
 	static
 	{
-		elementMap8 = new HashMap<String, SchemaElementInfo>();
+		elementMap8 = new HashMap<>();
 		
       // New elements "raster" and "heatmap" appear as children of a graph.
       elementMap8.put( EL_GRAPH, 
@@ -246,7 +246,7 @@ class Schema8 extends Schema7
    @Override
    public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap8.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap8.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -257,7 +257,7 @@ class Schema8 extends Schema7
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap8.get(elTag);
+		SchemaElementInfo info = elementMap8.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -332,7 +332,7 @@ class Schema8 extends Schema7
    {
       if(EL_SET.equals(e.getTag()))
       {
-         String v7 = null;
+         String v7;
          try { v7 = e.getAttributeValueByName(A_V7); } catch(XMLException xe) { return(false); }
          if(!"true".equals(v7)) return(true);
       }
@@ -371,17 +371,17 @@ class Schema8 extends Schema7
 		boolean fixNullSrcAttr = false;
 		
 		// list of ALL "trace" elements in the old schema, in case we need to change their "src" attribute
-		List<BasicSchemaElement> traces = new ArrayList<BasicSchemaElement>();
+		List<BasicSchemaElement> traces = new ArrayList<>();
 		
 		// original IDs of all datasets referenced in any "trace" elements found. The original IDs are the map keys and 
 		// all values are initially null. This is used to (1) detect and remove dataset orphans, and (2) to fix any IDs 
 		// that are invalid in schema 8. After processing of the schema, the keys in the hashmap are examined. If any ID 
 		// is found to be invalid, the corresponding VALUE in the hashmap will hold a replacement ID. The corresponding 
 		// "set" and all referencing "trace" elements are updated with the replacement ID. See below...
-		HashMap<String, String> setIDMap = new HashMap<String, String>();
+		HashMap<String, String> setIDMap = new HashMap<>();
 		
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {
@@ -413,7 +413,7 @@ class Schema8 extends Schema7
       }
 
       // remove any "set" elements in "ref" node that are orphans, ie, not referenced by any "trace" element.
-      List<BasicSchemaElement> sets = new ArrayList<BasicSchemaElement>();
+      List<BasicSchemaElement> sets = new ArrayList<>();
       BasicSchemaElement fig = (BasicSchemaElement) oldSchema.getRootElement();
       BasicSchemaElement ref = (BasicSchemaElement) fig.getChildAt(fig.getChildCount()-1);
       int i = 0;
@@ -437,7 +437,7 @@ class Schema8 extends Schema7
          String uid = "emptySet";
          if(setIDMap.containsKey(uid))
          {
-            String adjID = uid;
+            String adjID;
             int n = 0;
             do
             {
@@ -498,11 +498,11 @@ class Schema8 extends Schema7
     * A compiled regular expression that is used to validate candidate dataset IDs in schema version 8: they must have 
     * at least one printable ASCII character that is an alphanumeric character or one of <em>$@|.<>_[](){}+-^!=</em>.
     */
-	private static Pattern idVerifier = 
+	private static final Pattern idVerifier =
 	   Pattern.compile("[a-zA-Z0-9_=\\$\\@\\|\\.\\<\\>\\[\\]\\(\\)\\{\\}\\+\\-\\^\\!]+");
 
 	/** Used to clean illegal characters from a candidate dataset ID in schema version 8.*/
-	private static Matcher idCleaner = 
+	private static final Matcher idCleaner =
 	   Pattern.compile("[^a-zA-Z0-9_=\\$\\@\\|\\.\\<\\>\\[\\]\\(\\)\\{\\}\\+\\-\\^\\!]+").matcher(" ");
 	
    /** The maximum length of a valid dataset identifier string, as of schema version 8. */
@@ -533,19 +533,19 @@ class Schema8 extends Schema7
     */
    private static List<String> enforceValidAndUniqueSetIDs(HashMap<String, String> idmap)
    {
-      List<String> invalidOrigIDs = new ArrayList<String>();
+      List<String> invalidOrigIDs = new ArrayList<>();
       Set<String> originalIDs = idmap.keySet();
       for(String origID : originalIDs) if(!isValidSetID(origID))
       {
          invalidOrigIDs.add(origID);
          
-         String adjID = (origID==null || origID.length()==0) ? "set" : idCleaner.reset(origID).replaceAll("");
-         if(adjID.length() == 0) adjID = "set";
+         String adjID = (origID==null || origID.isEmpty()) ? "set" : idCleaner.reset(origID).replaceAll("");
+         if(adjID.isEmpty()) adjID = "set";
          else if(adjID.length() > MAXIDLEN) adjID = adjID.substring(0, MAXIDLEN);
          
          if(idmap.containsKey(adjID) || idmap.containsValue(adjID))
          {
-            String uid = adjID;
+            String uid;
             int n = 0;
             do
             {

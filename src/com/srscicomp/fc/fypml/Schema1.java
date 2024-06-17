@@ -111,7 +111,7 @@ class Schema1 extends BaseSchema
 
 		// update the content of the old schema in place...
 		boolean defSymWasHollow = false;
-		Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+		Stack<BasicSchemaElement> elementStack = new Stack<>();
 		elementStack.push((BasicSchemaElement)oldSchema.getRootElement());
 		while(!elementStack.isEmpty())
 		{
@@ -140,17 +140,16 @@ class Schema1 extends BaseSchema
 			// currently set to "fillcircle", "fillbox", or "filldiamond", then change it to "circle", "box", or 
 			// "diamond", respectively.
 			final String[] adornAttrs = new String[] {A_SYMBOL, A_CAP, A_P0CAP, A_P1CAP, A_MIDCAP};
-			for(int i=0; i<adornAttrs.length; i++)
-			{
-				String attr = adornAttrs[i];
-				if(e.hasAttribute(attr))
-				{
-					String value = e.getAttributeValueByName(attr);
-					if(ADORN_FILLCIRCLE.equals(value)) e.setAttributeValueByName(attr, ADORN_CIRCLE);
-					else if(ADORN_FILLBOX.equals(value)) e.setAttributeValueByName(attr, ADORN_BOX);
-					else if(ADORN_FILLDIAMOND.equals(value)) e.setAttributeValueByName(attr, ADORN_DIAMOND);
-				}
-			}
+         for(String attr : adornAttrs)
+         {
+            if(e.hasAttribute(attr))
+            {
+               String value = e.getAttributeValueByName(attr);
+               if(ADORN_FILLCIRCLE.equals(value)) e.setAttributeValueByName(attr, ADORN_CIRCLE);
+               else if(ADORN_FILLBOX.equals(value)) e.setAttributeValueByName(attr, ADORN_BOX);
+               else if(ADORN_FILLDIAMOND.equals(value)) e.setAttributeValueByName(attr, ADORN_DIAMOND);
+            }
+         }
 
 			// finally, migrate the element object's schema info. We do not need to change the names of any attributes 
 			// or elements, and we've already corrected any attribute values above.

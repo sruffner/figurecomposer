@@ -12,7 +12,7 @@ public class DataSetInfo
    /**
     * Create summary information for a {@link DataSet} object.
     * 
-    * @param id The data set identifier. Must pass the test {@link DataSet#isValidIDString()}.
+    * @param id The data set identifier. Must pass the test {@link DataSet#isValidIDString(String)}.
     * @param format The data format. Cannot be null.
     * @param nrows Number of rows in the data. See {@link DataSet#getDataLength()} for details. Cannot be negative.
     * @param ncols The number of columns in the data. See {@link DataSet#getDataBreadth()} for details. Cannot be 
@@ -91,7 +91,7 @@ public class DataSetInfo
     * the method normally returns a new instance identical to the original one, except for the ID.
     * 
     * @param info The data set summary information to be updated.
-    * @param id The new identifier. Must satisfy constraints enforced by {@link DataSet#isValidIDString()}.
+    * @param id The new identifier. Must satisfy constraints enforced by {@link DataSet#isValidIDString(String)}.
     * @return Null if the new identifier is invalid. If it is identical to the ID of the <b>info</b> argument, then 
     * return that argument. Else, return a new <b>DataSetInfo</b> instance identical to the <b>info</b> argument 
     * except for the identifier.
@@ -122,54 +122,6 @@ public class DataSetInfo
       return(same);
    }
    
-   
-   //(08apr2020) NO LONGER NEED THESE, BUT SAVING THE CODE JUST IN CASE... 
-   /**
-    * Prepare a JSON (JavaScript Object Notation) array encapsulating the specified data set information object. The
-    * JSON array will have 4-8 elements (in order): the data set ID string, the data format code (an int), the set
-    * length (int), the set breadth (int), and 0-4 additional parameters (float).
-    * @param info The data set summary information object to be converted.
-    * @return A JSON array containing the data set information, as described.
-   public static JSONArray toJSON(DataSetInfo info)
-   {
-      JSONArray jsonInfo = new JSONArray();
-      try
-      {
-         jsonInfo.put(info.getID());
-         jsonInfo.put(info.getFormat().getIntCode());
-         jsonInfo.put(info.getDataLength());
-         jsonInfo.put(info.getDataBreadth());
-         for(int i=0; i<info.getFormat().getNumberOfParams(); i++)
-            jsonInfo.put(info.getParam(i));
-      }
-      catch(JSONException jse) { throw new NeverOccursException(jse); }
-      
-      return(jsonInfo);
-   }
-   
-   /**
-    * Create a data set summary information object initialized IAW the contents of the specified JSON array, which 
-    * should be formatted exactly as described in {@link #toJSON()}.
-    * @param jsonInfo JSON array of 4-8 elements defining a data set summary information object.
-    * @return The <code>DataSetInfo</code> object defined by the JSON array.
-    * @throws JSONException if any problem occurs while digesting the JSON array, indicating that the array is not
-    * correctly formatted or contains invalid values.
-   public static DataSetInfo fromJSON(JSONArray jsonInfo) throws JSONException
-   {
-      String id = jsonInfo.getString(0);
-      Fmt fmt = Fmt.getFormatByIntCode(jsonInfo.getInt(1));
-      if(fmt == null) throw new JSONException("Invalid dataset format code detected!");
-      int dataL = jsonInfo.getInt(2);
-      int dataB = jsonInfo.getInt(3);
-      float[] params = new float[fmt.getNumberOfParams()];
-      for(int i=0; i<params.length; i++) params[i] = (float) jsonInfo.getDouble(4+i);
-      
-      DataSetInfo info = createDataSetInfo(id, fmt, dataL, dataB, params);
-      if(info == null) throw new JSONException("Invalid data set info found in JSON array!");
-      return(info);
-   }
-   */
-   
    private DataSetInfo(String id, Fmt format, int nrows, int ncols, float[] params)
    {
       this.id = id;
@@ -180,19 +132,19 @@ public class DataSetInfo
    }
    
    /** The data set's identifier. */
-   private String id;
+   private final String id;
    
    /** The data set format. */
-   private Fmt format;
+   private final Fmt format;
    
    /** The length of, or number of rows in, the data matrix. */
-   private int nrows;
+   private final int nrows;
 
    /** The breadth of, or number of columns in, the data matrix. */
-   private int ncols;
+   private final int ncols;
 
    /** Other defining parameters for the data set. */
-   private float[] params;
+   private final float[] params;
    
    /** 
     * Get the data set identifier. 

@@ -73,11 +73,11 @@ class Schema19 extends Schema18
 	 * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
 	 * is new to this schema or has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap19 = null;
+	private static final Map<String, SchemaElementInfo> elementMap19;
 
 	static
 	{
-		elementMap19 = new HashMap<String, SchemaElementInfo>();
+		elementMap19 = new HashMap<>();
 		
       // (04may2015) Figure element now takes optional 'note' attribute specifying a figure description. Default="".
       elementMap19.put( EL_FIGURE, new SchemaElementInfo( false, 
@@ -123,7 +123,7 @@ class Schema19 extends Schema18
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap19.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap19.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -132,7 +132,7 @@ class Schema19 extends Schema18
 	 */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap19.get(elTag);
+		SchemaElementInfo info = elementMap19.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -182,7 +182,7 @@ class Schema19 extends Schema18
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

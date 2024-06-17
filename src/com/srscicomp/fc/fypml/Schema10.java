@@ -134,11 +134,11 @@ class Schema10 extends Schema9
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
     * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap10 = null;
+	private static final Map<String, SchemaElementInfo> elementMap10;
 
 	static
 	{
-		elementMap10 = new HashMap<String, SchemaElementInfo>();
+		elementMap10 = new HashMap<>();
 		
       // Added "strokeCap" and "strokeJoin" as inheritable attributes. They are required on the "figure" node.
       elementMap10.put( EL_FIGURE, new SchemaElementInfo( false, 
@@ -238,7 +238,7 @@ class Schema10 extends Schema9
    @Override
    public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap10.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap10.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -249,7 +249,7 @@ class Schema10 extends Schema9
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap10.get(elTag);
+		SchemaElementInfo info = elementMap10.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -300,7 +300,7 @@ class Schema10 extends Schema9
 			throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

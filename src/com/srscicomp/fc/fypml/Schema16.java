@@ -60,11 +60,11 @@ class Schema16 extends Schema15
 	 * This element map contains {@link SchemaElementInfo SchemaElementInfo} objects for each element that
 	 * is new to this schema or has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap16 = null;
+	private static final Map<String, SchemaElementInfo> elementMap16;
 
 	static
 	{
-		elementMap16 = new HashMap<String, SchemaElementInfo>();
+		elementMap16 = new HashMap<>();
 		
       // (07jul2014) The "trace" and "raster" elements no longer possess the "filled" attribute. Setting the "filled"
 		// attribute to "true" is the same as setting the element's "fillColor" to "none" (transparent).
@@ -110,7 +110,7 @@ class Schema16 extends Schema15
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap16.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap16.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -119,7 +119,7 @@ class Schema16 extends Schema15
 	 */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap16.get(elTag);
+		SchemaElementInfo info = elementMap16.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -177,7 +177,7 @@ class Schema16 extends Schema15
 		boolean needTransparentFillEBar = false;
 		
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

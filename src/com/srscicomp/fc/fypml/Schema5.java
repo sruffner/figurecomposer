@@ -46,11 +46,11 @@ class Schema5 extends Schema4
 	 * This element map contains <code>SchemaElementInfo</code> objects for each element that is new to this schema or 
 	 * has a different attribute set compared to the previous schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap5 = null;
+	private static final Map<String, SchemaElementInfo> elementMap5;
 
 	static
 	{
-		elementMap5 = new HashMap<String, SchemaElementInfo>();
+		elementMap5 = new HashMap<>();
 
 		// revised element map entry for the 'figure' element, which now serves as the root element as well. This 
       // includes all the attributes in the Schema4 'fyp' element, all of which are required, plus several 
@@ -76,7 +76,7 @@ class Schema5 extends Schema4
 	public boolean isSupportedElementTag(String elTag)
 	{
       if(EL_FYP.equals(elTag)) return(false);
-      else return(elementMap5.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      else return(elementMap5.containsKey(elTag) || super.isSupportedElementTag(elTag));
 	}
 
 	/**
@@ -87,7 +87,7 @@ class Schema5 extends Schema4
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap5.get(elTag);
+		SchemaElementInfo info = elementMap5.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -145,7 +145,7 @@ class Schema5 extends Schema4
       oldRoot.remove(0);
 
 		// update the content of the single figure/root node in place (any remaining content of old schema is ignored)...
-		Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+		Stack<BasicSchemaElement> elementStack = new Stack<>();
 		elementStack.push(figRoot);
 		while(!elementStack.isEmpty())
 		{
@@ -168,7 +168,7 @@ class Schema5 extends Schema4
          if(e.hasAttribute(A_ROTATE))
          {
             String value = e.getAttributeValueByName(A_ROTATE);
-            if(value != null && value.length() > 0)
+            if(value != null && !value.isEmpty())
             {
                try 
                {

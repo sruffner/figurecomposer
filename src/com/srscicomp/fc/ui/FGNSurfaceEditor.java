@@ -31,7 +31,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNSurfaceEditor extends FGNEditor implements ActionListener, FocusListener
 {
    /** Construct the scatter plot node properties editor. */
@@ -166,7 +165,7 @@ class FGNSurfaceEditor extends FGNEditor implements ActionListener, FocusListene
    private SurfaceNode getSurfaceNode() { return((SurfaceNode) getEditedNode()); }
    
    /** Text field in which the 3D scatter plot node's descriptive title is edited. */
-   private JTextField titleField = null;
+   private final JTextField titleField;
 
    /** Self-contained editor handles editing/loading of the data set assigned to the 3D scatter plot node. */
    private FGNPlottableDSCard dsEditor = null;

@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -31,8 +32,8 @@ import com.srscicomp.fc.data.DataSet.Fmt;
  * must be terminated by "\r", "\n", or "\r\n". A blank line (whitespace and line termination characters only) 
  * terminates a data set. Two formats exist -- an ambiguous "numbers only" format and an unambiguous "annotated" format
  * in which the first non-blank line is a "data set header". For a full description, see the method {@link
- * DataSet#fromOldPlainTextSrcFileFormat()}, upon which this class relies to parse the set of text lines representing a 
- * single data set.</p>
+ * DataSet#fromOldPlainTextSrcFileFormat(List, int, String, Fmt[], StringBuffer)}, upon which this class relies to parse
+ * the set of text lines representing a single data set.</p>
  *  
  * <p>The implementation is inefficient because the storage format is inefficient. There is no "table-of-contents" 
  * information at the beginning of the file, so the entire file must be scanned to get summary information. Since the 
@@ -63,45 +64,49 @@ class PlainTextSrc implements IDataSrc
    static boolean checkFile(File f)
    {
       if(f == null || !f.isFile()) return(false);
-      
-      BufferedReader rdr = null;
-      try
+
+      try(BufferedReader rdr = new BufferedReader(
+            new InputStreamReader(new FileInputStream(f), StandardCharsets.US_ASCII)))
       {
          // create a buffered reader for reading the ascii text file one line at a time
-         rdr = new BufferedReader( new InputStreamReader( new FileInputStream(f), "us-ascii" ) );
 
-         // read in first two non-blank lines. In the "numbers-only" case, it is possible that the first data set in the 
+         // read in first two non-blank lines. In the "numbers-only" case, it is possible that the first data set in the
          // file has only 1 tuple, in which case we'll only get one line
-         int n =0;
+         int n = 0;
          String[] lines = new String[2];
          while(n < 2)
          {
             String line = rdr.readLine();
-            if(line == null) return(false);   // EOF!
+            if(line == null) return (false);   // EOF!
             else line = line.trim();
-            if(line.length() > 0) lines[n++] = line;
+            if(!line.isEmpty()) lines[n++] = line;
             else if(n > 0) break;             // a single-line dataset!
          }
-         
+
          Annotation a = Annotation.parseAnnotationLine(lines[0]);
-         if(a != null && n < 2) return(false);
+         if(a != null && n < 2) return (false);
          int minLen = (a != null) ? a.getMinTupleLen() : 1;
          int maxLen = (a != null) ? a.getMaxTupleLen() : Integer.MAX_VALUE;
-         
-         for(int i=(a!=null ? 1 : 0); i<n; i++)
+
+         for(int i = (a != null ? 1 : 0); i < n; i++)
          {
             StringTokenizer st = new StringTokenizer(lines[i]);
             int nTokens = st.countTokens();
-            if(nTokens < minLen || nTokens > maxLen) return(false);
-            try { while(st.hasMoreTokens()) Float.parseFloat(st.nextToken()); }
-            catch(Throwable t) { return(false); }
+            if(nTokens < minLen || nTokens > maxLen) return (false);
+            try
+            {
+               while(st.hasMoreTokens()) Float.parseFloat(st.nextToken());
+            } catch(Throwable t)
+            {
+               return (false);
+            }
          }
-         return(true);
+         return (true);
       }
-      catch(IOException ioe) { System.out.println("Got IOExc: " + ioe.getMessage()); return(false); }
-      finally
+      catch(IOException ioe)
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         System.out.println("Got IOExc: " + ioe.getMessage());
+         return (false);
       }
    }
    
@@ -133,7 +138,7 @@ class PlainTextSrc implements IDataSrc
       if(prefFormats != null && prefFormats.length > 0)
       {
          preferredDSFormats = new Fmt[prefFormats.length];
-         for(int i=0; i<prefFormats.length; i++) preferredDSFormats[i] = prefFormats[i];
+         System.arraycopy(prefFormats, 0, preferredDSFormats, 0, prefFormats.length);
       }
    }
    
@@ -159,11 +164,12 @@ class PlainTextSrc implements IDataSrc
       
       // return data set with specified ID, if it exists
       DataSet ds = null;
-      for(int i=0; i<data.length; i++) if(data[i].getID().equals(id))
-      {
-         ds = data[i];
-         break;
-      }
+      for(DataSet dataSet : data)
+         if(dataSet.getID().equals(id))
+         {
+            ds = dataSet;
+            break;
+         }
       
       lastErrorMsg = (ds == null) ? "Dataset (ID=" + id + ") not found in source!" : "";
       return(ds);
@@ -182,7 +188,7 @@ class PlainTextSrc implements IDataSrc
    private String lastErrorMsg = "";
    
    /** The abstract pathname for the data source file. */
-   private File srcPath = null;
+   private final File srcPath;
    
    /**
     * If not null, this is a list of preferred data formats, which guides choosing the format for a parsed data set in 
@@ -228,16 +234,16 @@ class PlainTextSrc implements IDataSrc
 
       // parse the entire file
       BufferedReader rdr = null;
-      List<DataSet> sets = new ArrayList<DataSet>();
+      List<DataSet> sets = new ArrayList<>();
       StringBuffer errMsgBuf = new StringBuffer();
       try
       {
          // create a buffered reader for reading the ascii text file one line at a time
-         rdr = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), "us-ascii" ) );
+         rdr = new BufferedReader( new InputStreamReader( new FileInputStream(srcPath), StandardCharsets.US_ASCII) );
          
          // read in and parse data sets
          int nLinesRead = 0;
-         List<String> lines = new ArrayList<String>();
+         List<String> lines = new ArrayList<>();
          boolean done = false;
          while(!done)
          {
@@ -260,10 +266,10 @@ class PlainTextSrc implements IDataSrc
                
                if(start < 0)
                {
-                  if(nextLine.length() == 0) continue;
+                  if(nextLine.isEmpty()) continue;
                   else start = nLinesRead-1;
                }
-               else if(nextLine.length() == 0)
+               else if(nextLine.isEmpty())
                   break;
                
                lines.add(nextLine);
@@ -271,7 +277,7 @@ class PlainTextSrc implements IDataSrc
             
             // construct a new data set initialized IAW with the contiguous sequence of lines just read. If no parsing 
             // error occurred, append the new data set to the list of sets loaded thus far.
-            if(lines.size() > 0)
+            if(!lines.isEmpty())
             {
                String defID = "set" + sets.size();
                errMsgBuf.setLength(0);
@@ -293,10 +299,10 @@ class PlainTextSrc implements IDataSrc
       catch(IOException ioe) { lastErrorMsg = ioe.getMessage(); isInvalidSrcFile = true; }
       finally
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         try { if(rdr != null) rdr.close(); } catch(IOException ignored) {}
       }
 
-      if(lastErrorMsg.length() > 0) return;
+      if(!lastErrorMsg.isEmpty()) return;
       
       data = new DataSet[sets.size()];
       for(int i=0; i<sets.size(); i++) data[i] = sets.get(i);
@@ -304,7 +310,7 @@ class PlainTextSrc implements IDataSrc
    
    /**
     * Helper class encapsulating the <i>Phyplot</i>-style annotation header format. For a complete description, see
-    * {@link DataSet#fromOldPlainTextSrcFileFormat()}.
+    * {@link DataSet#fromOldPlainTextSrcFileFormat(List, int, String, Fmt[], StringBuffer)}.
     * @author sruffner
     */
    private static class Annotation
@@ -358,7 +364,7 @@ class PlainTextSrc implements IDataSrc
          }
          else if(!(isSampled || isMulti)) a.fmt = Fmt.PTSET;
          else if(isSampled && !isMulti) a.fmt = Fmt.SERIES;
-         else if((!isSampled) && isMulti) a.fmt = Fmt.MSET;
+         else if(!isSampled) a.fmt = Fmt.MSET;
          else a.fmt = Fmt.MSERIES;
 
          if(isSampled)

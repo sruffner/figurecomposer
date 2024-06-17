@@ -111,11 +111,11 @@ class Schema23 extends Schema22
     * This element map contains {@link SchemaElementInfo} objects for each element that is new to this schema or has a 
     * different attribute set compared to the previous schema.
     */
-   private static Map<String, SchemaElementInfo> elementMap23 = null;
+   private static final Map<String, SchemaElementInfo> elementMap23;
 
    static
    {
-      elementMap23 = new HashMap<String, SchemaElementInfo>();
+      elementMap23 = new HashMap<>();
       
       // 07jun2019: The "zaxis" element renamed as "colorbar". The "colorbar" element added as a required component of
       // the "graph3d" element. During schema migration, the "colorbar" element is added to each existing "graph3d"
@@ -191,7 +191,7 @@ class Schema23 extends Schema22
    @Override public boolean isSupportedElementTag(String elTag)
    {
       if(EL_ZAXIS.equals(elTag)) return(false);
-      return(elementMap23.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap23.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
    /**
@@ -200,7 +200,7 @@ class Schema23 extends Schema22
     */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
    {
-      SchemaElementInfo info = (SchemaElementInfo) elementMap23.get(elTag);
+      SchemaElementInfo info = elementMap23.get(elTag);
       return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
    }
 
@@ -243,7 +243,7 @@ class Schema23 extends Schema22
    @Override public boolean isValidChildAtIndex(BasicSchemaElement e, String childTag, int index)
    {
       String elTag = e.getTag();
-      SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+      SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
       if(!eInfo.isChildAllowed(childTag)) return(false);
       if(EL_GRAPH.equals(elTag))
       {
@@ -312,7 +312,7 @@ class Schema23 extends Schema22
       if(A_EDGE.equals(attr)) return(isValidEnumAttributeValue(value, EDGE_CHOICES));
       if(A_CMODE.equals(attr)) return(isValidEnumAttributeValue(value, CMODE_CHOICES));
 
-       if(A_SCALE.equals(attr)) return(isValidIntegerAttributeValue(value, MIN_SCALE, MAX_SCALE));
+      if(A_SCALE.equals(attr)) return(isValidIntegerAttributeValue(value, MIN_SCALE, MAX_SCALE));
        
       return(super.isValidAttributeValue(e, attr, value));
    }
@@ -338,7 +338,7 @@ class Schema23 extends Schema22
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

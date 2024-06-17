@@ -111,11 +111,11 @@ class Schema26 extends Schema25
     * This element map contains {@link SchemaElementInfo} objects for each element that is new to this schema or has a 
     * different attribute set compared to the previous schema.
     */
-   private static Map<String, SchemaElementInfo> elementMap26 = null;
+   private static final Map<String, SchemaElementInfo> elementMap26;
 
    static
    {
-      elementMap26 = new HashMap<String, SchemaElementInfo>();
+      elementMap26 = new HashMap<>();
 
       // 01jun2023: Added new "violin" element, controlling appearance of violin plot component of a box plot
       elementMap26.put( EL_VIOLIN, new SchemaElementInfo( false, 
@@ -175,7 +175,7 @@ class Schema26 extends Schema25
     */
    @Override public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap26.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap26.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
    /**
@@ -184,7 +184,7 @@ class Schema26 extends Schema25
     */
    @Override public SchemaElementInfo getSchemaElementInfo(String elTag)
    {
-      SchemaElementInfo info = (SchemaElementInfo) elementMap26.get(elTag);
+      SchemaElementInfo info = elementMap26.get(elTag);
       return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
    }
 
@@ -202,11 +202,11 @@ class Schema26 extends Schema25
       List<ISimpleXMLElement> children = e.getElementContent();
       if(EL_BOX.equals(elTag))
          return(children.size() == 3 && 
-            EL_SYMBOL.equals(((BasicSchemaElement) children.get(0)).getTag()) &&
-            EL_EBAR.equals(((BasicSchemaElement) children.get(1)).getTag()) &&
-            EL_VIOLIN.equals(((BasicSchemaElement) children.get(2)).getTag()));
+            EL_SYMBOL.equals(children.get(0).getTag()) &&
+            EL_EBAR.equals(children.get(1).getTag()) &&
+            EL_VIOLIN.equals(children.get(2).getTag()));
       else if(EL_SCATTER.equals(elTag))
-         return(children.size() == 1 && EL_SCATTERLINE.equals(((BasicSchemaElement) children.get(0)).getTag()));
+         return(children.size() == 1 && EL_SCATTERLINE.equals(children.get(0).getTag()));
       
       return(super.hasRequiredChildren(e));
    }
@@ -221,7 +221,7 @@ class Schema26 extends Schema25
    @Override public boolean isValidChildAtIndex(BasicSchemaElement e, String childTag, int index)
    {
       String elTag = e.getTag();
-      SchemaElementInfo eInfo = (SchemaElementInfo) getSchemaElementInfo(elTag);
+      SchemaElementInfo eInfo = getSchemaElementInfo(elTag);
       if(!eInfo.isChildAllowed(childTag)) return(false);
       if(EL_BOX.equals(elTag))
          return((EL_SYMBOL.equals(childTag) && index == 0) || (EL_EBAR.equals(childTag) && index == 1) ||
@@ -286,7 +286,7 @@ class Schema26 extends Schema25
          throw new XMLException("A schema instance can only migrate from the previous version.");
 
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {

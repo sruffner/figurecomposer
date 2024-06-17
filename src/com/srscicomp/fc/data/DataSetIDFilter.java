@@ -29,7 +29,7 @@ public class DataSetIDFilter extends DocumentFilter
    {
       int currDocLen = fb.getDocument().getLength();
       
-      if(s.length() == 0)
+      if(s.isEmpty())
       {
          // if replacement string is empty, then we're simply removing characters. This is OK as long as the result is 
          // not an empty string.

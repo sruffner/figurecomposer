@@ -40,7 +40,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 final class FGNPlottableDSCard extends JPanel implements ActionListener, FocusListener
 {
    /** Construct an editor panel used to edit the data set rendered by a data presentation node.. */
@@ -160,7 +159,7 @@ final class FGNPlottableDSCard extends JPanel implements ActionListener, FocusLi
    private FGNPlottableData plottableNode = null;
 
    /** Text field that displays/edits the data set's identifier. */
-   private JTextField idField = null;
+   private final JTextField idField;
    
    /** <i>View</i> button invokes a modal dialog by which user can view or edit the raw data. */
    private JButton viewBtn = null;

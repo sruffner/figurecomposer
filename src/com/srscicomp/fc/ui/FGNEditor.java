@@ -14,7 +14,6 @@ import com.srscicomp.fc.fig.FGraphicNode;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 abstract class FGNEditor extends JPanel
 {
    /** A common tool tip for widget that edits the "id" attribute, which 9 different types of nodes possess. */
@@ -82,10 +81,9 @@ abstract class FGNEditor extends JPanel
    
    /**
     * This method is invoked on the current node editor panel whenever the user selects a character from the special
-    * characters tool dialog: {@link FigNodeTree.CharMapDlg}. This dialog allows the user to insert characters into
-    * text components that are not accessible from a standard keyboard. By design, the dialog is not focusable, and the
-    * selected character should only be inserted into a text component that has the current keyboard focus AND accepts
-    * such character input. 
+    * characters tool dialog. This dialog allows the user to insert characters into text components that are not
+    * accessible from a standard keyboard. By design, the dialog is not focusable, and the selected character should
+    * only be inserted into a text component that has the current keyboard focus AND accepts such character input.
     * 
     * <p><i>The default implementation does nothing.</i> If a subclass representing a node-specific editor includes a
     * text widget that accepts special characters AND that text component currently has the keyboard focus, then it

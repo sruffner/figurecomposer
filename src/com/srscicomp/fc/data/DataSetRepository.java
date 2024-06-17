@@ -5,12 +5,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import com.srscicomp.common.util.NeverOccursException;
+import com.srscicomp.common.util.Utilities;
 
 /**
  * <b>DataSetRepository</b> wraps a single binary file containing a repository of <i>FigureComposer</i> data sets. This 
@@ -71,7 +71,7 @@ import com.srscicomp.common.util.NeverOccursException;
  *    block is unallocated or unused, this section has no valid content. The breakdown:
  *    <ul>
  *       <li>Bytes 55-16: ID string, null-terminated and padded if the ID is less than 40 characters long. Single-byte 
- *       ASCII characters. Must satisfy the constraints defined by {@link DataSet#isValidIDString()}.</li>
+ *       ASCII characters. Must satisfy the constraints defined by {@link DataSet#isValidIDString(String)}.</li>
  *       <li>Bytes 59-56: (int) Data format code. See {@link DataSet.Fmt} for the set of recognized values.</li>
  *       <li>Bytes 63-60: (int) Number of rows in data matrix, <i>N</i>. See {@link DataSet#getDataLength()}.</li>
  *       <li>Bytes 67-64: (int) Number of columns in data matrix, <i>M</i>. See {@link DataSet#getDataBreadth()}.</li>
@@ -126,7 +126,6 @@ public class DataSetRepository
       catch(IOException ioe)
       {
          System.out.println("Unexpected IO error while reading file path:\n   " + ioe.getMessage() + "\nQUITTING!");
-         fname = null;
       }
       if(fname == null)
          System.exit(0);
@@ -161,18 +160,11 @@ public class DataSetRepository
          String command = "??";
          String arg1 = null;
          String arg2 = null;
-         String arg3 = null;     // rest of command line args, with one space between each
          StringTokenizer tokenizer = new StringTokenizer(input);
          int nTokens = tokenizer.countTokens();
          if(nTokens > 0) command = tokenizer.nextToken();
          if(nTokens > 1) arg1 = tokenizer.nextToken();
          if(nTokens > 2) arg2 = tokenizer.nextToken();
-         if(nTokens > 3)
-         {
-            arg3 = "";
-            while(tokenizer.hasMoreTokens()) arg3 += tokenizer.nextToken() + " ";
-            arg3 = arg3.trim();
-         }
          
          // process command
          if("help".equals(command))
@@ -229,7 +221,7 @@ public class DataSetRepository
             int uid = -1;
             if(arg1 != null)
             {
-               try { uid = Integer.parseInt(arg1); } catch(NumberFormatException nfe) {}
+               try { uid = Integer.parseInt(arg1); } catch(NumberFormatException ignored) {}
             }
             if(uid <= 0)
             {
@@ -240,8 +232,8 @@ public class DataSetRepository
             int n = 0;
             if(arg2 != null)
             {
-               try { n = Integer.parseInt(arg2); } catch(NumberFormatException nfe) {}
-               n = (n < 0) ? 0 : (n>200 ? 200 : n);
+               try { n = Integer.parseInt(arg2); } catch(NumberFormatException ignored) {}
+               n = Utilities.rangeRestrict(0, 200, n);
             }
             
             DataSet ds = dnf.get(uid);
@@ -275,7 +267,7 @@ public class DataSetRepository
             int n = 0;
             if(arg1 != null)
             {
-               try { n = Integer.parseInt(arg1); } catch(NumberFormatException nfe) {}
+               try { n = Integer.parseInt(arg1); } catch(NumberFormatException ignored) {}
                n = (n < 1) ? 0 : (n>200 ? 0 : n);
             }
             if(n == 0)
@@ -287,7 +279,7 @@ public class DataSetRepository
             int m = 0;
             if(arg2 != null)
             {
-               try { m = Integer.parseInt(arg2); } catch(NumberFormatException nfe) {}
+               try { m = Integer.parseInt(arg2); } catch(NumberFormatException ignored) {}
                m = (m < 2) ? 0 : (m>100 ? 0 : m);
             }
             if(m == 0)
@@ -339,7 +331,7 @@ public class DataSetRepository
             int uid = -1;
             if(arg1 != null)
             {
-               try { uid = Integer.parseInt(arg1); } catch(NumberFormatException nfe) {}
+               try { uid = Integer.parseInt(arg1); } catch(NumberFormatException ignored) {}
             }
             if(uid <= 0)
             {
@@ -368,8 +360,8 @@ public class DataSetRepository
             int n = 0;
             if(arg1 != null)
             {
-               try { n = Integer.parseInt(arg1); } catch(NumberFormatException nfe) {}
-               n = (n < 0) ? 0 : (n>200 ? 200 : n);
+               try { n = Integer.parseInt(arg1); } catch(NumberFormatException ignored) {}
+               n = Utilities.rangeRestrict(0, 200, n);
             }
             if(n == 0)
             {
@@ -456,13 +448,11 @@ public class DataSetRepository
       
       int expectedTagLE = isHubRepo ? TAG_DNX_LE : TAG_DNR_LE;
       boolean ok = false;
-      RandomAccessFile raf = null;
-      try
+      try(RandomAccessFile raf = new RandomAccessFile(f, "r"))
       {
-         raf = new RandomAccessFile(f, "r");
          FileChannel fc = raf.getChannel();
-         
-         // read in and check file header: tag and num sections in file. Fix endianness. 
+
+         // read in and check file header: tag and num sections in file. Fix endianness.
          bb.limit(TAGSZ);
          if(TAGSZ != fc.read(bb))
             throw new IOException("Bad file header");
@@ -489,11 +479,7 @@ public class DataSetRepository
 
          ok = true;
       }
-      catch(IOException ioe) { }
-      finally
-      {
-         try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
-      }
+      catch(IOException ignored) {}
       
       return(ok);
    }
@@ -520,7 +506,7 @@ public class DataSetRepository
       allocatedBlocks = null;
       uid2BlockMap = null;
       failureReason = null;
-      datasetCache = new HashMap<Integer, SoftReference<DataSet>>();
+      datasetCache = new HashMap<>();
    }
    
    /**
@@ -572,7 +558,7 @@ public class DataSetRepository
     * section index and will disable this file proxy if any anomalies are detected. If the physical file does not yet 
     * exist, this method will create it, writing the 8-byte file tag and an initial section index, indicating that no 
     * dataset blocks have been allocated yet.</p>
-    * @returns True if successful or if file has already been preloaded; false if an IO error occurs, if file content
+    * @return True if successful or if file has already been preloaded; false if an IO error occurs, if file content
     * is not consistent with the expected dataset repository file format, or if this file proxy was already rendered 
     * unusable by a previous catastrophic error.
     */
@@ -581,36 +567,33 @@ public class DataSetRepository
       if(failureReason != null) return(false);
       if(allocatedBlocks != null) return(true);
       
-      boolean needInit = !filePath.isFile(); 
-      RandomAccessFile raf = null;
-      try
+      boolean needInit = !filePath.isFile();
+      try(RandomAccessFile raf = new RandomAccessFile(filePath, "rwd"))
       {
-         raf = new RandomAccessFile(filePath, "rwd");
          FileChannel fc = raf.getChannel();
          fc.position(0);
-         
+
          ByteBuffer bb = getByteBuffer();
 
          if(needInit)
          {
             // file just created. Write the file tag and a 500-entry section index with no dataset blocks allocated.
-            IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, (long)0, 0, null);
-            
-            bb.limit(TAGSZ + SECTIONSZ*INDEXENTRYSZ);
+            IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, 0, 0, null);
+
+            bb.limit(TAGSZ + SECTIONSZ * INDEXENTRYSZ);
             bb.putInt(tagLE);
             bb.putInt(1);
-            for(int i=0; i<SECTIONSZ; i++) putIndexEntry(bb, unallocated);
+            for(int i = 0; i < SECTIONSZ; i++) putIndexEntry(bb, unallocated);
             bb.position(0);
-            if(TAGSZ + SECTIONSZ*INDEXENTRYSZ != fc.write(bb))
+            if(TAGSZ + SECTIONSZ * INDEXENTRYSZ != fc.write(bb))
                throw new IOException("Unexpected error while initializing empty repository file");
-            
+
             numSections = 1;
-            allocatedBlocks = new ArrayList<IndexEntry>();
-            uid2BlockMap = new HashMap<Integer, IndexEntry>();
-         }
-         else
+            allocatedBlocks = new ArrayList<>();
+            uid2BlockMap = new HashMap<>();
+         } else
          {
-            // read in and check file header: tag and num sections in file. Fix endianness. 
+            // read in and check file header: tag and num sections in file. Fix endianness.
             bb.limit(TAGSZ);
             if(TAGSZ != fc.read(bb))
                throw new IOException("Unexpected EOF while reading file header");
@@ -627,15 +610,15 @@ public class DataSetRepository
             int nSections = bb.getInt();
             if(nSections <= 0) throw new IOException("Invalid number of data sections: " + nSections);
 
-            // parse the block index of each existing data section and create list of all allocated blocks. Validate 
-            // block index structure: first block starts immediately after index. Offset of next allocated block = 
-            // offset of prev allocated block + size of prev allocated block. Once an unallocated block is encountered, 
+            // parse the block index of each existing data section and create list of all allocated blocks. Validate
+            // block index structure: first block starts immediately after index. Offset of next allocated block =
+            // offset of prev allocated block + size of prev allocated block. Once an unallocated block is encountered,
             // all remaining blocks in index must be unallocated. Also, if there is more than one data section, only the
             // last section can have any unallocated blocks, and the block index for section N begins immediately after
             // the last allocated block of section N-1.
             //
-            List<IndexEntry> allocated = new ArrayList<IndexEntry>();
-            HashMap<Integer, IndexEntry> blockMap = new HashMap<Integer, IndexEntry>();
+            List<IndexEntry> allocated = new ArrayList<>();
+            HashMap<Integer, IndexEntry> blockMap = new HashMap<>();
             IndexEntry lastEntry = null;
             int i = 0;
             boolean gotUnallocBlock = false;
@@ -646,36 +629,35 @@ public class DataSetRepository
 
                // read in the block index for the current section
                bb.clear();
-               bb.limit(SECTIONSZ*INDEXENTRYSZ);
-               if(SECTIONSZ*INDEXENTRYSZ != fc.read(bb))
+               bb.limit(SECTIONSZ * INDEXENTRYSZ);
+               if(SECTIONSZ * INDEXENTRYSZ != fc.read(bb))
                   throw new IOException("Unexpected EOF while reading block index for data section " + i);
                bb.position(0);
-               
+
                // consume and validate section's block index, appending allocated blocks and update uid-to-block hash
-               for(int j=0; j<SECTIONSZ; j++)
+               for(int j = 0; j < SECTIONSZ; j++)
                {
                   IndexEntry entry = getIndexEntry(bb);
                   if(entry == null)
                      throw new IOException("Could not parse index entry at block " + j + " in data section " + i);
-                  
+
                   if(entry.uid < UNOCCUPIED_ID || gotUnallocBlock)
                   {
                      gotUnallocBlock = true;
                      if(entry.uid != UNALLOCATED_ID || entry.offset != 0 || entry.size != 0)
                         throw new IOException("Bad unallocated entry at pos=" + i + " in block index ");
-                     if(i != nSections - 1) 
+                     if(i != nSections - 1)
                         throw new IOException(
-                           "Found unallocated block outside terminal data section (section " + i + ", blk " + j + ")");
-                  }
-                  else
+                              "Found unallocated block outside terminal data section (section " + i + ", blk " + j + ")");
+                  } else
                   {
-                     long expected = 0;
+                     long expected;
                      if(j != 0) expected = lastEntry.offset + lastEntry.size;
-                     else if(i==0) expected = TAGSZ + SECTIONSZ*INDEXENTRYSZ;
-                     else expected = lastEntry.offset + lastEntry.size + SECTIONSZ*INDEXENTRYSZ;
-                     
+                     else if(i == 0) expected = TAGSZ + SECTIONSZ * INDEXENTRYSZ;
+                     else expected = lastEntry.offset + lastEntry.size + SECTIONSZ * INDEXENTRYSZ;
+
                      if(entry.offset != expected)
-                        throw new IOException("Bad file offset in index entry: section " + i + ", block " + j + 
+                        throw new IOException("Bad file offset in index entry: section " + i + ", block " + j +
                               ";\n  expected offset = " + expected + ", observed = " + entry.offset);
 
                      allocated.add(entry);
@@ -683,10 +665,10 @@ public class DataSetRepository
                      lastEntry = entry;
                   }
                }
-               
+
                ++i;
             }
-            
+
             numSections = nSections;
             allocatedBlocks = allocated;
             uid2BlockMap = blockMap;
@@ -696,10 +678,6 @@ public class DataSetRepository
       {
          failureReason = ioe.getMessage() + "\n  File: " + filePath;
          clearCache();
-      }
-      finally
-      {
-         try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
       }
       
       return(failureReason == null);
@@ -749,7 +727,7 @@ public class DataSetRepository
    
    /**
     * Get the unique integer identifiers (UIDs) for all datasets currently stored in this dataset repository file.
-    * @param If non-null, all dataset UIDs are appended to this list, in no particular order.
+    * @param uids If non-null, all dataset UIDs are appended to this list, in no particular order.
     * @return If the argument is non-null, it is returned with the UIDs added. If the argument is null, a new list 
     * object is returned holding the UIDs. If the repository has been rendered unusable by a previous operational 
     * failure, this method returns null.
@@ -759,7 +737,7 @@ public class DataSetRepository
       preload();
       if(isUnusable()) return(null);
       
-      List<Integer> uidList = (uids != null) ? uids : new ArrayList<Integer>();
+      List<Integer> uidList = (uids != null) ? uids : new ArrayList<>();
       uidList.addAll(uid2BlockMap.keySet());
       return(uidList);
    }
@@ -817,10 +795,10 @@ public class DataSetRepository
       
       // prepare index entry holding dataset ID and block offset and size. If block is yet unallocated, its offset will
       // be at EOF and its size will match the dataset's required storage size.
-      IndexEntry entryAdded = null;
+      IndexEntry entryAdded;
       if(block == allocatedBlocks.size())
       {
-         if(allocatedBlocks.size() == 0) 
+         if(allocatedBlocks.isEmpty())
             entryAdded = new IndexEntry(uid, TAGSZ + SECTIONSZ*INDEXENTRYSZ, size, info);
          else
          {
@@ -924,32 +902,25 @@ public class DataSetRepository
       offset += block*INDEXENTRYSZ;
       
       // open the file and overwrite the block index entry
-      RandomAccessFile raf = null;
-      try
+      try(RandomAccessFile raf = new RandomAccessFile(filePath, "rwd"))
       {
          // open file and reposition to beginning of the block index entry to be updated
-         raf = new RandomAccessFile(filePath, "rwd");
          FileChannel fc = raf.getChannel();
          fc.position(offset);
-         
+
          ByteBuffer bb = getByteBuffer();
          bb.clear();
          bb.limit(INDEXENTRYSZ);
          if(!putIndexEntry(bb, entry))
             throw new IOException("Unexpected error while preparing index entry");
          bb.position(0);
-         if(INDEXENTRYSZ != fc.write(bb)) 
+         if(INDEXENTRYSZ != fc.write(bb))
             throw new IOException("Unexpected error while writing index entry");
-      }
-      catch(IOException ioe)
+      } catch(IOException ioe)
       {
-         failureReason = "Failed to update block index entry (section " + section + ", block " + block +  "):\n  " + 
+         failureReason = "Failed to update block index entry (section " + section + ", block " + block + "):\n  " +
                ioe.getMessage();
          clearCache();
-      }
-      finally 
-      {
-         try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
       }
 
       // remove the affected dataset from the dataset cache if it is there, replacing it with the renamed dataset
@@ -1057,17 +1028,16 @@ public class DataSetRepository
       
       // prepare compacted index and corresponding UID-to-block hashmap. Recover unused space in each occupied block!
       long compactedOffset = TAGSZ;
-      List<IndexEntry> compactedIndex = new ArrayList<IndexEntry>();
-      HashMap<Integer, IndexEntry> compactedMap = new HashMap<Integer, IndexEntry>();
-      for(int i=0; i<allocatedBlocks.size(); i++)
+      List<IndexEntry> compactedIndex = new ArrayList<>();
+      HashMap<Integer, IndexEntry> compactedMap = new HashMap<>();
+      for(IndexEntry entry : allocatedBlocks)
       {
-         IndexEntry entry = allocatedBlocks.get(i);
          if(entry.uid > UNOCCUPIED_ID)
          {
             // if next block will start a new data section, we have to make room for that section's block index!
             int nBlks = compactedIndex.size();
-            if((nBlks % SECTIONSZ) == 0) compactedOffset += SECTIONSZ*INDEXENTRYSZ;
-            
+            if((nBlks % SECTIONSZ) == 0) compactedOffset += SECTIONSZ * INDEXENTRYSZ;
+
             IndexEntry entry2 = new IndexEntry(entry.uid, compactedOffset, computeStorageSize(entry.info), entry.info);
             compactedOffset += entry2.size;
             compactedIndex.add(entry2);
@@ -1107,7 +1077,7 @@ public class DataSetRepository
          
          // write each data section into the compacted file, transferring data from old file. Each section begins with
          // its block index.
-         IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, (long)0, 0, null);
+         IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, 0, 0, null);
          for(i=0; i<nSections; i++)
          {
             // first write the block index for the data section
@@ -1149,8 +1119,8 @@ public class DataSetRepository
       }
       finally
       {
-         try { if(srcRAF != null) srcRAF.close(); } catch(IOException ioe) {}
-         try { if(dstRAF != null) dstRAF.close(); } catch(IOException ioe) {}
+         try { if(srcRAF != null) srcRAF.close(); } catch(IOException ignored) {}
+         try { if(dstRAF != null) dstRAF.close(); } catch(IOException ignored) {}
       }
       
       if(ok)
@@ -1212,7 +1182,7 @@ public class DataSetRepository
          
          // move to the end of the file and write the block index for the new section. No blocks are allocated yet.
          fc.position(fc.size());
-         IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, (long)0, 0, null);
+         IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, 0, 0, null);
          bb.clear();
          bb.limit(SECTIONSZ*INDEXENTRYSZ);
          for(int i=0; i<SECTIONSZ; i++) if(!putIndexEntry(bb, unallocated))
@@ -1229,7 +1199,7 @@ public class DataSetRepository
       }
       finally
       {
-         try { if(raf != null) raf.close(); } catch(IOException ioe) {}
+         try { if(raf != null) raf.close(); } catch(IOException ignored) {}
       }
       
       if(ok) ++numSections;
@@ -1275,54 +1245,48 @@ public class DataSetRepository
       if(!(canCoalesce || lastEntryUnoccupied)) return(-1);
       
       // handle special case: last block in last section is unoccupied, and coalescing is not possible.
-      if(lastEntryUnoccupied && !canCoalesce)
+      if(!canCoalesce)
       {
-         RandomAccessFile raf = null;
-         try
+         try(RandomAccessFile raf = new RandomAccessFile(filePath, "rwd"))
          {
-            raf = new RandomAccessFile(filePath, "rwd");
             FileChannel fc = raf.getChannel();
-            
+
             // position file pointer to the start of the last entry of last data section
             long sectionOffset = TAGSZ;
             if(numSections > 1)
             {
-               IndexEntry e = allocatedBlocks.get((numSections-1)*SECTIONSZ -1);
+               IndexEntry e = allocatedBlocks.get((numSections - 1) * SECTIONSZ - 1);
                sectionOffset = e.offset + e.size;
             }
-            fc.position(sectionOffset + (SECTIONSZ-1)*INDEXENTRYSZ);
-            
+            fc.position(sectionOffset + (SECTIONSZ - 1) * INDEXENTRYSZ);
+
             // mark that entry as unallocated
             ByteBuffer bb = getByteBuffer();
             bb.limit(INDEXENTRYSZ);
-            if(!putIndexEntry(bb, new IndexEntry(UNALLOCATED_ID, (long)0, 0, null)))
+            if(!putIndexEntry(bb, new IndexEntry(UNALLOCATED_ID, 0, 0, null)))
                throw new IOException("Unexpected error while preparing block index");
             bb.position(0);
             if(INDEXENTRYSZ != fc.write(bb))
                throw new IOException("Unexpected error while writing file index chunk");
-            
+
             // truncate file at the end of the next-to-last block in the last data section
-            IndexEntry e = allocatedBlocks.get(allocatedBlocks.size()-2);
+            IndexEntry e = allocatedBlocks.get(allocatedBlocks.size() - 2);
             fc.truncate(e.offset + e.size);
-            
+
             // the last allocated block is now unallocated!
-            allocatedBlocks.remove(allocatedBlocks.size()-1);
+            allocatedBlocks.remove(allocatedBlocks.size() - 1);
          }
          catch(IOException ioe)
          {
             failureReason = "Failed while coalescing:\n   " + ioe.getMessage() + "\n   File: " + filePath;
             clearCache();
          }
-         finally
-         {
-            try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
-         }
          
          return((failureReason == null) ? allocatedBlocks.size() : -1);
       }
       
       // coalesce the last section's block index. We'll have gained at least one unallocated block as a result.
-      List<IndexEntry> updated = new ArrayList<IndexEntry>();
+      List<IndexEntry> updated = new ArrayList<>();
       IndexEntry unoccupied = null;
       int i = (numSections-1)*SECTIONSZ;
       while(i < numSections*SECTIONSZ)
@@ -1353,43 +1317,37 @@ public class DataSetRepository
       if(unoccupied != null) updated.add(unoccupied);
       
       // write the coalesced block index to the physical file
-      RandomAccessFile raf = null;
-      try
+      try(RandomAccessFile raf = new RandomAccessFile(filePath, "rwd"))
       {
-         raf = new RandomAccessFile(filePath, "rwd");
          FileChannel fc = raf.getChannel();
-         
+
          // position file pointer to the start of the block index of the last data section
          long sectionOffset = TAGSZ;
          if(numSections > 1)
          {
-            IndexEntry e = allocatedBlocks.get((numSections-1)*SECTIONSZ -1);
+            IndexEntry e = allocatedBlocks.get((numSections - 1) * SECTIONSZ - 1);
             sectionOffset = e.offset + e.size;
          }
          fc.position(sectionOffset);
-         
+
          ByteBuffer bb = getByteBuffer();
-         bb.limit(SECTIONSZ*INDEXENTRYSZ);
-         
-         IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, (long)0, 0, null);
-         for(i=0; i<SECTIONSZ; i++) 
+         bb.limit(SECTIONSZ * INDEXENTRYSZ);
+
+         IndexEntry unallocated = new IndexEntry(UNALLOCATED_ID, 0, 0, null);
+         for(i = 0; i < SECTIONSZ; i++)
          {
             IndexEntry entry = (i < updated.size()) ? updated.get(i) : unallocated;
             if(!putIndexEntry(bb, entry))
                throw new IOException("Unexpected error while preparing block index");
          }
          bb.position(0);
-         if(SECTIONSZ*INDEXENTRYSZ != fc.write(bb))
+         if(SECTIONSZ * INDEXENTRYSZ != fc.write(bb))
             throw new IOException("Unexpected error while writing file index chunk");
       }
       catch(IOException ioe)
       {
          failureReason = "Failed while coalescing:\n   " + ioe.getMessage() + "\n   File: " + filePath;
          clearCache();
-      }
-      finally
-      {
-         try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
       }
       
       // return immediately if file update failed
@@ -1432,15 +1390,13 @@ public class DataSetRepository
 
       // store dataset in cache now
       storeInCache(entry.uid, ds);
-      
-      RandomAccessFile raf = null;
-      try
+
+      try(RandomAccessFile raf = new RandomAccessFile(filePath, "rwd"))
       {
          // open file and reposition to beginning of target block
-         raf = new RandomAccessFile(filePath, "rwd");
          FileChannel fc = raf.getChannel();
          fc.position(entry.offset);
-         
+
          // write the dataset UID
          ByteBuffer bb = getByteBuffer();
          bb.limit(4);
@@ -1448,16 +1404,16 @@ public class DataSetRepository
          bb.position(0);
          if(4 != fc.write(bb)) throw new IOException("Unexpected error while writing UID to allocated block");
          bb.clear();
-         
+
          // write the raw data array in CHUNKSZ chunks
          int nBytes = computeStorageSize(entry.info) - 4;
          int nWrt = 0;
          while(nWrt < nBytes)
          {
-            int nChunk = Math.min(CHUNKSZ, nBytes-nWrt);
+            int nChunk = Math.min(CHUNKSZ, nBytes - nWrt);
             bb.limit(nChunk);
             FloatBuffer fbuf = bb.asFloatBuffer();
-            ds.copyRawData(nWrt/4, nChunk/4, fbuf);
+            ds.copyRawData(nWrt / 4, nChunk / 4, fbuf);
             bb.position(0);
             if(nChunk != fc.write(bb)) throw new IOException("Unexpected error while writing dataset raw data");
             bb.clear();
@@ -1470,28 +1426,24 @@ public class DataSetRepository
          long offset = TAGSZ;
          if(iSect > 0)
          {
-            IndexEntry e = allocatedBlocks.get(iSect*SECTIONSZ - 1);
+            IndexEntry e = allocatedBlocks.get(iSect * SECTIONSZ - 1);
             offset = e.offset + e.size;
          }
          offset += (idx % SECTIONSZ) * INDEXENTRYSZ;
-         
+
          fc.position(offset);
          bb.clear();
          bb.limit(INDEXENTRYSZ);
          if(!putIndexEntry(bb, entry))
             throw new IOException("Unexpected error while preparing index entry");
          bb.position(0);
-         if(INDEXENTRYSZ != fc.write(bb)) 
+         if(INDEXENTRYSZ != fc.write(bb))
             throw new IOException("Unexpected error while writing index entry");
       }
       catch(IOException ioe)
       {
          failureReason = "Failed to write dataset in block " + idx + ":\n  " + ioe.getMessage();
          clearCache();
-      }
-      finally 
-      {
-         try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
       }
       
       return(failureReason == null);
@@ -1511,15 +1463,13 @@ public class DataSetRepository
       // try in-memory cache first!
       DataSet ds = this.retrieveFromCache(entry.uid);
       if(ds != null) return(ds);
-      
-      RandomAccessFile raf = null;
-      try
+
+      try(RandomAccessFile raf = new RandomAccessFile(filePath, "r"))
       {
          // open file and reposition to beginning of target block
-         raf = new RandomAccessFile(filePath, "r");
          FileChannel fc = raf.getChannel();
          fc.position(entry.offset);
-         
+
          // read the dataset UID and verify
          ByteBuffer bb = getByteBuffer();
          bb.limit(4);
@@ -1528,19 +1478,19 @@ public class DataSetRepository
          int uid = bb.getInt();
          if(uid != entry.uid) throw new IOException("Retrieved dataset UID does not match index entry!");
          bb.clear();
-         
+
          // read the raw data array in CHUNKSZ chunks
          float[] fData = new float[entry.info.getDataArraySize()];
          int nBytes = fData.length * 4;
          int nWrt = 0;
          while(nWrt < nBytes)
          {
-            int nChunk = Math.min(CHUNKSZ, nBytes-nWrt);
+            int nChunk = Math.min(CHUNKSZ, nBytes - nWrt);
             bb.limit(nChunk);
             if(nChunk != fc.read(bb)) throw new IOException("Unexpected error while reading dataset raw data");
             bb.position(0);
             FloatBuffer fbuf = bb.asFloatBuffer();
-            fbuf.get(fData, nWrt/4, nChunk/4);
+            fbuf.get(fData, nWrt / 4, nChunk / 4);
             nWrt += nChunk;
             bb.clear();
          }
@@ -1552,13 +1502,9 @@ public class DataSetRepository
       }
       catch(IOException ioe)
       {
-         failureReason = "Failed to read dataset (UID=" + entry.uid + ") at offset " + 
+         failureReason = "Failed to read dataset (UID=" + entry.uid + ") at offset " +
                entry.offset + ":\n  " + ioe.getMessage();
          clearCache();
-      }
-      finally 
-      {
-         try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
       }
       
       return(ds);
@@ -1578,24 +1524,22 @@ public class DataSetRepository
       
       int iSect = idx / SECTIONSZ;
       int iBlk = idx % SECTIONSZ;
-      RandomAccessFile raf = null;
-      try
+      try(RandomAccessFile raf = new RandomAccessFile(filePath, "rwd"))
       {
-         raf = new RandomAccessFile(filePath, "rwd");
          FileChannel fc = raf.getChannel();
 
-         // find offset to the relevant block index entry. If it is not in the first data section, we must examine last 
+         // find offset to the relevant block index entry. If it is not in the first data section, we must examine last
          // block in preceding section to find the offset to start of the section containing the entry to be updated.
          long offset = TAGSZ;
          if(iSect > 0)
          {
-            IndexEntry e = allocatedBlocks.get(iSect*SECTIONSZ - 1);
+            IndexEntry e = allocatedBlocks.get(iSect * SECTIONSZ - 1);
             offset = e.offset + e.size;
          }
          offset += iBlk * INDEXENTRYSZ;
-         
+
          fc.position(offset);
-         
+
          ByteBuffer bb = getByteBuffer();
          bb.limit(4);
          bb.putInt(UNOCCUPIED_ID);
@@ -1604,13 +1548,9 @@ public class DataSetRepository
       }
       catch(IOException ioe)
       {
-         failureReason = "Failed to unoccupy allocated block (section " + iSect + ", block " + iBlk + "):\n  " + 
+         failureReason = "Failed to unoccupy allocated block (section " + iSect + ", block " + iBlk + "):\n  " +
                ioe.getMessage();
          clearCache();
-      }
-      finally 
-      {
-         try{ if(raf != null) raf.close(); } catch(IOException ioe) {}
       }
       
       return(failureReason == null);
@@ -1631,7 +1571,7 @@ public class DataSetRepository
       if(bb == null)
       {
          bb = ByteBuffer.allocate(CHUNKSZ);
-         softBB = new SoftReference<ByteBuffer>(bb);
+         softBB = new SoftReference<>(bb);
       }
       bb.clear();
       if(byteOrder == null) byteOrder = ByteOrder.nativeOrder();
@@ -1643,7 +1583,7 @@ public class DataSetRepository
     * Store a dataset in the repository's in-memory dataset cache. If the cache is at capacity, at least one entry is 
     * removed to make room.
     * @param uid Unique identifier of the dataset to be stored.
-    * @oaram ds The dataset to be stored in cache.
+    * @param ds The dataset to be stored in cache.
     */
    private void storeInCache(int uid, DataSet ds)
    {
@@ -1652,7 +1592,7 @@ public class DataSetRepository
       if(ref != null)
       {
          ref.clear();
-         datasetCache.put(uid, new SoftReference<DataSet>(ds));
+         datasetCache.put(uid, new SoftReference<>(ds));
          return;
       }
       
@@ -1683,7 +1623,7 @@ public class DataSetRepository
       }
       
       // store the dataset in the cache
-      datasetCache.put(uid, new SoftReference<DataSet>(ds));
+      datasetCache.put(uid, new SoftReference<>(ds));
    }
    
    /**
@@ -1722,7 +1662,7 @@ public class DataSetRepository
    }
    
    /** Absolute pathname of the repository file. */
-   private File filePath;
+   private final File filePath;
    
    /** Little-endian file tag code for this repository file. It has one of two possible values. Set at construction. */
    private final int tagLE;
@@ -1745,10 +1685,10 @@ public class DataSetRepository
    private List<IndexEntry> allocatedBlocks;
    
    /** Maps dataset UID to the index entry which defines the file block in which the dataset is stored. */
-   private HashMap<Integer, IndexEntry> uid2BlockMap = null;
+   private HashMap<Integer, IndexEntry> uid2BlockMap;
    
    /** Cache of recent datasets. Maintained as soft references so they can be garbage-collected when necessary. */
-   private HashMap<Integer, SoftReference<DataSet>> datasetCache = null;
+   private final HashMap<Integer, SoftReference<DataSet>> datasetCache;
    
    /** If non-null, this describes why last attempted operation failed. Once set, all further activity is disabled. */
    private String failureReason;
@@ -1829,21 +1769,16 @@ public class DataSetRepository
       if(uid <= UNOCCUPIED_ID)
       {
          bb.position(bb.position() + DATASETINFOSZ);
-         IndexEntry entry = new IndexEntry(uid, offset, size, null);
-         return(entry);
+         return(new IndexEntry(uid, offset, size, null));
       }
       
-      String id = null;
+      String id;
       byte[] idBytes = new byte[DataSet.MAXIDLEN+1];
       idBytes[DataSet.MAXIDLEN] = (byte) '\0';
       bb.get(idBytes, 0, DataSet.MAXIDLEN);
-      try
-      {
-         id = new String(idBytes, "US-ASCII");
-         id = id.trim();
-         if(!DataSet.isValidIDString(id)) return(null); 
-      }
-      catch(UnsupportedEncodingException uee) { throw new NeverOccursException(uee); }
+      id = new String(idBytes, StandardCharsets.US_ASCII);
+      id = id.trim();
+      if(!DataSet.isValidIDString(id)) return(null);
 
       DataSet.Fmt fmt = DataSet.Fmt.getFormatByIntCode(bb.getInt());
       if(fmt == null) return(null);
@@ -1881,14 +1816,10 @@ public class DataSetRepository
       }
       else
       {
-         try 
-         { 
-            byte[] id = entry.info.getID().getBytes("US-ASCII"); 
-            bb.put(id);
-            for(int i=id.length; i<DataSet.MAXIDLEN; i++) bb.put((byte)0);
-         } 
-         catch(UnsupportedEncodingException uee) { return(false); }
-         
+         byte[] id = entry.info.getID().getBytes(StandardCharsets.US_ASCII);
+         bb.put(id);
+         for(int i=id.length; i<DataSet.MAXIDLEN; i++) bb.put((byte)0);
+
          bb.putInt(entry.info.getFormat().getIntCode());
          bb.putInt(entry.info.getDataLength());
          bb.putInt(entry.info.getDataBreadth());
@@ -1908,7 +1839,7 @@ public class DataSetRepository
       /** UID of dataset stored in the file block defined by this index. -1 == unallocated, 0 = allocated but unused. */
       int uid;
       /** Offset in bytes from start of file to first byte of file block. 0 if block not allocated. */
-      long offset;
+      final long offset;
       /** File block size in bytes. 0 if block not allocated. */
       int size;
       /** Summary info on dataset stored in the file block defined by this index. Ignore if block is unoccupied. */

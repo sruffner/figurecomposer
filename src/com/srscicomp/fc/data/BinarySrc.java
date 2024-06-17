@@ -190,7 +190,7 @@ class BinarySrc implements IDataSrc
    }
    
    /** Delegate object that handles all file I/O with the underlying data set repository file. */
-   private DataSetRepository repository = null;
+   private final DataSetRepository repository;
    
    /** Maps data set ID strings to the unique positive integer ID under which data set is stored in repository. */
    private HashMap<String, Integer> dsid2uidMap = null;
@@ -229,7 +229,7 @@ class BinarySrc implements IDataSrc
       
       // prepare data set ID name to integer UID hash map, verifying that no two data sets have the same ID string
       int[] uids = repository.getUIDs();
-      dsid2uidMap = new HashMap<String, Integer>();
+      dsid2uidMap = new HashMap<>();
       for(int uid : uids)
       {
          DataSetInfo dsi = repository.getDataSetInfo(uid);

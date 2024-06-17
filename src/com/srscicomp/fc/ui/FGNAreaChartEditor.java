@@ -26,14 +26,13 @@ import com.srscicomp.fc.uibase.FCIcons;
  * -- it is for identification purposes only and will serve to distinguish the area chart in the figure node tree GUI.
  * On the next row is an embedded {@link FGNPlottableDSCard}, which exposes the ID of the data set referenced by the 
  * node, and provides facilities for viewing and/or editing that raw data set. Below this is a numeric text field to 
- * specify the area chart's baseline value. The next two rows are occupied by the {@link TextStyleEditor} and {@line 
+ * specify the area chart's baseline value. The next two rows are occupied by the {@link TextStyleEditor} and {@link
  * DrawStyleEditor} exposing the area chart's text/font styles (for rendering area labels) and draw styles. At the 
  * bottom of the panel is a {@link DataGroupPropEditor} in which the user can view and modify the fill color and legend 
  * label for each of the area chart's individual data groups.</p>
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNAreaChartEditor extends FGNEditor implements ActionListener, FocusListener
 {
    /** Construct the bar plot node properties editor. */
@@ -64,7 +63,7 @@ class FGNAreaChartEditor extends FGNEditor implements ActionListener, FocusListe
       
       JLabel modeLabel = new JLabel("Labels: ");
       add(modeLabel);
-      labelModeCB = new JComboBox<AreaChartNode.LabelMode>(AreaChartNode.LabelMode.values());
+      labelModeCB = new JComboBox<>(AreaChartNode.LabelMode.values());
       labelModeCB.addActionListener(this);
       labelModeCB.setToolTipText("Area label display mode");
       add(labelModeCB);
@@ -201,7 +200,7 @@ class FGNAreaChartEditor extends FGNEditor implements ActionListener, FocusListe
    private AreaChartNode getAreaChartNode() { return((AreaChartNode) getEditedNode()); }
    
    /** When checked, an entry for each data group in the area chart is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** Text field in which area chart node's descriptive title is edited. */
    private JTextField titleField = null;

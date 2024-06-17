@@ -28,13 +28,12 @@ import com.srscicomp.fc.uibase.FCIcons;
  * node, and provides facilities for viewing and/or editing that raw data set. Below this are widgets for specifying the
  * bar plot's display mode, baseline, and relative bar width -- plus a check box to enable/disable rendering the bar
  * group legend labels on the bar plot itself (an alternative to showing them in the graph legend). The next two rows
- * are occupied by the {@link TextStyleEditor} and {@line DrawStyleEditor} exposing the bar plot's text/font styles (for
+ * are occupied by the {@link TextStyleEditor} and {@link DrawStyleEditor} exposing the bar plot's text/font styles (for
  * the bar group legend labels) and draw styles. At the bottom of the panel is a {@link DataGroupPropEditor} in which 
  * the user can view and modify the bar group fill colors and legend labels.</p>
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNBarPlotEditor extends FGNEditor implements ActionListener, FocusListener
 {
    /** Construct the bar plot node properties editor. */
@@ -55,7 +54,7 @@ class FGNBarPlotEditor extends FGNEditor implements ActionListener, FocusListene
       dsEditor = new FGNPlottableDSCard();
       add(dsEditor);
 
-      modeCombo = new JComboBox<BarPlotNode.DisplayMode>(BarPlotNode.DisplayMode.values());
+      modeCombo = new JComboBox<>(BarPlotNode.DisplayMode.values());
       modeCombo.addActionListener(this);
       modeCombo.setToolTipText("Select bar plot display mode");
       add(modeCombo);
@@ -230,7 +229,7 @@ class FGNBarPlotEditor extends FGNEditor implements ActionListener, FocusListene
    private BarPlotNode getBarPlotNode() { return((BarPlotNode) getEditedNode()); }
    
    /** When checked, an entry for each bar group in the bar plot is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** Text field in which bar plot node's descriptive title is edited. */
    private JTextField titleField = null;

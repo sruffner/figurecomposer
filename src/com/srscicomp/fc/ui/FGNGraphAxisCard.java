@@ -37,15 +37,7 @@ import com.srscicomp.common.ui.RGBColorPicker;
 import com.srscicomp.common.ui.TabStrip;
 import com.srscicomp.common.ui.TabStripModel;
 import com.srscicomp.common.util.Utilities;
-import com.srscicomp.fc.fig.AxisNode;
-import com.srscicomp.fc.fig.ColorBarNode;
-import com.srscicomp.fc.fig.ColorMap;
-import com.srscicomp.fc.fig.FGNGraphAxis;
-import com.srscicomp.fc.fig.FGNPreferences;
-import com.srscicomp.fc.fig.FGNodeType;
-import com.srscicomp.fc.fig.FGraphicNode;
-import com.srscicomp.fc.fig.LogTickPattern;
-import com.srscicomp.fc.fig.TickSetNode;
+import com.srscicomp.fc.fig.*;
 import com.srscicomp.fc.fig.TickSetNode.LabelFormat;
 import com.srscicomp.fc.uibase.StyledTextEditor;
 import com.srscicomp.fc.uibase.ColorMapGradientRenderer;
@@ -54,10 +46,10 @@ import com.srscicomp.fc.uibase.MeasureEditor;
 
 /**
   * A reconfigurable editor for displaying and editing the properties of a {@link FGNGraphAxis} node, which encapsulates
- * the primary or secondary axis of the 2D multi-purpose graph container {@link GraphNode}, or the color bar associated
- * with any 2D or 3D graph container. A color bar is "axis like" because it includes an axis line and is intended to
- * represent how the range of Z data is mapped to a color gradient. The editor also manages the number of tick mark sets
- * defined on the axis, along with their properties.
+ * the primary or secondary axis of the 2D multi-purpose graph container {@link com.srscicomp.fc.fig.GraphNode}, or the
+ * color bar associated with any 2D or 3D graph container. A color bar is "axis like" because it includes an axis line
+ * and is intended to represent how the range of Z data is mapped to a color gradient. The editor also manages the
+ * number of tick mark sets defined on the axis, along with their properties.
  * 
  * <p>A 2D graph axis is represented by a {@link AxisNode}, while the color bar is encapsulated as
  * a {@link ColorBarNode}; both derive from <b>FGNGraphAxis</b>. Each tick mark set is defined by a
@@ -77,19 +69,18 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * <p><i>NOTE</i>. This class intended only for use in one of the graph container editors. These are composite editors
  * that handle all the component nodes of a 2D or 3D graph. When the graph object is loaded for editing, these editors
- * must call {@link #loadAxis()} to specify the {@link FGNGraphAxis} node that should be displayed and edited here. 
+ * must call {@link #loadAxis(FGNGraphAxis)} to specify the axis node that should be displayed and edited here.
  * Also note that this is not designed to handle the axis components of a polar plot or 3D graph, which are very
  * different from the axes of a 2D graph.</p>.
  *
  * @author sruffner
  */
-@SuppressWarnings("serial")
 final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStripModel
 {
    /** Construct the properties editor for a standard 2D graph axis or color bar. */
    FGNGraphAxisCard()
    {
-      tabStrip = new TabStrip(this);
+      TabStrip tabStrip = new TabStrip(this);
       add(tabStrip);
       
       addTickSetBtn = new JButton(FCIcons.V4_ADD_22);
@@ -130,7 +121,8 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
    {
       if(fgnAxis != null && e.getSource() == addTickSetBtn)
       {
-         boolean ok = fgnAxis.getGraphicModel().insertNode(fgnAxis, FGNodeType.TICKS, -1);
+         FGraphicModel fgm = fgnAxis.getGraphicModel();
+         boolean ok = (fgm != null) && fgm.insertNode(fgnAxis, FGNodeType.TICKS, -1);
          if(ok) setSelectedTab(getNumTabs()-1);
       }
    }
@@ -263,7 +255,8 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
    {
       if(fgnAxis != null && tabPos > 0)
       {
-         if(fgnAxis.getGraphicModel().deleteNode(fgnAxis.getChildAt(tabPos-1)))
+         FGraphicModel fgm = fgnAxis.getGraphicModel();
+         if(fgm != null && fgm.deleteNode(fgnAxis.getChildAt(tabPos-1)))
          {
             if(tabPos == iSelectedTab) setSelectedTab(tabPos-1);
             else fireStateChanged();
@@ -294,27 +287,25 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
    private int iSelectedTab = -1;
    
    /** List of all change listeners registered with the tab strip model. */
-   private EventListenerList tabListeners = new EventListenerList();
+   private final EventListenerList tabListeners = new EventListenerList();
 
-   /** First tab shows the axis properties; then there's one tab for each tick mark set defined on the axis. */
-   private TabStrip tabStrip = null;
    /** Clicking this button will append a new tick set node to the axis. */
-   private JButton addTickSetBtn = null;
+   private final JButton addTickSetBtn;
   /** The container for the properties editor currently selected via the tab strip. Uses a card layout. */
    private JPanel contentPanel = null;
    
    /** The properties editor for a 2D graph's primary or secondary axis node. */
-   private XYAxisCard xyAxisCard = new XYAxisCard();
+   private final XYAxisCard xyAxisCard = new XYAxisCard();
    /** The card ID assigned to the editor for a 2D graph's primary or secondary axis node. */
    private final static String CARD_XYAXIS = "X/Y Axis";
    
    /** The properties editor specific to a graph's color bar. */
-   private ColorBarCard colorBarCard = new ColorBarCard();
+   private final ColorBarCard colorBarCard = new ColorBarCard();
    /** The card ID assigned to the color bar properties editor. */
    private final static String CARD_CBAR = "CBar";
    
    /** The properties editor for a tick mark set. */
-   private TickSetCard tickSetCard = new TickSetCard();
+   private final TickSetCard tickSetCard = new TickSetCard();
    /** The card ID assigned to the tick mark set properties editor. */
    private final static String CARD_TICKS = "Ticks";
 
@@ -612,7 +603,7 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
       }
 
       /** Numeric text field edits the axis range start. */
-      private NumericTextField startField = null;
+      private final NumericTextField startField;
 
       /** Numeric text field edits the axis range end. */
       private NumericTextField endField = null;
@@ -696,7 +687,7 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
          startField.addActionListener(this);
          p.add(startField);
          
-         cmapCombo = new JComboBox<ColorMap>(FGNPreferences.getInstance().getAllAvailableColorMaps());
+         cmapCombo = new JComboBox<>(FGNPreferences.getInstance().getAllAvailableColorMaps());
          ColorMapGradientRenderer renderer = new ColorMapGradientRenderer();
          renderer.setPreferredSize(new Dimension(150, 25));
          cmapCombo.setRenderer(renderer);
@@ -709,12 +700,12 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
          endField.addActionListener(this);
          p.add(endField);
          
-         edgeLocCombo = new JComboBox<ColorBarNode.Edge>(ColorBarNode.Edge.values());
+         edgeLocCombo = new JComboBox<>(ColorBarNode.Edge.values());
          edgeLocCombo.setToolTipText("Select the graph edge beside which color axis is drawn");
          edgeLocCombo.addActionListener(this);
          p.add(edgeLocCombo);
          
-         cmapModeCombo = new JComboBox<ColorBarNode.CMapMode>(ColorBarNode.CMapMode.values());
+         cmapModeCombo = new JComboBox<>(ColorBarNode.CMapMode.values());
          cmapModeCombo.setToolTipText("Select datum-to-color index mapping mode");
          cmapModeCombo.addActionListener(this);
          p.add(cmapModeCombo);
@@ -1031,7 +1022,7 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
       }
 
       /** Numeric text field edits the color bar's axis range start. */
-      private NumericTextField startField = null;
+      private final NumericTextField startField;
 
       /** Combo box selects which colormap is currently assigned to the color bar. */
       private JComboBox<ColorMap> cmapCombo = null;
@@ -1106,7 +1097,7 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
     * 
     * @author sruffner
     */
-   private class TickSetCard extends FGNEditor implements ActionListener, FocusListener, ItemListener
+   private static class TickSetCard extends FGNEditor implements ActionListener, FocusListener, ItemListener
    {
       TickSetCard()
       {         
@@ -1127,7 +1118,7 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
          
          JLabel toLabel = new JLabel(" to ");
          p.add(toLabel);
-         endField = new NumericTextField(-Double.MAX_VALUE, Double.MAX_VALUE, 4, -1);;
+         endField = new NumericTextField(-Double.MAX_VALUE, Double.MAX_VALUE, 4, -1);
          endField.setToolTipText("Enter end of tick set range");
          endField.addActionListener(this);
          p.add(endField);
@@ -1173,7 +1164,7 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
          gapEditor.addActionListener(this);
          p.add(gapEditor);
          
-         tickOriMB = new MultiButton<TickSetNode.Orientation>();
+         tickOriMB = new MultiButton<>();
          tickOriMB.addChoice(TickSetNode.Orientation.OUT, FCIcons.V4_TICKOUT_16, "outward");
          tickOriMB.addChoice(TickSetNode.Orientation.IN, FCIcons.V4_TICKIN_16, "inward");
          tickOriMB.addChoice(TickSetNode.Orientation.THRU, FCIcons.V4_TICKTHRU_16, "bisecting");
@@ -1182,10 +1173,10 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
          p.add(tickOriMB);
 
          LabelFormat[] fmts = LabelFormat.values();
-         formatCB = new JComboBox<LabelFormat>(fmts);
+         formatCB = new JComboBox<>(fmts);
          formatCB.setRenderer(new DefaultListCellRenderer() {
-            @Override public Component getListCellRendererComponent(JList<? extends Object> list, Object value, 
-                  int index, boolean isSelected, boolean cellHasFocus)
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                                    int index, boolean isSelected, boolean cellHasFocus)
             {
                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                String s = (value instanceof LabelFormat) ? ((LabelFormat)value).getGUILabel() : "";
@@ -1403,7 +1394,6 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
             ticks.setCustomTickLabelsFromCommaSeparatedList(s);
             String adj = ticks.getCustomTickLabelsAsCommaSeparatedList();
             if(!adj.equals(s)) customLabelsField.setText(adj);
-            ok = true;
          }
          
          if(!ok) Toolkit.getDefaultToolkit().beep();
@@ -1418,7 +1408,7 @@ final class FGNGraphAxisCard extends FGNEditor implements ActionListener, TabStr
       private TickSetNode ticks = null;
       
       /** Numeric text field edits the tick set range start. */
-      private NumericTextField startField = null;
+      private final NumericTextField startField;
 
       /** Numeric text field edits the tick set range end. */
       private NumericTextField endField = null;

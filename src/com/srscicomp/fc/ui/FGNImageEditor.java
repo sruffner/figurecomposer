@@ -41,7 +41,6 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNImageEditor extends FGNEditor implements ActionListener, PropertyChangeListener
 {
    /** Construct the text box node properties editor. */
@@ -232,7 +231,7 @@ class FGNImageEditor extends FGNEditor implements ActionListener, PropertyChange
       Rectangle rCrop = (bi == null) ? null : img.getCrop();
       
       if(bi == null) dimLabel.setText("<no image>");
-      else dimLabel.setText("" + bi.getWidth() + " x " + bi.getHeight());
+      else dimLabel.setText(bi.getWidth() + " x " + bi.getHeight());
       
       cropXField.setValue(rCrop==null ? 0 : rCrop.x);
       cropYField.setValue(rCrop==null ? 0 : rCrop.y);
@@ -431,7 +430,7 @@ class FGNImageEditor extends FGNEditor implements ActionListener, PropertyChange
    private ImageNode getImageNode() { return((ImageNode) getEditedNode()); }
    
    /** Click this button to load a different source image for the image node being edited. */
-   private JButton loadBtn = null;
+   private final JButton loadBtn;
    
    /** Abstract pathname of the source file from which last image was loaded (for initializing file chooser state). */
    private File lastImgFile = null;

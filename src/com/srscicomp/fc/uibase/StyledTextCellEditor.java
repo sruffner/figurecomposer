@@ -19,7 +19,6 @@ import com.srscicomp.fc.fig.FGraphicNode;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class StyledTextCellEditor extends AbstractCellEditor implements TableCellEditor, ActionListener
 {
    public StyledTextCellEditor()

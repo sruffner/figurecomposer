@@ -79,7 +79,7 @@ final class DataGroupPropEditor extends JPanel
    /**
     * Reload this editor to display and modify the properties associated with the different data groups in the specified
     * "grouped-data" presentation node. 
-    * @param n The grouped-data node to be edited. 
+    * @param fpd The grouped-data node to be edited.
     * @return True if node was loaded into editor; false if <i>n == null</i> or does not support data groups. In the
     * latter case, the editor panel is hidden.
     */
@@ -101,7 +101,7 @@ final class DataGroupPropEditor extends JPanel
     */
    public void cancelEditing()
    { 
-      ((ColorCellEditor) propsTable.getDefaultEditor(Color.class)).cancelCellEditing();
+      propsTable.getDefaultEditor(Color.class).cancelCellEditing();
    }
    
    /** The "grouped-data" presentation node currently being edited. Null if no node is loaded into editor panel. */
@@ -111,7 +111,7 @@ final class DataGroupPropEditor extends JPanel
    private final boolean isPie;
    
    /** The properties for each data group are displayed and edited in this table. */
-   private JTable propsTable = null;
+   private final JTable propsTable;
    
    /** Fixed width of table columns displaying fill color. */
    private final static int COLW_COLOR = 80;
@@ -166,7 +166,7 @@ final class DataGroupPropEditor extends JPanel
          if(value==null || plottable==null || !value.getClass().equals(getColumnClass(c)) || !isCellEditable(r, c))
             return;
          
-         boolean ok = false;
+         boolean ok;
          if(isPie && c == 0) ok = ((PieChartNode)plottable).setSliceDisplaced(r, (Boolean)value);
          else if(c == 0 || (isPie && c==1)) ok =  plottable.setDataGroupColor(r, (Color)value);
          else ok = plottable.setDataGroupLabel(r, (String)value);

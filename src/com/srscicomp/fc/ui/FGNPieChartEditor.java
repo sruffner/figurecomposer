@@ -27,7 +27,7 @@ import com.srscicomp.fc.uibase.FCIcons;
  * GUI. On the next row is an embedded {@link FGNPlottableDSCard}, which exposes the ID of the data set referenced by 
  * the node, and provides facilities for viewing and/or editing that raw data set. Below this are widgets for specifying
  * the pie chart's inner radius, outer radius, the relative radial offset for displaced pie slices, and the slice label
- * display mode. The next two rows are occupied by the {@link TextStyleEditor} and {@line DrawStyleEditor} exposing the
+ * display mode. The next two rows are occupied by the {@link TextStyleEditor} and {@link DrawStyleEditor} exposing the
  * pie chart's text/font styles (for rendering slice labels) and draw styles.  At the bottom of the panel is an {@link 
  * DataGroupPropEditor} in which the user can view and modify the pie chart's data group properties. Each data group is 
  * represented by one pie slice in the chart, and the table in this panel edits the "displaced" flag, fill color, and 
@@ -36,7 +36,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNPieChartEditor extends FGNEditor implements ActionListener, FocusListener
 {
    /** Construct the pie chart node properties editor. */
@@ -87,7 +86,7 @@ class FGNPieChartEditor extends FGNEditor implements ActionListener, FocusListen
       
       JLabel modeLabel = new JLabel("Labels: ");
       add(modeLabel);
-      labelModeCB = new JComboBox<PieChartNode.LabelMode>(PieChartNode.LabelMode.values());
+      labelModeCB = new JComboBox<>(PieChartNode.LabelMode.values());
       labelModeCB.addActionListener(this);
       labelModeCB.setToolTipText("Pie slice label display mode");
       add(labelModeCB);
@@ -249,7 +248,7 @@ class FGNPieChartEditor extends FGNEditor implements ActionListener, FocusListen
    private PieChartNode getPieChartNode() { return((PieChartNode) getEditedNode()); }
    
    /** When checked, an entry for each slice in the pie chart is included in parent graph's legend. */
-   private JCheckBox showInLegendChk = null;
+   private final JCheckBox showInLegendChk;
 
    /** Text field in which pie chart node's descriptive title is edited. */
    private JTextField titleField = null;

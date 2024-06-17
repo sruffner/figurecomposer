@@ -44,11 +44,10 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * 
  * <p><i>NOTE</i>. This class intended only for use in the 2D and 3D graph editors. These are composite editors that
  * handle all the component nodes of a 2D or 3D graph. When the graph object is loaded for editing, these editors must
- * call {@link #loadLegend()} to specify the legend node that should be displayed and edited here.</p>.
+ * call {@link #loadLegend(LegendNode)} to specify the legend node that should be displayed and edited here.</p>.
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 final class FGNLegendCard extends FGNEditor implements ActionListener, ItemListener, PropertyChangeListener
 {
    /** Construct the graph legend properties editor. */
@@ -121,7 +120,7 @@ final class FGNLegendCard extends FGNEditor implements ActionListener, ItemListe
       lengthEditor.addActionListener(this);
       p.add(lengthEditor);
       
-      midPtMB = new MultiButton<Boolean>();
+      midPtMB = new MultiButton<>();
       midPtMB.addChoice(Boolean.TRUE, FCIcons.V4_MIDPT_16, "midpoint");
       midPtMB.addChoice(Boolean.FALSE, FCIcons.V4_ENDPT_16, "endpoints");
       midPtMB.setToolTipText("Location of marker symbol in legend entry");
@@ -311,7 +310,7 @@ final class FGNLegendCard extends FGNEditor implements ActionListener, ItemListe
    @Override public void itemStateChanged(ItemEvent e)
    {
       if(legend == null || e.getSource() != midPtMB) return;
-      legend.setMid(midPtMB.getCurrentChoice().booleanValue());
+      legend.setMid(midPtMB.getCurrentChoice());
    }
    
    @Override public void propertyChange(PropertyChangeEvent e)
@@ -325,7 +324,7 @@ final class FGNLegendCard extends FGNEditor implements ActionListener, ItemListe
    private JCheckBox hideChk = null;
    
    /** Customized component for editing the x-coordinate of the legend's location. */
-   private MeasureEditor xEditor = null;
+   private final MeasureEditor xEditor;
 
    /** Customized component for editing the y-coordinate of the legend's location. */
    private MeasureEditor yEditor = null;

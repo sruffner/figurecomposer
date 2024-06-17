@@ -42,11 +42,12 @@ class Schema12 extends Schema11
     * has a different attribute set compared to the previous schema. As of 27Apr2011, this map is EMPTY, as there are
     * no changes in the attributes sets for each element in the schema.
 	 */
-	private static Map<String, SchemaElementInfo> elementMap12 = null;
+	@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+   private static final Map<String, SchemaElementInfo> elementMap12;
 
 	static
 	{
-		elementMap12 = new HashMap<String, SchemaElementInfo>();
+		elementMap12 = new HashMap<>();
 	}
 
    /**
@@ -57,7 +58,7 @@ class Schema12 extends Schema11
    @Override
    public boolean isSupportedElementTag(String elTag)
    {
-      return(elementMap12.containsKey(elTag) ? true : super.isSupportedElementTag(elTag));
+      return(elementMap12.containsKey(elTag) || super.isSupportedElementTag(elTag));
    }
 
 	/**
@@ -68,7 +69,7 @@ class Schema12 extends Schema11
    @Override
 	public SchemaElementInfo getSchemaElementInfo(String elTag)
 	{
-		SchemaElementInfo info = (SchemaElementInfo) elementMap12.get(elTag);
+		SchemaElementInfo info = elementMap12.get(elTag);
 		return( (info==null) ? super.getSchemaElementInfo(elTag) : info);
 	}
 
@@ -160,11 +161,11 @@ class Schema12 extends Schema11
 		// push a null onto the stack. Note that we need to push one on for each child pused onto the element stack, or
 		// things will get screwed up!. The stack elements are either null or a two-element array [w h], with dimensions
 		// expressed in inches.
-		Stack<double[]> parentSizeStack = new Stack<double[]>();
+		Stack<double[]> parentSizeStack = new Stack<>();
 		parentSizeStack.push(null);
 		
       // update the content of the old schema in place...
-      Stack<BasicSchemaElement> elementStack = new Stack<BasicSchemaElement>();
+      Stack<BasicSchemaElement> elementStack = new Stack<>();
       elementStack.push((BasicSchemaElement) oldSchema.getRootElement());
       while(!elementStack.isEmpty())
       {
@@ -248,7 +249,7 @@ class Schema12 extends Schema11
 	 */
 	private double[] fixGraphNode(BasicSchemaElement graph, double[] vpSize) throws XMLException
 	{
-	   double w = 0;
+	   double w;
 	   String wm = graph.getAttributeValueByName(A_WIDTH);
 	   if(!isValidMeasureAttributeValue(wm, false, true, true))
 	      throw new XMLException("Graph width attribute is not a valid measure!");
@@ -267,7 +268,7 @@ class Schema12 extends Schema11
 	   else
 	      w = measureToInches(wm, false);
 
-      double h = 0;
+      double h;
       String hm = graph.getAttributeValueByName(A_HEIGHT);
       if(!isValidMeasureAttributeValue(hm, false, true, true))
          throw new XMLException("Graph height attribute is not a valid measure!");
