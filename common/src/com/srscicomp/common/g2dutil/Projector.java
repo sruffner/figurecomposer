@@ -94,7 +94,7 @@ public class Projector
       zExtW = src.zExtW;
       zFactor = src.zFactor;
       zLog = src.zLog;
-      zMax = src.xMax;
+      zMax = src.zMax;
       zMin = src.zMin;
    }
 

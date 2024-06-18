@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+    <key>CFBundleExecutable</key>
+    <string>universalJavaApplicationStub</string>
+    <key>CFBundleIconFile</key>
+    <string>FCApp.icns</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.srscicomp.FigureComposer</string>
+    <key>CFBundleDisplayName</key>
+    <string>FigureComposer</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>FigureComposer</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>EXP_VERSION</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>EXP_COPYRIGHT</string>
+    <key>JVMVersion</key>
+    <string>1.8+</string>
+    <key>JVMMainClassName</key>
+    <string>com.srscicomp.fc.ui.FigureComposer</string>
+    <key>JVMOptions</key>
+    <array>
+       <string>-splash:$APP_ROOT/Contents/Resources/fcSplash.png</string>
+       <string>-Dapple.laf.useScreenMenuBar=true</string>
+       <string>-Dapple.awt.brushMetalLook=false</string>
+       <string>-Dapple.awt.antialiasing=on</string>
+       <string>-Dapple.awt.rendering=quality</string>
+       <string>-Dapple.awt.graphics.UseQuartz=false</string>
+       <string>-Xmx1024M</string>
+    </array>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+       <dict>
+          <key>CFBundleTypeIconFile</key>
+          <string>FCApp.icns</string>
+          <key>CFBundleTypeName</key>
+          <string>FypML figure definition file</string>
+          <key>CFBundleTypeRole</key>
+          <string>Editor</string>
+          <key>LSHandlerRank</key>
+          <string>Owner</string>
+          <key>LSItemContentTypes</key>
+          <array>
+             <string>com.srscicomp.fyp</string>
+          </array>
+          <key>NSExportableTypes</key>
+          <array>
+             <string>public.png</string>
+             <string>public.jpeg</string>
+             <string>com.adobe.encapsulated-postscript</string>
+          </array>
+       </dict>
+    </array>
+
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+       <dict>
+          <key>UTTypeIdentifier</key>
+          <string>com.srscicomp.fyp</string>
+          <key>UTTypeReferenceURL</key>
+          <string>https://sites.google.com/a/srscicomp.com/figure-composer/fypml</string>
+          <key>UTTypeDescription</key>
+          <string>FypML figure definition markup</string>
+          <key>UTTypeIconFile</key>
+          <string>FCApp.icns</string>
+          <key>UTTypeConformsTo</key>
+          <array>
+              <string>public.xml</string>
+          </array>
+          <key>UTTypeTagSpecification</key>
+          <dict>
+             <key>public.filename-extension</key>
+             <array>
+                <string>fyp</string> 
+             </array>
+          </dict>
+       </dict>
+    </array>
+    
+    <key>NSAppleEventsUsageDescription</key>
+    <string>There was an error while launching FigureComposer. Please click OK to display a dialog with more information or cancel and view the syslog for details.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Figure Composer requests access to Downloads to search for figure files in that folder.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Figure Composer requests access to Documents to search for figure files in that folder.</string>
+    <key>NSDesktopFoldersUsageDescription</key>
+    <string>Figure Composer requests access to Desktop to search for figure files in that folder.</string>
+</dict>
+</plist>
