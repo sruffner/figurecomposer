@@ -202,8 +202,7 @@ import com.srscicomp.fc.uibase.WrapLayout;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
-class DSEditorToolDlg extends JDialog 
+class DSEditorToolDlg extends JDialog
       implements ActionListener, DocumentListener, ListSelectionListener, FocusListener, WindowListener
 {
    /**

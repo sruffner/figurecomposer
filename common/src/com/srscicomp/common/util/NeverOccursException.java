@@ -8,7 +8,6 @@ package com.srscicomp.common.util;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class NeverOccursException extends RuntimeException
 {
    public NeverOccursException(String msg) { super(msg); }

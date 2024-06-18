@@ -460,18 +460,19 @@ final class CanvasRuler extends JComponent implements CanvasListener
                {
                   String tickLbl = Utilities.toString(posLogical, 6, 1);
                   Rectangle2D lblRect = fm.getStringBounds(tickLbl, g2);
-                  if(isHorizontal) 
+                  int textStartX;
+                  int textStartY;
+                  if(isHorizontal)
                   {
-                     int textStartX = (int) Math.round(posDev - lblRect.getWidth()/2.0);
-                     int textStartY = (int) Math.round(TICK1_LEN + 2.0*lblRect.getHeight()/3.0);
-                     g2.drawString(tickLbl, textStartX, textStartY);
-                  } 
+                     textStartX = (int) Math.round(posDev - lblRect.getWidth() / 2.0);
+                     textStartY = (int) Math.round(TICK1_LEN + 2.0 * lblRect.getHeight() / 3.0);
+                  }
                   else
                   {
-                     int textStartX = (int) Math.round(DESIGN_SZ - TICK2_LEN - 2 - lblRect.getWidth());
-                     int textStartY = (int) Math.round(tick + lblRect.getHeight()/3.0);
-                     g2.drawString(tickLbl, textStartX, textStartY);
-                  }                 
+                     textStartX = (int) Math.round(DESIGN_SZ - TICK2_LEN - 2 - lblRect.getWidth());
+                     textStartY = (int) Math.round(tick + lblRect.getHeight() / 3.0);
+                  }
+                  g2.drawString(tickLbl, textStartX, textStartY);
                }
             }
 
@@ -507,18 +508,19 @@ final class CanvasRuler extends JComponent implements CanvasListener
                {
                   String tickLbl = Utilities.toString(posLogical, 6, 1);
                   Rectangle2D lblRect = fm.getStringBounds(tickLbl, g2);
-                  if(isHorizontal) 
+                  int textStartX;
+                  int textStartY;
+                  if(isHorizontal)
                   {
-                     int textStartX = (int) Math.round(posDev - lblRect.getWidth()/2.0);
-                     int textStartY = (int) Math.round(TICK1_LEN + 2.0*lblRect.getHeight()/3.0);
-                     g2.drawString(tickLbl, textStartX, textStartY);
-                  } 
+                     textStartX = (int) Math.round(posDev - lblRect.getWidth() / 2.0);
+                     textStartY = (int) Math.round(TICK1_LEN + 2.0 * lblRect.getHeight() / 3.0);
+                  }
                   else
                   {
-                     int textStartX = (int) Math.round(DESIGN_SZ - TICK10_LEN - 2 - lblRect.getWidth());
-                     int textStartY = (int) Math.round(tick + lblRect.getHeight()/3.0);
-                     g2.drawString(tickLbl, textStartX, textStartY);
-                  }                 
+                     textStartX = (int) Math.round(DESIGN_SZ - TICK10_LEN - 2 - lblRect.getWidth());
+                     textStartY = (int) Math.round(tick + lblRect.getHeight() / 3.0);
+                  }
+                  g2.drawString(tickLbl, textStartX, textStartY);
                }
             }
 

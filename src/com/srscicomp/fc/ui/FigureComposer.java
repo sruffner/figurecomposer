@@ -1,15 +1,6 @@
 package com.srscicomp.fc.ui;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.HeadlessException;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.KeyboardFocusManager;
-import java.awt.Rectangle;
-import java.awt.SplashScreen;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
@@ -27,7 +18,6 @@ import javax.swing.SwingUtilities;
 
 import com.srscicomp.common.ui.GUIUtilities;
 import com.srscicomp.common.ui.LocalFontEnvironment;
-import com.srscicomp.common.ui.OSXAdapter;
 import com.srscicomp.common.util.Utilities;
 import com.srscicomp.fc.uibase.FCAboutDlg;
 import com.srscicomp.fc.uibase.FCChooser;
@@ -92,9 +82,9 @@ import com.srscicomp.fc.uibase.FCWorkspace.EventID;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class FigureComposer extends JFrame implements WindowListener, FCWorkspace.Listener
 {
+
    /**
     * This helper class serves as the "launcher" for the Figure Composer application. It performs various initialization
     * tasks, then creates and shows the application frame window. It also displays a splash screen and handles updates
@@ -416,7 +406,7 @@ public class FigureComposer extends JFrame implements WindowListener, FCWorkspac
     * is aborted. Otherwise, this method saves the current frame window bounds in the user's workspace settings, and 
     * calls {@link System#exit(int) System.exit(0)}.
     */
-   @Override public void doExit()
+   public void doExit()
    {
       if(!fcView.onVetoableApplicationExit())
          return;
@@ -432,7 +422,7 @@ public class FigureComposer extends JFrame implements WindowListener, FCWorkspac
     * Displays a simple modal "about" dialog with version number and some other application information. Dialog is
     * disposed upon closing.
     */
-   @Override public void doAbout()
+   public void doAbout()
    {
       FCAboutDlg dlg = new FCAboutDlg(this);
       dlg.setLocationRelativeTo(this);
@@ -443,21 +433,19 @@ public class FigureComposer extends JFrame implements WindowListener, FCWorkspac
     * Displays modal preference dialog used to set screen DPI and a variety of default values for various properties
     * of a DataNav figure.
     */
-   @Override public void doPreferences() 
+   public void doPreferences()
    { 
       PreferencesDlg.editPreferences(this); 
 
       // user may have changed the screen DPI; update the minimum frame window size just in case
       updateMinimumSize(false);
    }
-   
-   @Override public boolean hasPreferences() { return(true); }
 
    /**
     * <i>FigureComposer</i> supports opening a single FypML figure definition file in response to a file-open app event
     * from OS X. If the file list contains more than one file, only the first is opened. 
     */
-   @Override public void doFileOpen(List<File> files)
+   public void doFileOpen(List<File> files)
    {
       if(files == null || files.isEmpty()) return;
       File f = files.get(0);
@@ -478,7 +466,6 @@ public class FigureComposer extends JFrame implements WindowListener, FCWorkspac
          fcView.openFigure(f);
       }
    }
-   @Override public boolean supportsFileOpenEvents() { return(true); }
 
    
    /** Flag set once the application frame window has been opened after application start. */
@@ -523,19 +510,24 @@ public class FigureComposer extends JFrame implements WindowListener, FCWorkspac
    private void createMacApplicationMenuHooks()
    {
       if(!Utilities.isMacOS()) return;
-      
-      
+
       try
       {
-         OSXAdapter adapter = new OSXAdapter(this);
-         adapter.addEventHandlers();
+         Desktop desktop = Desktop.getDesktop();
+         desktop.setAboutHandler(e -> doAbout());
+         desktop.setPreferencesHandler(e -> doPreferences());
+         desktop.setQuitHandler((e, response) -> {
+            doExit();
+            response.cancelQuit();   // We only get here if user cancelled exit.
+         });
+         desktop.setOpenFileHandler(e -> doFileOpen(e.getFiles()));
       }
       catch(Exception e)
       {
-         JOptionPane.showMessageDialog(FigureComposer.this, 
-               "Exception (" + e.getMessage() + ") occurred while registering macOS Application menu handlers.\n" +
-               "Application menu handling and double-click file open feature disabled.",
-               "macOS Desktop Integration Failed", JOptionPane.WARNING_MESSAGE);
+         JOptionPane.showMessageDialog(FigureComposer.this,
+               "Exception (" + e.getMessage() + ") occurred while registering macOS Application menu " +
+                     "handlers.\n" + "Application menu handling and double-click file open feature disabled.",
+               "MacOS Desktop Integration Failed", JOptionPane.WARNING_MESSAGE);
       }
    }
 

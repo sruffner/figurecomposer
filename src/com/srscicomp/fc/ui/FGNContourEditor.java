@@ -43,7 +43,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNContourEditor extends FGNEditor implements ActionListener, FocusListener
 {
    /** Construct the heatmap node properties editor. */

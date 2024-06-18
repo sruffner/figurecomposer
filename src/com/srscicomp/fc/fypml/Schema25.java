@@ -329,7 +329,7 @@ class Schema25 extends Schema24
       int i0 = s.indexOf('['), i1 = s.indexOf(']');
       if((i0 < 0) || (i0 >= i1) || (i1 != s.length() - 1)) return(false);
       String name = s.substring(0, i0);
-      if(isValidEnumAttributeValue(name, CMAP_CHOICES_V25) || !name.matches("[\\w]+")) return(false);
+      if(isValidEnumAttributeValue(name, CMAP_CHOICES_V25) || !name.matches("\\w+")) return(false);
       
       String[] sframes = s.substring(i0+1, i1).split(" ");
       if((sframes.length < 2) || (sframes.length > 10)) return(false);

@@ -35,7 +35,6 @@ import com.srscicomp.fc.uibase.StyledTextCellRenderer;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 final class DataGroupPropEditor extends JPanel
 {
    /**

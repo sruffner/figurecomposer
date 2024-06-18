@@ -499,11 +499,11 @@ class Schema8 extends Schema7
     * at least one printable ASCII character that is an alphanumeric character or one of <em>$@|.<>_[](){}+-^!=</em>.
     */
 	private static final Pattern idVerifier =
-	   Pattern.compile("[a-zA-Z0-9_=\\$\\@\\|\\.\\<\\>\\[\\]\\(\\)\\{\\}\\+\\-\\^\\!]+");
+	   Pattern.compile("[a-zA-Z0-9_=$@|.<>\\[\\](){}+\\-^!]+");
 
 	/** Used to clean illegal characters from a candidate dataset ID in schema version 8.*/
 	private static final Matcher idCleaner =
-	   Pattern.compile("[^a-zA-Z0-9_=\\$\\@\\|\\.\\<\\>\\[\\]\\(\\)\\{\\}\\+\\-\\^\\!]+").matcher(" ");
+	   Pattern.compile("[^a-zA-Z0-9_=$@|.<>\\[\\](){}+\\-^!]+").matcher(" ");
 	
    /** The maximum length of a valid dataset identifier string, as of schema version 8. */
    private final static int MAXIDLEN = 40;

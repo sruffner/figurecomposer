@@ -153,8 +153,7 @@ import com.srscicomp.fc.uibase.FCWorkspace.EventID;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
-public class FigComposer extends JPanel implements TabStripModel, FGModelListener, FCWorkspace.Listener, 
+public class FigComposer extends JPanel implements TabStripModel, FGModelListener, FCWorkspace.Listener,
       ComponentListener, KeyEventDispatcher, WSFigBrowser.Listener, CanvasListener
 {
    /** 

@@ -14,7 +14,6 @@ import java.awt.geom.Point2D;
  * @see Graph2DViewer
  * @author sruffner
  */
-@SuppressWarnings("EmptyMethod")
 public interface RenderableModel
 {
    /**

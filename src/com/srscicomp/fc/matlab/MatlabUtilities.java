@@ -6,10 +6,7 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
-import java.util.Stack;
+import java.util.*;
 
 import com.srscicomp.common.g2dutil.Marker;
 import com.srscicomp.common.g2dutil.TextAlign;
@@ -79,7 +76,6 @@ import com.srscicomp.fc.fig.TraceNode.DisplayMode;
  * 
  * @author sruffner
  */
-@SuppressWarnings("DataFlowIssue")
 public class MatlabUtilities
 {
    /**
@@ -651,7 +647,7 @@ public class MatlabUtilities
     */
    private static void addGraphToFigure(FigureNode fig, HGObject hgFig, HGObject hgAxes, ColorMap cm, double[][] matCM)
    {
-      if(!fig.getGraphicModel().insertNode(fig, FGNodeType.GRAPH, -1))
+      if(!Objects.requireNonNull(fig.getGraphicModel()).insertNode(fig, FGNodeType.GRAPH, -1))
          throw new NeverOccursException("Failed to insert new graph into FypML figure.");
       
       GraphNode graph = (GraphNode) fig.getChildAt(fig.getChildCount()-1);
@@ -994,7 +990,7 @@ public class MatlabUtilities
       }
       
       if(removeTickSet) 
-         xAxis.getGraphicModel().deleteNode(ticks);
+         Objects.requireNonNull(xAxis.getGraphicModel()).deleteNode(ticks);
       else if(!autoX)
       {
          if(intv == 0)
@@ -1083,7 +1079,7 @@ public class MatlabUtilities
       }
 
       if(removeTickSet) 
-         yAxis.getGraphicModel().deleteNode(ticks);
+         Objects.requireNonNull(yAxis.getGraphicModel()).deleteNode(ticks);
       else if(!autoY)
       {
          if(intv == 0)
@@ -1274,7 +1270,7 @@ public class MatlabUtilities
     */
    private static void addMinorTicksToAxis(AxisNode axis, boolean isLog)
    {
-      if(!axis.getGraphicModel().insertNode(axis, FGNodeType.TICKS, -1))
+      if(!Objects.requireNonNull(axis.getGraphicModel()).insertNode(axis, FGNodeType.TICKS, -1))
          throw new NeverOccursException("Failed to insert new tick set into FypML axis.");
       TickSetNode majorTicks = (TickSetNode) axis.getChildAt(0);
       TickSetNode minorTicks = (TickSetNode) axis.getChildAt(1);
@@ -1314,7 +1310,7 @@ public class MatlabUtilities
     */
    private static void addMinorTicksToAxis(Axis3DNode a3)
    {
-      if(!a3.getGraphicModel().insertNode(a3, FGNodeType.TICKS3D, -1))
+      if(!Objects.requireNonNull(a3.getGraphicModel()).insertNode(a3, FGNodeType.TICKS3D, -1))
          throw new NeverOccursException("Failed to insert new tick set into FypML 3D axis.");
       Ticks3DNode majorTicks = (Ticks3DNode) a3.getChildAt(0);
       Ticks3DNode minorTicks = (Ticks3DNode) a3.getChildAt(1);
@@ -1467,7 +1463,7 @@ public class MatlabUtilities
    private static void addPolarPlotToFigure(
          FigureNode fig, HGObject hgFig, HGObject hgAxes, ColorMap cm, double[][] matCM)
    {
-      if(!fig.getGraphicModel().insertNode(fig, FGNodeType.PGRAPH, -1))
+      if(!Objects.requireNonNull(fig.getGraphicModel()).insertNode(fig, FGNodeType.PGRAPH, -1))
          throw new NeverOccursException("Failed to insert new polar plot into FypML figure.");
       
       PolarPlotNode pgraph = (PolarPlotNode) fig.getChildAt(fig.getChildCount()-1);
@@ -1686,7 +1682,7 @@ public class MatlabUtilities
    private static void add3DGraphToFigure(
          FigureNode fig, HGObject hgFig, HGObject hgAxes, ColorMap cm, double[][] matCM)
    {
-      if(!fig.getGraphicModel().insertNode(fig, FGNodeType.GRAPH3D, -1))
+      if(!Objects.requireNonNull(fig.getGraphicModel()).insertNode(fig, FGNodeType.GRAPH3D, -1))
          throw new NeverOccursException("Failed to insert new 3D graph into FypML figure.");
       
       Graph3DNode g3 = (Graph3DNode) fig.getChildAt(fig.getChildCount()-1);
@@ -1967,7 +1963,7 @@ public class MatlabUtilities
          }
          
          if(removeTickSet) 
-            g3.getAxis(axis).getGraphicModel().deleteNode(ticks);
+            Objects.requireNonNull(g3.getAxis(axis).getGraphicModel()).deleteNode(ticks);
          else
          {
             if(intv == 0)
@@ -2619,7 +2615,7 @@ public class MatlabUtilities
       }
 
       if(removeTickSet)
-         colorBar.getGraphicModel().deleteNode(ticks);
+         Objects.requireNonNull(colorBar.getGraphicModel()).deleteNode(ticks);
       else if(!colorBar.isAutoranged())
       {
          if(intv == 0)
@@ -3001,7 +2997,7 @@ public class MatlabUtilities
       
       // we can now append the scatter plot node as a child of the graph. The display mode in this use case is always
       // "scatter", since there is no Z data.
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.SCATTER, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.SCATTER, -1))
          throw new NeverOccursException("Failed to insert new scatter plot node into FypML graph.");
       
       ScatterPlotNode spn = (ScatterPlotNode) graph.getChildAt(graph.getChildCount()-1);
@@ -3065,7 +3061,7 @@ public class MatlabUtilities
       if((!graph.isPolar()) && addRasterToGraph((GraphNode) graph, lineSeriesObj)) return;
 
       // append the trace node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.TRACE, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TRACE, -1))
          throw new NeverOccursException("Failed to insert new trace node into FypML 2D graph container.");
       
       TraceNode trace = (TraceNode) graph.getChildAt(graph.getChildCount()-1);
@@ -3303,7 +3299,7 @@ public class MatlabUtilities
       if(!lineSeriesObj.isRasterPlot()) return(false);
       
       // append a new raster node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.RASTER, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.RASTER, -1))
          throw new NeverOccursException("Failed to insert new raster node into FypML graph.");
       
       RasterNode raster = (RasterNode) graph.getChildAt(graph.getChildCount()-1);
@@ -3433,7 +3429,7 @@ public class MatlabUtilities
    private static void addErrorBarTraceToGraph(GraphNode graph, HGObject ebarObj)
    {
       // append the trace node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.TRACE, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TRACE, -1))
          throw new NeverOccursException("Failed to insert new trace node into FypML graph.");
       
       TraceNode trace = (TraceNode) graph.getChildAt(graph.getChildCount()-1);
@@ -3879,7 +3875,7 @@ public class MatlabUtilities
       // we can now append the scatter plot node as a child of the graph. The node type depends on whether the graph
       // container is 2D or 3D.
       FGNodeType childType = is2D ? FGNodeType.SCATTER : FGNodeType.SCATTER3D;
-      if(!graph.getGraphicModel().insertNode(graph, childType, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, childType, -1))
          throw new NeverOccursException("Failed to insert new scatter plot node into FypML graph container.");
       
       FGraphicNode child = graph.getChildAt(graph.getChildCount()-1);
@@ -4111,7 +4107,7 @@ public class MatlabUtilities
       markSz = ScatterPlotNode.MAXSYMSIZECONSTRAINTS.constrain(markSz);
       
       // we can now append the 3D scatter plot node as a child of the graph.
-      if(!g3.getGraphicModel().insertNode(g3, FGNodeType.SCATTER3D, -1))
+      if(!Objects.requireNonNull(g3.getGraphicModel()).insertNode(g3, FGNodeType.SCATTER3D, -1))
          throw new NeverOccursException("Failed to insert new scatter plot node into FypML 3D graph.");
       
       Scatter3DNode spn = (Scatter3DNode) g3.getChildAt(g3.getChildCount()-1);
@@ -4339,7 +4335,7 @@ public class MatlabUtilities
       }
       
       // append the bar plot node to the graph, then set its data set and configure its properties appropriately
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.BAR, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.BAR, -1))
          throw new NeverOccursException("Failed to insert new bar plot node into FypML graph.");
       
       BarPlotNode bp = (BarPlotNode) graph.getChildAt(graph.getChildCount()-1);
@@ -4440,7 +4436,7 @@ public class MatlabUtilities
       }
       
       // now add the line segment and set its properties appropriately
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.LINE, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.LINE, -1))
          throw new NeverOccursException("Failed to insert new line segment node into FypML graph.");
       
       LineNode line = (LineNode) graph.getChildAt(graph.getChildCount()-1);
@@ -4570,7 +4566,7 @@ public class MatlabUtilities
       }
       
       // append the area chart node to the graph, then set its data set and configure its properties appropriately
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.AREA, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.AREA, -1))
          throw new NeverOccursException("Failed to insert new area chart node into FypML graph.");
       
       AreaChartNode ac = (AreaChartNode) graph.getChildAt(graph.getChildCount()-1);
@@ -4688,7 +4684,7 @@ public class MatlabUtilities
       if(!ok) return(false);
       
       // append the trace node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.TRACE, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TRACE, -1))
          throw new NeverOccursException("Failed to insert new trace node into FypML graph.");
       
       TraceNode trace = (TraceNode) graph.getChildAt(graph.getChildCount()-1);
@@ -4928,7 +4924,7 @@ public class MatlabUtilities
       if(!ok) return(false);
       
       // append the trace node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.TRACE, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TRACE, -1))
          throw new NeverOccursException("Failed to insert new trace node into FypML graph.");
       
       TraceNode trace = (TraceNode) graph.getChildAt(graph.getChildCount()-1);
@@ -5082,7 +5078,7 @@ public class MatlabUtilities
    private static boolean addPatchAsPieChart(PolarPlotNode pgraph, HGObject patchObj, double[][] matCM, double[] cLim)
    {
       // append the pie chart node to the graph, initially associated with an empty data set
-      if(!pgraph.getGraphicModel().insertNode(pgraph, FGNodeType.PIE, -1))
+      if(!Objects.requireNonNull(pgraph.getGraphicModel()).insertNode(pgraph, FGNodeType.PIE, -1))
          throw new NeverOccursException("Failed to insert new pie chart node into FypML 2D polar plot container.");
       
       PieChartNode pie = (PieChartNode) pgraph.getChildAt(pgraph.getChildCount()-1);
@@ -5168,7 +5164,7 @@ public class MatlabUtilities
    private static void addHeatMapToGraph(GraphNode graph, HGObject hgSurface)
    {
       // append the contour node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.CONTOUR, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.CONTOUR, -1))
          throw new NeverOccursException("Failed to insert new contour plot node into FypML graph.");
       
       ContourNode heatMap = (ContourNode) graph.getChildAt(graph.getChildCount()-1);
@@ -5220,7 +5216,7 @@ public class MatlabUtilities
    private static void addContourPlotToGraph(GraphNode graph, HGObject hgContour)
    {
       // append the contour node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.CONTOUR, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.CONTOUR, -1))
          throw new NeverOccursException("Failed to insert new contour plot node into FypML graph.");
       
       ContourNode contour = (ContourNode) graph.getChildAt(graph.getChildCount()-1);
@@ -5317,7 +5313,7 @@ public class MatlabUtilities
       }
 
       // append the raster node to the graph and install the extracted data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.RASTER, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.RASTER, -1))
          throw new NeverOccursException("Failed to insert new raster node into FypML 2D graph container.");
       
       RasterNode raster = (RasterNode) graph.getChildAt(graph.getChildCount()-1);
@@ -5479,7 +5475,7 @@ public class MatlabUtilities
       if(ds == null) return;
       
       // append the surface node to the graph and set the relevant properties
-      if(!g3.getGraphicModel().insertNode(g3, FGNodeType.SURFACE, -1))
+      if(!Objects.requireNonNull(g3.getGraphicModel()).insertNode(g3, FGNodeType.SURFACE, -1))
          throw new NeverOccursException("Failed to insert new surface node into FypML 3D graph.");
       SurfaceNode surf = (SurfaceNode) g3.getChildAt(g3.getChildCount()-1);
       surf.setTitle(title);
@@ -5581,7 +5577,7 @@ public class MatlabUtilities
             (int) Math.round(hgSurface.get3DBarPlotBarSize()*100/xExt));
       
       // append the 3D scatter plot node to the 3D graph and set its relevant properties
-      if(!g3.getGraphicModel().insertNode(g3, FGNodeType.SCATTER3D, -1))
+      if(!Objects.requireNonNull(g3.getGraphicModel()).insertNode(g3, FGNodeType.SCATTER3D, -1))
          throw new NeverOccursException("Failed to insert new 3D scatter plot node into FypML graph3d container.");
       Scatter3DNode sp3 = (Scatter3DNode) g3.getChildAt(g3.getChildCount()-1);
 
@@ -5629,7 +5625,7 @@ public class MatlabUtilities
 
          if(xData == null || xData.length < 2 || yData == null || yData.length < 2) return;
 
-         if(!graph.getGraphicModel().insertNode(graph, FGNodeType.LINE, -1))
+         if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.LINE, -1))
             throw new NeverOccursException("Failed to insert new line segment node into FypML 2D graph container.");
          
          LineNode line = (LineNode) graph.getChildAt(graph.getChildCount()-1);
@@ -5672,7 +5668,7 @@ public class MatlabUtilities
       //
       
       // append the trace node to the graph, initially associated with an empty data set
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.TRACE, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TRACE, -1))
          throw new NeverOccursException("Failed to insert new trace node into FypML 2D graph container.");
       
       TraceNode trace = (TraceNode) graph.getChildAt(graph.getChildCount()-1);
@@ -5856,7 +5852,7 @@ public class MatlabUtilities
       if(pos == null) return;
       
       // append the text label node to the graph container and set its label string and font-related properties
-      if(!graph.getGraphicModel().insertNode(graph, FGNodeType.LABEL, -1))
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.LABEL, -1))
          throw new NeverOccursException("Failed to insert new text label into FypML 2D or 3D graph container.");
       
       LabelNode label = (LabelNode) graph.getChildAt(graph.getChildCount()-1);
@@ -6054,7 +6050,7 @@ public class MatlabUtilities
          FigureNode fig, HGObject hgFig, HGObject hgPolar, ColorMap cm, double[][] matCM)
    {
       // create the FypML polar plot now. We'll delete it if import fails...
-      if(!fig.getGraphicModel().insertNode(fig, FGNodeType.PGRAPH, -1))
+      if(!Objects.requireNonNull(fig.getGraphicModel()).insertNode(fig, FGNodeType.PGRAPH, -1))
          throw new NeverOccursException("Failed to insert new 2D polar plot into FypML figure.");
       
       PolarPlotNode pgraph = (PolarPlotNode) fig.getChildAt(fig.getChildCount()-1);
@@ -6334,7 +6330,7 @@ public class MatlabUtilities
          if(isVisible)
          {
             // append a text label node to the polar plot and set its label string and text color
-            if(!pgraph.getGraphicModel().insertNode(pgraph, FGNodeType.LABEL, -1))
+            if(!Objects.requireNonNull(pgraph.getGraphicModel()).insertNode(pgraph, FGNodeType.LABEL, -1))
                throw new NeverOccursException("Failed to insert new text label into FypML polar plot.");
             
             LabelNode label = (LabelNode) pgraph.getChildAt(pgraph.getChildCount()-1);

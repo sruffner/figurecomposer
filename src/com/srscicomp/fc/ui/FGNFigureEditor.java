@@ -45,7 +45,6 @@ import com.srscicomp.fc.uibase.StyledTextEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class FGNFigureEditor extends FGNEditor implements ActionListener, FocusListener, PropertyChangeListener, ItemListener
 {
 

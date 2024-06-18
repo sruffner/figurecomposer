@@ -8,7 +8,6 @@ import javax.swing.DefaultCellEditor;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class IntegerCellEditor extends DefaultCellEditor
 {
    public IntegerCellEditor(int minVal, int maxVal)

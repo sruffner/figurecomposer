@@ -32,7 +32,6 @@ import java.util.EventListener;
  * 
  * @author sruffner
  */
-@SuppressWarnings("EmptyMethod")
 public interface CanvasListener extends EventListener
 {
    /**

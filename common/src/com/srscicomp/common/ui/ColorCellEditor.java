@@ -16,7 +16,6 @@ import javax.swing.table.TableCellEditor;
  * <p>(22jan2015) Revised to allow specifying certain characteristics of the delegate RGB color picker.</p>
  * @author sruffner
  */
-@SuppressWarnings("serial")
 public class ColorCellEditor extends AbstractCellEditor implements TableCellEditor, PropertyChangeListener
 {
    /**

@@ -72,7 +72,6 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-@SuppressWarnings("serial")
 class TitlePopupDlg extends JDialog implements WindowFocusListener, ActionListener, PropertyChangeListener
 {
    /**
