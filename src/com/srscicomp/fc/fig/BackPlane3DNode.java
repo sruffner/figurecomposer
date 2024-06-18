@@ -160,7 +160,7 @@ public class BackPlane3DNode extends FGraphicNode implements Cloneable
          if(g2dCopy != null) g2dCopy.dispose(); 
       }
       
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
    
    public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException 
@@ -169,10 +169,15 @@ public class BackPlane3DNode extends FGraphicNode implements Cloneable
       if(g3 == null || !isRendered()) return;
       List<Point2D> verts = g3.getBackPlaneVertices(side);
       if(verts == null || verts.size() != 4) return;
-      verts.add((Point2D) null);   // to close the path
+      verts.add(null);   // to close the path
       
       psDoc.startElement(this);
       psDoc.renderPolygons(verts, getFillColor().getAlpha() != 0);
       psDoc.endElement();
+   }
+
+   @Override public BackPlane3DNode clone() throws CloneNotSupportedException
+   {
+      return (BackPlane3DNode) super.clone();
    }
 }

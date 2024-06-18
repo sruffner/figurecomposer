@@ -101,4 +101,9 @@ public class ScatterLineStyleNode extends FGraphicNode implements Cloneable
    }
    @Override public boolean render(Graphics2D g2d, RenderTask task) { return(true); }
    @Override public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException { /* NOOP */ }
+
+   @Override public ScatterLineStyleNode clone() throws CloneNotSupportedException
+   {
+      return (ScatterLineStyleNode) super.clone();
+   }
 }

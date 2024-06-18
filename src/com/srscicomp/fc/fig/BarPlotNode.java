@@ -149,7 +149,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
    public DisplayMode getMode() { return(mode); }
 
    /**
-    * Set the data display mode for this bar plot node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the data display mode for this bar plot node. If a change is made, {@link #onNodeModified} is invoked.
     * @param mode The new display mode. Null is rejected.
     * @return False if argument was null; true otherwise.
     */
@@ -202,7 +202,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
    public float getBaseline() { return(baseline); }
     
    /**
-    * Set the bar plot baseline. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the bar plot baseline. If a change is made, {@link #onNodeModified} is invoked.
     * @param base The new baseline, in user units. NaN and +/-infinity are rejected.
     * @return True if new value was accepted.
     */
@@ -211,14 +211,14 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(base)) return(false);
       if(baseline != base)
       {
-         if(doMultiNodeEdit(FGNProperty.BASELINE, new Float(base))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BASELINE, base)) return(true);
          
-         Float old = new Float(baseline);
+         Float old = baseline;
          baseline = base;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BASELINE);
-            FGNRevEdit.post(this, FGNProperty.BASELINE, new Float(baseline), old);
+            FGNRevEdit.post(this, FGNProperty.BASELINE, baseline, old);
          }
       }
       return(true);
@@ -240,7 +240,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
    public int getBarWidth() { return(barWidth); }
     
    /**
-    * Set the bar plot's relative bar width. If a change is made, {@link #onNodeModified()} is invoked. 
+    * Set the bar plot's relative bar width. If a change is made, {@link #onNodeModified} is invoked.
     * @param bw Relative bar width, as a percentage. Values outside [{@link #MINRELBW} .. {@link #MAXRELBW}] are 
     * rejected.
     * @return True if new value was accepted.
@@ -250,14 +250,14 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
       if(bw < MINRELBW || bw > MAXRELBW) return(false);
       if(barWidth != bw)
       {
-         if(doMultiNodeEdit(FGNProperty.BARWIDTH, new Integer(bw))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BARWIDTH, bw)) return(true);
 
-         Integer old = new Integer(barWidth);
+         Integer old = barWidth;
          barWidth = bw;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BARWIDTH);
-            FGNRevEdit.post(this, FGNProperty.BARWIDTH, new Integer(barWidth), old);
+            FGNRevEdit.post(this, FGNProperty.BARWIDTH, barWidth, old);
          }
       }
       return(true);
@@ -288,15 +288,15 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
    {
       if(autoLabelOn != b)
       {
-         if(doMultiNodeEdit(FGNProperty.AUTO, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.AUTO, b)) return;
          
-         Boolean old = new Boolean(autoLabelOn);
+         Boolean old = autoLabelOn;
          autoLabelOn = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.AUTO);
             String desc = (autoLabelOn ? "Enable" : "Disable") + " automated legend labels on bar plot";
-            FGNRevEdit.post(this, FGNProperty.AUTO, new Boolean(autoLabelOn), old, desc);
+            FGNRevEdit.post(this, FGNProperty.AUTO, autoLabelOn, old, desc);
          }
       }
    }
@@ -304,7 +304,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case MODE : ok = setMode((DisplayMode)propValue); break;
@@ -318,13 +318,13 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case MODE : value = getMode(); break;
-         case BASELINE: value = new Float(getBaseline()); break;
-         case BARWIDTH: value = new Integer(getBarWidth()); break;
-         case AUTO: value = new Boolean(isAutoLabelOn()); break;
+         case BASELINE: value = getBaseline(); break;
+         case BARWIDTH: value = getBarWidth(); break;
+         case AUTO: value = isAutoLabelOn(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -344,9 +344,9 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
       styleSet.putStyle(FGNProperty.MODE, getMode());
-      styleSet.putStyle(FGNProperty.BARWIDTH, new Integer(getBarWidth()));
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
-      styleSet.putStyle(FGNProperty.AUTO, new Boolean(isAutoLabelOn()));
+      styleSet.putStyle(FGNProperty.BARWIDTH, getBarWidth());
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
+      styleSet.putStyle(FGNProperty.AUTO, isAutoLabelOn());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -364,7 +364,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
       Integer n = (Integer) applied.getCheckedStyle(FGNProperty.BARWIDTH, getNodeType(), Integer.class);
       if(n != null && (n>=MINRELBW) && (n<=MAXRELBW) && !n.equals(restore.getStyle(FGNProperty.BARWIDTH)))
       {
-         barWidth = n.intValue();
+         barWidth = n;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.BARWIDTH);
@@ -445,6 +445,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
       if(ds != null) setDataSet(ds);
    }
 
+   @SuppressWarnings("SuspiciousNameCombination")
    @Override protected boolean recalcDataRange(Object hint)
    {
       boolean needRecalc = 
@@ -573,12 +574,12 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
       // if there are no well-defined X-coordinates, then the bar plot is not rendered (zero bar group span). If there 
       // is only one, the bar group span defaults to 1.0, since cannot computer minimum interval between neighboring
       // X-coordinates.
-      List<Integer> validIndices = new ArrayList<Integer>();
+      List<Integer> validIndices = new ArrayList<>();
       for(int i=0; i<ds.getDataLength(); i++) if(Utilities.isWellDefined(ds.getX(i, 0)))
-         validIndices.add(new Integer(i));
+         validIndices.add(i);
       if(validIndices.size() <= 1)
       {
-         barGrpSpan = (validIndices.size() == 0) ? 0 : 1.0;
+         barGrpSpan = (validIndices.isEmpty()) ? 0 : 1.0;
          return;
       }
 
@@ -757,7 +758,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
 
    
    /** Helper class encsapsulates information needed to render the label for a bar group. */
-   private class LabelInfo
+   private static class LabelInfo
    {
       /** The label text in FypML styled text format. */
       String label;
@@ -1077,7 +1078,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
             // The next call to hasNext() will return false.
             if(!gotNextBar)
             {
-               for(int i = 0; i<barVertices.length; i++) barVertices[i].setLocation(Double.NaN, Double.NaN);
+               for(Point2D barVertex : barVertices) barVertex.setLocation(Double.NaN, Double.NaN);
             }
 
             nVertsSoFar = 0;
@@ -1088,6 +1089,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
          return(nextVtx);
       }
 
+      @SuppressWarnings("SuspiciousNameCombination")
       private void prepareBarVertices(int pos, double x, double y)
       {
          double x1 = x + xoff - wBar/2.0;
@@ -1163,7 +1165,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
       int nPtsSoFar;
       int nVertsSoFar;
       Point2D[] sectionVertices;
-      Point2D origin;
+      final Point2D origin;
       
       /**
        * Retrieve a new iterator. This merely returns a fresh copy of the producer, which acts both as {@link Iterable}
@@ -1263,7 +1265,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
             // The next call to hasNext() will return false.
             if(!gotNextSection)
             {
-               for(int i = 0; i<sectionVertices.length; i++) sectionVertices[i].setLocation(Double.NaN, Double.NaN);
+               for(Point2D sectionVertex : sectionVertices) sectionVertex.setLocation(Double.NaN, Double.NaN);
             }
 
             nVertsSoFar = 0;
@@ -1303,8 +1305,8 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
             // the same time, swap radial coordinates to endure first vertex has the smaller radius.
             r0 = origin.distance(sectionVertices[0]);
             r1 = origin.distance(sectionVertices[1]);
-            sectionVertices[0].setLocation(theta0, (r0 < r1) ? r0 : r1);
-            sectionVertices[1].setLocation(theta1, (r0 < r1) ? r1 : r0);
+            sectionVertices[0].setLocation(theta0, Math.min(r0, r1));
+            sectionVertices[1].setLocation(theta1, Math.max(r0, r1));
          }
       }
       
@@ -1336,13 +1338,14 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
       Graphics2D g2BI = null;
       if(isAutoLabelOn() && !g.isPolar())
       {
+         assert FCIcons.V4_BROKEN != null;
          Image img = FCIcons.V4_BROKEN.getImage();
          BufferedImage bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
          g2BI = bi.createGraphics();
       }
 
       psDoc.startElement(this);
-      List<Point2D> vertices = new ArrayList<Point2D>();
+      List<Point2D> vertices = new ArrayList<>();
       for(int i=0; i<getNumDataGroups(); i++)
       {
          // get the vertices defining the bars for the i-th bar group
@@ -1350,7 +1353,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
          Iterator<Point2D> iterator = g.isPolar() ? new PolarBarVertexProducer(i) : new BarVertexProducer(i);
          while(iterator.hasNext()) 
             vertices.add((Point2D) iterator.next().clone());    // must clone, b/c producer reuses a Point2D
-         if(vertices.size() == 0) continue;
+         if(vertices.isEmpty()) continue;
          
          if(g.isPolar())
             psDoc.renderConcentricWedges(origin, vertices, getDataGroupColor(i));
@@ -1374,7 +1377,7 @@ public class BarPlotNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of the bar plot node cloned. 
     * The clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected BarPlotNode clone() throws CloneNotSupportedException
    {
       BarPlotNode copy = (BarPlotNode) super.clone();
       copy.rBoundsSelf = null;

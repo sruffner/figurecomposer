@@ -32,7 +32,7 @@ import com.srscicomp.fc.fig.Graph3DNode.BackDrop;
  * <p>The parent graph's 3D-to-2D projection calculations expect that each axis range is specified as <i>[min, max]</i>,
  * where <i>min &lt; max</li>. Any dimension of the 3D graph can be on a logarithmic scale by making the axis range of
  * the corresponding axis logarithmic, in which case <i>min &gt; 0</i>. For these reasons, axis range and linear/log
- * scale are set as a single composite property to ensure the range is always valid -- see {@link #setRange()}. This is 
+ * scale are set as a single composite property to ensure the range is always valid -- see {@link #setRange}. This is
  * distinct from the 2D case, where you can change the direction of values along the axis by setting the start of the 
  * range greater than the end. You can always "reverse" the direction of values along the axis by changing the 
  * orientation of the 3D graph.</p>
@@ -52,7 +52,7 @@ import com.srscicomp.fc.fig.Graph3DNode.BackDrop;
  * 
  * <p>As of v5.4.0 (schema version 24), <b>Axis3DNode</b> supports a "styled text" label, in which text color, font
  * style, underline state, superscript, and subscript can vary on a per-character basis. See {@link 
- * FGraphicNode#toStyledText()}.</p>
+ * FGraphicNode#toStyledText}.</p>
  *
  * @author sruffner
  */
@@ -70,7 +70,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    {
       super(HASFONTATTRS|HASFILLCATTR|HASSTROKEATTRS|HASTITLEATTR|ALLOWLFINTITLE|ALLOWATTRINTITLE);
       axis = which == null ? Graph3DNode.Axis.X : which;
-      setTitle(axis.toString() + "-axis Label");
+      setTitle(axis + "-axis Label");
       range[0] = 0;
       range[1] = 100;
       isLog = false;
@@ -170,10 +170,10 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    //
    
    /** The axis range ("user" units): [A, B], where A must be less than B. */
-   private double[] range = new double[] {0, 100};
+   private final double[] range = new double[] {0, 100};
 
    /** True if axis and corresponding dimension in the 3D graph are on a logarithmic (base 10) scale; else linear. */
-   private boolean isLog = false;
+   private boolean isLog;
    
    /** 
     * Flag indicates whether logarithmic axis is presented as base2 (true) or base10 (false). This affects rendering
@@ -245,7 +245,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    }
 
    /**
-    * Select the logarithmic base for this axis. If a change is made, {@link #onNodeModified()} is invoked.
+    * Select the logarithmic base for this axis. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param b True for base 2, false for base 10.
     */
@@ -253,15 +253,15 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    {
       if(log2 != b)
       {
-         if(doMultiNodeEdit(FGNProperty.LOG2, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.LOG2, b)) return;
          
-         Boolean old = new Boolean(log2);
+         Boolean old = log2;
          log2 = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LOG2);
             String desc = "Set 3D " + axis + "-axis logarithmic base = " + (log2 ? "2" : "10");
-            FGNRevEdit.post(this, FGNProperty.LOG2, new Boolean(log2), old, desc);
+            FGNRevEdit.post(this, FGNProperty.LOG2, log2, old, desc);
          }
       }
    }
@@ -271,7 +271,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
 
    /**
     * Get the axis power-of-10 scale factor affecting the scaling of tick mark labels along the axis.
-    * 
+    * <p>
     * When the endpoints of the 3D axis range are very small (e.g., 1e-6) or very large (1e10), the tick mark labels 
     * along the axis tend to get long and are best presented in scientific notation. In that case, each tick label 
     * includes an exponent: "1e-6 2e-6 3e-6 ...". 
@@ -290,7 +290,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the axis scale factor -- an integer exponent N such that numeric axis tick mark labels are scaled by 10^N.
-    * If a change was made, {@link #onNodeModified()} is invoked.
+    * If a change was made, {@link #onNodeModified} is invoked.
     * 
     * @param n New value for scale factor exponent. Rejected if outside allowed range: {@link 
     * FGNGraphAxis#MINPOWERSCALE} .. {@link FGNGraphAxis#MAXPOWERSCALE}
@@ -301,14 +301,14 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       if(n < FGNGraphAxis.MINPOWERSCALE || n > FGNGraphAxis.MAXPOWERSCALE) return(false);
       if(powerScale != n)
       {
-         if(doMultiNodeEdit(FGNProperty.SCALE, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.SCALE, n)) return(true);
          
-         Integer old = new Integer(powerScale);
+         Integer old = powerScale;
          powerScale = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.SCALE);
-            FGNRevEdit.post(this, FGNProperty.SCALE, new Double(powerScale), old, "Change 3D axis power scale");
+            FGNRevEdit.post(this, FGNProperty.SCALE, (double) powerScale, old, "Change 3D axis power scale");
          }
       }
       return(true);
@@ -374,7 +374,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the perpendicular distance between the axis line and the corresponding edge of the 3D graph box. Note that
-    * this is the distance in 3D, not in the 2D projection! If a change is made, {@link #onNodeModified()} is invoked.
+    * this is the distance in 3D, not in the 2D projection! If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new axis spacer distance. The measure will be constrained to satisfy {@link 
     * AxisNode#SPACERCONSTRAINTS}.  A null value is rejected. 
@@ -418,7 +418,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    /**
     * Set the perpendicular distance between the axis line and the bottom or top of the axis label (whichever is 
     * closer). Note that this is the distance in 3D, not in the 2D projection! If a change is made, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
     * @param m The new axis label offset. The measurement will be constrained to satisfy {@link 
     * AxisNode#SPACERCONSTRAINTS}. A null value is rejected.
@@ -457,7 +457,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    public boolean getHide() { return(hide); }
 
    /**
-    * Set the hide state for this 3D axis. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the hide state for this 3D axis. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param b True to hide axis, false to show it.
     */
@@ -465,22 +465,22 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    {
       if(hide != b)
       {
-         if(doMultiNodeEdit(FGNProperty.HIDE, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.HIDE, b)) return;
          
-         Boolean old = new Boolean(hide);
+         Boolean old = hide;
          hide = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = hide ? "Hide " : "Show ";
             desc += "3D " + axis.toString() + "-axis";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hide), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hide, old, desc);
          }
       }
    }
 
    /**
-    * Same as {@link #setHide()}, but without posting an "undo" operation or calling {@link #onNodeModified()}. It is
+    * Same as {@link #setHide}, but without posting an "undo" operation or calling {@link #onNodeModified}. It is
     * meant to be used only when multiple properties are being modified in a single, atomic operation.
     * @param b True to hide axis, false to show it.
     */
@@ -488,9 +488,9 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    
    /**
     * Text line height, as a fraction of the element's font size. Applicable only when the auto-generated axis label is
-    * multi-line. Defaults to 1.2; range-restricted to [0.8, 3.0].
+    * multi-line. Range-restricted to [0.8, 3.0].
     */
-   private double lineHeight = 1.2;
+   private double lineHeight;
 
    /**
     * Get the text line height for the 3D axis label, in the event it is laid out in two or more text lines.
@@ -512,15 +512,15 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       lh = Utilities.rangeRestrict(0.8, 3.0, lh);
       if(lineHeight != lh)
       {
-         if(doMultiNodeEdit(FGNProperty.LINEHT, new Double(lh))) return(true);
+         if(doMultiNodeEdit(FGNProperty.LINEHT, lh)) return(true);
          
-         Double old = new Double(lineHeight);
+         Double old = lineHeight;
          lineHeight = lh;
          
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LINEHT);
-            FGNRevEdit.post(this, FGNProperty.LINEHT, new Double(lineHeight), old);
+            FGNRevEdit.post(this, FGNProperty.LINEHT, lineHeight, old);
         }
       }
       return(true);
@@ -528,7 +528,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case RANGE: 
@@ -548,16 +548,16 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case RANGE : value = new double[] {getRangeMin(), getRangeMax(), isLogarithmic() ? 1 : 0}; break;
-         case LOG2: value = new Boolean(isLogBase2()); break;
-         case SCALE: value = new Integer(getPowerScale()); break;
+         case LOG2: value = isLogBase2(); break;
+         case SCALE: value = getPowerScale(); break;
          case LABELOFFSET: value = getLabelOffset(); break;
          case SPACER: value = getSpacer();  break;
-         case HIDE: value = new Boolean(getHide()); break;
-         case LINEHT : value = new Double(getLineHeight()); break;
+         case HIDE: value = getHide(); break;
+         case LINEHT : value = getLineHeight(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -586,7 +586,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
          {
             for(int i=0; i<getChildCount(); i++) ((Ticks3DNode) getChildAt(i)).computeTickLocations(true);
             
-            if((g3.getBackDrop() == BackDrop.HIDDEN) || (hint!=FGNProperty.HIDE && getHide()))
+            if(g3.getBackDrop() == BackDrop.HIDDEN || getHide())
                model.onChange(this,  0, false, null);
             else
                super.onNodeModified(hint);
@@ -694,7 +694,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    {
       styleSet.putStyle(FGNProperty.SPACER, getSpacer());
       styleSet.putStyle(FGNProperty.LABELOFFSET, getLabelOffset());
-      styleSet.putStyle(FGNProperty.LINEHT, new Double(getLineHeight()));
+      styleSet.putStyle(FGNProperty.LINEHT, getLineHeight());
 
       for(int i=0; i<getChildCount(); i++)
       {
@@ -741,7 +741,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       Double lineHt = (Double) applied.getCheckedStyle(FGNProperty.LINEHT, nt, Double.class);
       if(lineHt != null && !lineHt.equals(restore.getStyle(FGNProperty.LINEHT)))
       {
-         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt.doubleValue());
+         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt);
          changed = true;
       }
       else restore.removeStyle(FGNProperty.LINEHT); 
@@ -849,7 +849,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
    
 
@@ -920,6 +920,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       if(!isRendered()) return;
       
       Graph3DNode g3 = getParentGraph3D();
+      assert g3 != null;
       BackDrop backDrop = g3.getBackDrop();
       Projector prj = g3.get2DProjection();
       
@@ -929,7 +930,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       
       // for a multi-line label, we need to set a width for the textbox containing it. Since an axis could be very
       // foreshortened in certain perspectives, we use the length of the corresponding dimension of the 3D graph box.
-      double multiLabelMaxW = 0;
+      double multiLabelMaxW;
       switch(axis)
       {
       case X : multiLabelMaxW = g3.getWidth().toMilliInches(); break;
@@ -969,7 +970,6 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
          }
          else if(rotAbs <= 150)
          {
-            hAlign = TextAlign.CENTERED;
             vAlign = (rot < 0) ? TextAlign.LEADING : TextAlign.TRAILING;
          }
          else
@@ -1034,7 +1034,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       // to switch implementations whenever label becomes multi-line or returns to single-line!
       if(!isMulti)
       {
-         SingleStringPainter ssPainter = null;
+         SingleStringPainter ssPainter;
          if(labelPainter == null || (labelPainter.getClass() != SingleStringPainter.class))
          {
             ssPainter = new SingleStringPainter();
@@ -1052,7 +1052,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       }
       else
       {
-         TextBoxPainter tbPainter = null;
+         TextBoxPainter tbPainter;
          if(labelPainter == null || (labelPainter.getClass() != TextBoxPainter.class))
          {
             tbPainter = new TextBoxPainter();
@@ -1082,6 +1082,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       if(p1 == null || p2 == null) throw new NullPointerException("p1, p2 cannot be null");
       
       Graph3DNode g3 = getParentGraph3D();
+      assert g3 != null;
       BackDrop backDrop = g3.getBackDrop();
       Projector prj = g3.get2DProjection();
       double xBack = prj.getBackSideX();
@@ -1249,6 +1250,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    Point2D getPointOppositeTickMarks()
    {
       Graph3DNode g3 = getParentGraph3D();
+      assert g3 != null;
       BackDrop backDrop = g3.getBackDrop();
       Projector prj = g3.get2DProjection();
       double xBack = prj.getBackSideX();
@@ -1284,12 +1286,13 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
    /**
     * Get the infinite line in the parent graph's 2D projection plane that is colinear with a tick mark at the specified
     * coordinate value.
-    * @param Tick The coordinate value (X, Y or Z, depending on the identity of this axis) for the tick mark.
+    * @param tick The coordinate value (X, Y or Z, depending on the identity of this axis) for the tick mark.
     * @return The line in 2D space containing the tick mark. Specified in the parent graph's viewport coordinates.
     */
    LineXY getLineXYContainingTickMark(double tick)
    {
       Graph3DNode g3 = getParentGraph3D();
+      assert g3 != null;
       BackDrop backDrop = g3.getBackDrop();
       Projector prj = g3.get2DProjection();
       double xBack = prj.getBackSideX();
@@ -1348,7 +1351,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
       // NOTE: Rather than recomputing label location, alignment, and so on -- we retrieve the relevant information
       // from the internal label painter and use it to render to the Postscript doc!
       String label = getAxisLabel();
-      if(label.length() > 0 && getFillColor().getAlpha() > 0)
+      if((!label.isEmpty()) && getFillColor().getAlpha() > 0)
       {
          if(labelPainter instanceof SingleStringPainter)
          {
@@ -1383,7 +1386,7 @@ public class Axis3DNode extends FGraphicNode implements Cloneable
     * This override ensures that the cloned 3D axis node's internal rendering resources are completely independent of 
     * the resources allocated to this node.
     */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       Axis3DNode copy = (Axis3DNode) super.clone();
       copy.adjEdge = null;

@@ -153,10 +153,10 @@ class ScatterPlotLegendEntry extends LegendEntry
       
       // get legend props we need. Note that "mid" flag is ignored for bubble plots
       double len = legend.getEntryLengthInMilliInches();
-      boolean mid = (isSizeBubble || isColorBubble) ? false : legend.getMid();
+      boolean mid = (!isSizeBubble) && (!isColorBubble) && legend.getMid();
       double sw = plottable.getStrokeWidth();
 
-      double ofs = 0;
+      double ofs;
       if(!areSymbolsRendered()) 
          ofs = len + sw/2;
       else
@@ -180,7 +180,7 @@ class ScatterPlotLegendEntry extends LegendEntry
       
       // get legend props we need. Note that "mid" flag is ignored for bubble plots
       double len = legend.getEntryLengthInMilliInches();
-      boolean mid = (isSizeBubble || isColorBubble) ? false : legend.getMid();
+      boolean mid = (!isSizeBubble) && (!isColorBubble) && legend.getMid();
       double sw = plottable.getStrokeWidth();
       double spacerMI = legend.getSpacer().toMilliInches();
       
@@ -221,7 +221,7 @@ class ScatterPlotLegendEntry extends LegendEntry
       double len = legend.getEntryLengthInMilliInches();
       boolean mid = legend.getMid();
       
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       pts.add(new Point2D.Double(0, y));
       
       // we use a shape painter to render the two symbols in legend entry (potentially one for the "scatter" mode). 

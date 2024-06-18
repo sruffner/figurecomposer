@@ -19,7 +19,7 @@ public enum FGNodeType
    SCATTER3D("3D Scatter/Line Plot"), SURFACE("Surface"), PGRAPH("Polar Graph"), PAXIS("Polar Axis"),
    BOX("Box Plot"), VIOLIN("Violin Plot"), SCATLINESTYLE("Scatter Plot Line Style");
    
-   private String niceName;
+   private final String niceName;
    
    FGNodeType(String s) { niceName = s; }
    

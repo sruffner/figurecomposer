@@ -194,11 +194,11 @@ public abstract class FGNGraphAxis extends FGraphicNode
     * include the changes in the graphic model's undo history. Auto-scaling changes are NOT undoable.
     * @param s The start of the axis range.
     * @param e The end of the axis range.
-    * @see FGNGraphAxis#doAutoScale()
+    * @see FGNGraphAxis#doAutoRange
     */
    abstract protected void setRange_NoUpdate(double s, double e);
    
-   private static double[] niceDivs = new double[] {1, 1.25, 1.5, 2, 2.5, 5, 7.5};
+   private static final double[] niceDivs = new double[] {1, 1.25, 1.5, 2, 2.5, 5, 7.5};
    
    /**
     * Adjust the range for this axis to accommodate the specified minimum and maximum values, if possible. If the
@@ -267,6 +267,8 @@ public abstract class FGNGraphAxis extends FGraphicNode
       // NOTE: Autoscaling of axes is only supported by GraphNode, one of two possible 2D graph implementations
       if(!isAutoranged() || !Utilities.isWellDefined(minVal) || !Utilities.isWellDefined(maxVal)) 
          return(false);
+      if( !(getParentGraph() instanceof GraphNode))
+         return(false);
       GraphNode g = (GraphNode) getParentGraph();
       
       // swap min, max if they're incorrect
@@ -278,8 +280,8 @@ public abstract class FGNGraphAxis extends FGraphicNode
       boolean isPolar = g.isPolar();
       boolean isRadial = isPolar && !isPrimary();
       boolean log2 = (getLogBase() == 2);
-      double s = 0;
-      double e = 0;
+      double s;
+      double e;
       double intv = 0;
       TickSetNode.LabelFormat tickFmt = TickSetNode.LabelFormat.INT;
       TickSetNode major = getMajorTickSet();
@@ -375,13 +377,13 @@ public abstract class FGNGraphAxis extends FGraphicNode
             double minDiff = 10;
             int nBest = 0; 
             double kBest = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 5 && ((diff < minDiff) || (diff == minDiff && n > nBest)))
                {
-                  kBest = niceDivs[i]; 
+                  kBest = niceDiv;
                   nBest = n;
                   minDiff = diff;
                }
@@ -393,13 +395,13 @@ public abstract class FGNGraphAxis extends FGraphicNode
             double minDiff1 = 10;
             int nBest1 = 0;
             double kBest1 = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 5 && ((diff < minDiff1) || (diff == minDiff1 && n > nBest1)))
                {
-                  kBest1 = niceDivs[i]; 
+                  kBest1 = niceDiv;
                   nBest1 = n;
                   minDiff1 = diff;
                }
@@ -424,13 +426,13 @@ public abstract class FGNGraphAxis extends FGraphicNode
             double minDiff = 10;
             int nBest = 0; 
             double kBest = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 2 && ((diff < minDiff) || (diff == minDiff && n > nBest)))
                {
-                  kBest = niceDivs[i]; 
+                  kBest = niceDiv;
                   nBest = n;
                   minDiff = diff;
                }
@@ -442,13 +444,13 @@ public abstract class FGNGraphAxis extends FGraphicNode
             double minDiff1 = 10;
             int nBest1 = 0;
             double kBest1 = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 2 && ((diff < minDiff1) || (diff == minDiff1 && n > nBest1)))
                {
-                  kBest1 = niceDivs[i]; 
+                  kBest1 = niceDiv;
                   nBest1 = n;
                   minDiff1 = diff;
                }
@@ -468,19 +470,19 @@ public abstract class FGNGraphAxis extends FGraphicNode
          {
             // CASE 4: Extrema are opposite sign but ratio M/(-m) >= 10 or <= 0.1. Use the larger extremum to 
             // determine interval; add an extra division on opposite side of zero to encompass the smaller extremum.
-            double m = (maxVal > -minVal) ? maxVal : -minVal;
+            double m = Math.max(maxVal, -minVal);
             double p = Math.floor(Utilities.log10(m));
             double kExact = m / Math.pow(10, p);
             double minDiff = 10;
             int nBest = 0; 
             double kBest = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 5 && ((diff < minDiff) || (diff == minDiff && n > nBest)))
                {
-                  kBest = niceDivs[i]; 
+                  kBest = niceDiv;
                   nBest = n;
                   minDiff = diff;
                }
@@ -492,13 +494,13 @@ public abstract class FGNGraphAxis extends FGraphicNode
             double minDiff1 = 10;
             int nBest1 = 0;
             double kBest1 = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 5 && ((diff < minDiff1) || (diff == minDiff1 && n > nBest1)))
                {
-                  kBest1 = niceDivs[i]; 
+                  kBest1 = niceDiv;
                   nBest1 = n;
                   minDiff1 = diff;
                }
@@ -527,24 +529,6 @@ public abstract class FGNGraphAxis extends FGraphicNode
             else if(minVal < 0 && k*pwr < m) ++k;
             s = ((minVal > 0) ? k : -k) * pwr;
             
-            /*
-            double minDiff = 10;
-            int nBest = 0;
-            double kBest = 0;
-            for(int i=0; i<niceDivs.length; i++)
-            {
-               int n = (int) ((minVal > 0) ? Math.floor(kExact/niceDivs[i]) : Math.ceil(kExact/niceDivs[i]));
-               double diff = Math.abs(niceDivs[i]*n - kExact);
-               if(n >= 1 && n <= 5 && diff < minDiff)
-               {
-                  nBest = n;
-                  kBest = niceDivs[i];
-                  minDiff = diff;
-               }
-            }
-            s = (minVal > 0 ? 1 : -1) * nBest*kBest*Math.pow(10,p);
-            */
-            
             // (2) Let D = maxVal-s. Find N'*K'*10^p' >= D, minimizing the difference.
             m = maxVal-s;
             p = Math.floor(Utilities.log10(m));
@@ -552,13 +536,13 @@ public abstract class FGNGraphAxis extends FGraphicNode
             double minDiff = 10;
             double nBest = 0;
             double kBest = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 5 && ((diff < minDiff) || (diff == minDiff && n > nBest)))
                {
-                  kBest = niceDivs[i]; 
+                  kBest = niceDiv;
                   nBest = n;
                   minDiff = diff;
                }
@@ -570,13 +554,13 @@ public abstract class FGNGraphAxis extends FGraphicNode
             double minDiff1 = 10;
             int nBest1 = 0;
             double kBest1 = 0;
-            for(int i=0; i<niceDivs.length; i++)
+            for(double niceDiv : niceDivs)
             {
-               int n = (int) Math.ceil(kExact/niceDivs[i]);
-               double diff = niceDivs[i]*n - kExact;
+               int n = (int) Math.ceil(kExact / niceDiv);
+               double diff = niceDiv * n - kExact;
                if(n >= 1 && n <= 5 && ((diff < minDiff1) || (diff == minDiff1 && n > nBest1)))
                {
-                  kBest1 = niceDivs[i]; 
+                  kBest1 = niceDiv;
                   nBest1 = n;
                   minDiff1 = diff;
                }
@@ -598,8 +582,8 @@ public abstract class FGNGraphAxis extends FGraphicNode
       }
       
       // swap start and end if original range was descending
-      if(descending) {double d = s; s = e; e = d; };
-      
+      if(descending) {double d = s; s = e; e = d; }
+
       // update the axis range if there was any change. Also update major tick set interval and label format. If axis
       // is logarithmic, make sure major tick set renders at least one tick per decade. We rely on caller to trigger a 
       // refresh. 

@@ -4,6 +4,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.Objects;
 
 import com.srscicomp.common.g2dviewer.RenderTask;
 
@@ -67,7 +68,7 @@ public class ViolinStyleNode extends FGraphicNode implements Cloneable
    public Measure getSize() { return(size); }
 
    /**
-    * Set the rendered size of the violin plot. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the rendered size of the violin plot. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new size. A null value is rejected, as is a measure in "user units". Otherwise, the measure is
     * constrained by {@link BoxPlotNode#BOXWIDTHCONSTRAINTS}. 
@@ -108,8 +109,7 @@ public class ViolinStyleNode extends FGraphicNode implements Cloneable
 
       if(getParent() instanceof BoxPlotNode)
       {
-         if((hint == null || hint == FGNProperty.SIZE) || 
-               ((hint != null) && (hint != FGNProperty.SIZE) && (size.getValue() > 0)))
+         if((hint == null || hint == FGNProperty.SIZE) || (size.getValue() > 0))
             getParent().onNodeModified(null);
          else
             model.onChange(this, 0, false, null);
@@ -118,23 +118,21 @@ public class ViolinStyleNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
-      switch(p)
-      {
-         case SIZE : ok = setSize((Measure) propValue); break;
-         default : ok = super.setPropertyValue(p, propValue); break;
-      }
+      boolean ok;
+      if(Objects.requireNonNull(p) == FGNProperty.SIZE)
+         ok = setSize((Measure) propValue);
+      else
+         ok = super.setPropertyValue(p, propValue);
       return(ok);
    }
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
-      switch(p)
-      {
-         case SIZE : value = getSize(); break;
-         default : value = super.getPropertyValue(p); break;
-      }
+      Object value;
+      if(Objects.requireNonNull(p) == FGNProperty.SIZE)
+         value = getSize();
+      else
+         value = super.getPropertyValue(p);
       return(value);
    }
    
@@ -190,8 +188,12 @@ public class ViolinStyleNode extends FGraphicNode implements Cloneable
    /** The violin plot is not drawn if it has zero size, or if it is neither filled nor stroked. */
    @Override protected boolean isRendered()
    {
-      boolean rendered = (size.getValue() > 0) && ((getFillColor().getAlpha() > 0) ||
-            ((getStrokeColor().getAlpha() > 0) && (getStrokeWidth() > 0)));
-      return(rendered);
+      return((size.getValue() > 0) && ((getFillColor().getAlpha() > 0) ||
+            ((getStrokeColor().getAlpha() > 0) && (getStrokeWidth() > 0))));
+   }
+
+   @Override public ViolinStyleNode clone() throws CloneNotSupportedException
+   {
+      return (ViolinStyleNode) super.clone();
    }
 }

@@ -147,7 +147,7 @@ public class Grid3DNode extends FGraphicNode implements Cloneable
          if(g2dCopy != null) g2dCopy.dispose(); 
       }
       
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
 
    }
    
@@ -161,5 +161,10 @@ public class Grid3DNode extends FGraphicNode implements Cloneable
       psDoc.startElement(this);
       psDoc.renderPolyline(verts.toArray(new Point2D[0]), null, 0, null, null, false);
       psDoc.endElement();
+   }
+
+   @Override public Grid3DNode clone() throws CloneNotSupportedException
+   {
+      return (Grid3DNode) super.clone();
    }
 }

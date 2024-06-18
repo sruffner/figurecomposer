@@ -12,12 +12,7 @@ import java.awt.geom.GeneralPath;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import com.srscicomp.common.g2dutil.Marker;
 import com.srscicomp.common.g2dutil.MultiShapePainter;
@@ -67,17 +62,17 @@ import com.srscicomp.fc.fig.Graph3DNode.Side;
  * are no text attributes associated with this presentation node.</p>
  * 
  * <p><b>Scatter3DNode</b> can render a simplified projection of the 3D scatter plot on any of the three backplanes of 
- * its parent graph. During a render cycle, {@link Graph3DNode} will invoke {@link #renderProjections()} on each 3D 
+ * its parent graph. During a render cycle, {@link Graph3DNode} will invoke {@link #renderProjections} on each 3D
  * scatter plot child; these projections are rendered after the backplanes but before any data presentation nodes, 
  * including the 3D scatter plot itself, since the projections are intended to lie ON the backplanes. The projected 
  * points are represented by small filled circles limited in size to [0..10] points. The dots can be different for each 
- * backplane; see {@link #setProjectionDotSize()}, {@link #setProjectionDotColor()}. By default, the projections are not
+ * backplane; see {@link #setProjectionDotSize}, {@link #setProjectionDotColor}. By default, the projections are not
  * rendered (dot size is set to 0 for all 3 backplanes).</p>
  * 
  * <p>In the two bar plot-like display modes, for each data point (Xn, Yn, Zn}, a 3D bar is drawn parallel to the Z-axis
  * and extending from the base plane Z=Zo to the plane Z=Zn, centered on (Xn,Yn) in the XY plane. In the {@link 
  * DisplayMode#BARPLOT} display mode, the three visible faces of the bar are filled with the node's current fill color. 
- * In the {@link DisplayMode#COLORBARBPLOT} mode, the YZ and XZ faces are filled with a linear color gradient IAW the 
+ * In the {@link DisplayMode#COLORBARPLOT} mode, the YZ and XZ faces are filled with a linear color gradient IAW the
  * graph's current color map and the Z-coordinate range [Zo..Zn] spanned by the bar, and the XY face is filled with the 
  * color that maps to the Z-coordinate for that face (either Zo or Zn, depending on the 3D graph's orientation). The 
  * bars are stroked IAW the 3D scatter plot's current stroking styles. The "barWidth" property sets the size of a bar's
@@ -86,7 +81,7 @@ import com.srscicomp.fc.fig.Graph3DNode.Side;
  * is the 4D format {@link Fmt#XYZWSET}, the W-coordinate data are ignored.</p>
  * 
  * <p><b>NOTE: Limitations in rendering a color-mapped bar plot.</b> A color-mapped bar plot (with display mode {@link 
- * DisplayMode#COLORBARPLOT}) will not have a color gradient on the XZ/YZ faces of each bar when the color mapping is 
+ * DisplayMode#COLORBARPLOT}) will not have a color gradient on the XZ/YZ faces of each bar when the color mapping is
  * logarithmic, as a logarithmic gradient is not supported. Instead, each bar is filled with a solid color that maps to
  * the Z-coordinate of the data point represented by that bar.</p>
  * 
@@ -176,14 +171,14 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
        * A 3D bar plot with color gradient fill.  No symbols, poly-line or backplane dot projections rendered. The
        * W-coordinate is ignored if the data set is 4D.
        */
-      COLORBARBPLOT("colorBarPlot");
+      COLORBARPLOT("colorBarPlot");
       
       @Override public String toString() { return(niceName); }
       
-      private DisplayMode(String s) { niceName = s; }
+      DisplayMode(String s) { niceName = s; }
       
       /** The display mode name as it should appear in GUI and in FypML markup. */
-      private String niceName;
+      private final String niceName;
    }
 
    /** The current data display mode. */
@@ -197,7 +192,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    public DisplayMode getMode() { return(mode); }
 
    /**
-    * Set data display mode for this 3D scatter plot node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set data display mode for this 3D scatter plot node. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param mode The new display mode. Null is rejected.
     * @return False if argument was null; true otherwise.
@@ -247,14 +242,14 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    {
       if(this.stemmed != ena)
       {
-         if(doMultiNodeEdit(FGNProperty.STEMMED, new Boolean(ena))) return(true);
+         if(doMultiNodeEdit(FGNProperty.STEMMED, ena)) return(true);
          
-         Boolean old = new Boolean(this.stemmed);
+         Boolean old = this.stemmed;
          this.stemmed = ena;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.STEMMED);
-            FGNRevEdit.post(this, FGNProperty.STEMMED, new Boolean(this.stemmed), old, 
+            FGNRevEdit.post(this, FGNProperty.STEMMED, this.stemmed, old,
                   (this.stemmed ? "Show stems on " : "Connect data points in ") + "3D scatter plot");
          }
       }
@@ -287,15 +282,15 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       
       if(zBase != base)
       {
-         if(doMultiNodeEdit(FGNProperty.BASELINE, new Double(base))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BASELINE, base)) return(true);
          
-         Double old = new Double(zBase);
+         Double old = zBase;
          zBase = base;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BASELINE);
             String desc = "Set 3D scatter plot's base plane to Z=" + Utilities.toString(zBase, 6, 3);
-            FGNRevEdit.post(this, FGNProperty.BASELINE, new Double(zBase), old, desc);
+            FGNRevEdit.post(this, FGNProperty.BASELINE, zBase, old, desc);
          }
       }
       return(true);
@@ -332,21 +327,21 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       if(sz < MINBARSZ || sz > MAXBARSZ) return(false);
       if(barSize != sz)
       {
-         if(doMultiNodeEdit(FGNProperty.BARWIDTH, new Integer(sz))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BARWIDTH, sz)) return(true);
 
-         Integer old = new Integer(barSize);
+         Integer old = barSize;
          barSize = sz;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BARWIDTH);
-            FGNRevEdit.post(this, FGNProperty.BARWIDTH, new Integer(barSize), old);
+            FGNRevEdit.post(this, FGNProperty.BARWIDTH, barSize, old);
          }
       }
       return(true);
    }
    
    /** The symbol's background fill: solid color (possibly transparent) or a gradient. */
-   private BkgFill bkgFill = null;
+   private BkgFill bkgFill;
 
    /**
     * Get the current background fill descriptor for this 3D scatter plot. If the node's marker symbol is a closed path,
@@ -358,8 +353,8 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    
    /**
     * Set the background fill descriptor for this 3D scatter plot. If a change is made, an "undo" operation is posted 
-    * and {@link #onNodeModified()} is invoked.
-    * @param The new background fill descriptor. A null value is rejected.
+    * and {@link #onNodeModified} is invoked.
+    * @param bf The new background fill descriptor. A null value is rejected.
     * @return False if argument was null; true otherwise.
     */
    public boolean setBackgroundFill(BkgFill bf)
@@ -384,7 +379,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
     * Array holds size of the dots representing the projection of the scatter plot onto each of the parent graph's 
     * backplanes, in order: XY plane, XZ plane, YZ plane.
     */
-   private int[] prjDotSizes = null;
+   private final int[] prjDotSizes;
    
    /**
     * Get the size of the circular dots representing the projection of this 3D scatter plot onto the specified backplane
@@ -413,13 +408,13 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       int idx = (backplane==Side.XZ) ? 1 : (backplane==Side.YZ ? 2 : 0);
       if(prjDotSizes[idx] != sz)
       {
-         Integer old = new Integer(prjDotSizes[idx]);
+         int old = prjDotSizes[idx];
          prjDotSizes[idx] = sz;
          if(areNotificationsEnabled())
          {
             // index identifying backplane is included with old and new values of the dot size
-            Object[] oldInfo = new Object[] {new Integer(idx), old};
-            Object[] newInfo = new Object[] {new Integer(idx), new Integer(sz)};
+            Object[] oldInfo = new Object[] {idx, old};
+            Object[] newInfo = new Object[] {idx, sz};
             onNodeModified(FGNProperty.PROJSZ);
             FGNRevEdit.post(this, FGNProperty.PROJSZ, newInfo, oldInfo, 
                   "Change dot size for " + backplane + " projection");
@@ -439,9 +434,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    String getProjectionDotSizesAsTokenList()
    {
       if(prjDotSizes[0]==0 && prjDotSizes[1]==0 && prjDotSizes[2]==0) return("");
-      StringBuilder sb = new StringBuilder();
-      sb.append(prjDotSizes[0]).append(" ").append(prjDotSizes[1]).append(" ").append(prjDotSizes[2]);
-      return(sb.toString());
+      return(prjDotSizes[0] + " " + prjDotSizes[1] + " " + prjDotSizes[2]);
    }
    
    /**
@@ -467,7 +460,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          for(int i=0; i<3 && i<tokens.length; i++)
          {
             int sz = 0;
-            try { sz = Integer.parseInt(tokens[i]); } catch(NumberFormatException nfe) {}
+            try { sz = Integer.parseInt(tokens[i]); } catch(NumberFormatException ignored) {}
             prjDotSizes[i] = Utilities.rangeRestrict(0, 10, sz);
          }
       }
@@ -477,7 +470,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
     * Array holds size of the dots representing the projection of the scatter plot onto each of the parent graph's 
     * backplanes, in order: XY plane, XZ plane, YZ plane.
     */
-   private Color[] prjDotColors = null;
+   private final Color[] prjDotColors;
    
    /**
     * Get the color of the filled dots representing the projection of this 3D scatter plot onto the specified backplane
@@ -511,8 +504,8 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          if(areNotificationsEnabled())
          {
             // index identifying backplane is included with old and new values of the dot color
-            Object[] oldInfo = new Object[] {new Integer(idx), old};
-            Object[] newInfo = new Object[] {new Integer(idx), c};
+            Object[] oldInfo = new Object[] {idx, old};
+            Object[] newInfo = new Object[] {idx, c};
             onNodeModified(FGNProperty.PROJC);
             FGNRevEdit.post(this, FGNProperty.PROJC, newInfo, oldInfo, 
                   "Change dot color for " + backplane + " projection");
@@ -535,11 +528,9 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       if(Color.BLACK.equals(prjDotColors[0]) && Color.BLACK.equals(prjDotColors[1]) && 
             Color.BLACK.equals(prjDotColors[2])) 
          return("");
-      StringBuilder sb = new StringBuilder();
-      sb.append(BkgFill.colorToHexString(prjDotColors[0])).append(" ");
-      sb.append(BkgFill.colorToHexString(prjDotColors[1])).append(" ");
-      sb.append(BkgFill.colorToHexString(prjDotColors[2]));
-      return(sb.toString());
+      return(BkgFill.colorToHexString(prjDotColors[0]) + " " +
+            BkgFill.colorToHexString(prjDotColors[1]) + " " +
+            BkgFill.colorToHexString(prjDotColors[2]));
    }
    
    /**
@@ -558,7 +549,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
     */
    void setProjectionDotColorsFromTokenList(String tokenList)
    {
-      for(int i=0; i<prjDotColors.length; i++) prjDotColors[i] = Color.BLACK;
+      Arrays.fill(prjDotColors, Color.BLACK);
       if(tokenList != null)
       {
          String[] tokens = tokenList.trim().split("\\s");
@@ -569,7 +560,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       Object[] arObj = null;
       switch(p)
       {
@@ -591,8 +582,8 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
             }
             if(ok)
             {
-               int idx = ((Integer) arObj[0]).intValue();
-               int sz = ((Integer) arObj[1]).intValue();
+               int idx = (Integer) arObj[0];
+               int sz = (Integer) arObj[1];
                ok = idx >= 0 && idx < prjDotSizes.length && sz >= 0 && sz <= 10;
                if(ok) ok = setProjectionDotSize(idx==0 ? Side.XY : (idx==1 ? Side.XZ : Side.YZ), sz);
             }
@@ -610,7 +601,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
             }
             if(ok)
             {
-               int idx = ((Integer) arObj[0]).intValue();
+               int idx = (Integer) arObj[0];
                ok = idx >= 0 && idx < prjDotSizes.length;
                if(ok) ok = setProjectionDotColor(idx==0 ? Side.XY : (idx==1 ? Side.XZ : Side.YZ), (Color) arObj[1]);
             }
@@ -622,13 +613,13 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case MODE: value = getMode(); break;
-         case STEMMED: value = new Boolean(getStemmed()); break;
-         case BASELINE: value = new Double(getZBase()); break;
-         case BARWIDTH: value = new Integer(getBarSize()); break;
+         case STEMMED: value = getStemmed(); break;
+         case BASELINE: value = getZBase(); break;
+         case BARWIDTH: value = getBarSize(); break;
          case BKGC: value = getBackgroundFill(); break;
          case PROJSZ:
          case PROJC:
@@ -654,10 +645,10 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
       styleSet.putStyle(FGNProperty.MODE, getMode());
-      styleSet.putStyle(FGNProperty.STEMMED, new Boolean(getStemmed()));
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
+      styleSet.putStyle(FGNProperty.STEMMED, getStemmed());
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
       styleSet.putStyle(FGNProperty.BKGC, getBackgroundFill());
-      styleSet.putStyle(FGNProperty.BARWIDTH, new Integer(getBarSize()));
+      styleSet.putStyle(FGNProperty.BARWIDTH, getBarSize());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -699,7 +690,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       Integer barSz = (Integer) applied.getCheckedStyle(FGNProperty.BARWIDTH, null, Integer.class);
       if(barSz != null && !barSz.equals(restore.getStyle(FGNProperty.BARWIDTH)))
       {
-         barSize = Utilities.rangeRestrict(MINBARSZ, MAXBARSZ, barSz.intValue());
+         barSize = Utilities.rangeRestrict(MINBARSZ, MAXBARSZ, barSz);
          changed = true;
       }
       return(changed);
@@ -796,7 +787,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    @Override public List<LegendEntry> getLegendEntries()
    {
       if(!getShowInLegend()) return(null);
-      List<LegendEntry> out = new ArrayList<LegendEntry>();
+      List<LegendEntry> out = new ArrayList<>();
       out.add(new ScatterPlotLegendEntry(this));
       return(out);
    }
@@ -884,7 +875,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       {
          if(shapePainter == null) updateRenderingResources();
          if(!polyPainter.render(g2d, task)) return(false);
-         if(!shapePainter.render(g2d, task)) return(false);
+         return shapePainter.render(g2d, task);
       }
       return(true);
    }
@@ -915,9 +906,9 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    
    /** 
     * Is this 3D scatter plot currently configured in one of the two bar plot display modes?
-    * @return True if current display mode is {@link DisplayMode#BARPLOT} or {@link DisplayMode#COLORBARBPLOT}.
+    * @return True if current display mode is {@link DisplayMode#BARPLOT} or {@link DisplayMode#COLORBARPLOT}.
     */
-   public boolean isBarPlotDisplayMode() { return(mode == DisplayMode.BARPLOT || mode == DisplayMode.COLORBARBPLOT); }
+   public boolean isBarPlotDisplayMode() { return(mode == DisplayMode.BARPLOT || mode == DisplayMode.COLORBARPLOT); }
    
    /**
     * Deos this 3D scatter plot also render its projection onto the specified backplane in the parent graph? The
@@ -1032,7 +1023,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          if(isStroked() && !getStemmed())
          {
             Iterator<Point2D> iterator = new DataPointProducer();
-            List<Point2D> ptList = new ArrayList<Point2D>();
+            List<Point2D> ptList = new ArrayList<>();
             while(iterator.hasNext())
             {
                Point2D next = (Point2D) iterator.next().clone();    // b/c DataPointProducer reuses a Point2D
@@ -1043,15 +1034,14 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
             
             // in case the point list is really large
             ptList.clear();
-            ptList = null;
          }
          
          ShapeProducer producer = new ShapeProducer();
-         List<Point2D> pts = new ArrayList<Point2D>();
-         List<Double> adornSizes = new ArrayList<Double>();
-         List<BkgFill> adornBkgFills = new ArrayList<BkgFill>();
+         List<Point2D> pts = new ArrayList<>();
+         List<Double> adornSizes = new ArrayList<>();
+         List<BkgFill> adornBkgFills = new ArrayList<>();
          
-         if(producer.sizeConstant) adornSizes.add(new Double(producer.maxSymSizeMI));
+         if(producer.sizeConstant) adornSizes.add(producer.maxSymSizeMI);
          if(producer.fillConstant) adornBkgFills.add(producer.bkgFill);
          boolean doStems = (producer.pStemEnd != null);
          
@@ -1068,7 +1058,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
             }
             
             if(!producer.sizeConstant)
-               adornSizes.add(new Double(producer.currSymSzMI));
+               adornSizes.add(producer.currSymSzMI);
             if(!producer.fillConstant)
                adornBkgFills.add(producer.bkgFill);
          }
@@ -1101,9 +1091,9 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       {
          // for the bar plot display modes, we prepare a polygon mesh as for a surface; in this case, the polygons
          // don't form a mesh -- but it works because the PSDoc routine fills and strokes each polygon separately
-         boolean isCMap = (mode==DisplayMode.COLORBARBPLOT);
-         List<Point2D> verts = new ArrayList<Point2D>();
-         List<Number> fillInfo = new ArrayList<Number>();
+         boolean isCMap = (mode==DisplayMode.COLORBARPLOT);
+         List<Point2D> verts = new ArrayList<>();
+         List<Number> fillInfo = new ArrayList<>();
 
          BarProducer barGenerator = new BarProducer();
          while(barGenerator.hasNext())
@@ -1117,16 +1107,16 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
                if(barGenerator.getFillPaint() instanceof Color)
                {
                   fillInfo.add(Double.NaN);
-                  fillInfo.add(new Integer(barGenerator.getPackedRGBForDataZ()));
+                  fillInfo.add(barGenerator.getPackedRGBForDataZ());
                }
                else
                {
                   Point2D p = barGenerator.getGradientFillStart();
-                  fillInfo.add(new Double(p.getX()));
-                  fillInfo.add(new Double(p.getY()));
+                  fillInfo.add(p == null ? 0 : p.getX());
+                  fillInfo.add(p == null ? 0 : p.getY());
                   p = barGenerator.getGradientFillEnd();
-                  fillInfo.add(new Double(p.getX()));
-                  fillInfo.add(new Double(p.getY()));
+                  fillInfo.add(p == null ? 0 : p.getX());
+                  fillInfo.add(p == null ? 0 : p.getY());
                }
             }
          }
@@ -1229,7 +1219,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of the 3D scatter plot node
     * that was cloned. The clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected Scatter3DNode clone() throws CloneNotSupportedException
    {
       Scatter3DNode copy = (Scatter3DNode) super.clone();
       copy.rBoundsSelf = null;
@@ -1243,7 +1233,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
     * order a list of such points based on the their locations in 3D space using {@link P3DComparator}.
     * @author sruffner
     */
-   private class Point4D extends Point3D
+   private static class Point4D extends Point3D
    {
       Point4D(double x, double y, double z, double w)
       {
@@ -1301,7 +1291,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
                Math.max(Math.abs(ds.getWMin()), Math.abs(ds.getWMax())) :
                Math.max(Math.abs(ds.getZMin()), Math.abs(ds.getZMax()));
          
-         scatterPts = new ArrayList<Point4D>();
+         scatterPts = new ArrayList<>();
          nSoFar = 0;
          pLoc = new Point2D.Double();
          
@@ -1316,14 +1306,14 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          if(prj != null && !isBarPlotDisplayMode())
          {
             for(int i=0; i<ds.getDataSize(-1); i++)
-               scatterPts.add(new Point4D(ds.getX(i,-1), ds.getY(i,-1), ds.getZ(i), is4D ? ds.getW(i) : 0f));
+               scatterPts.add(new Point4D(ds.getX(i, -1), ds.getY(i, -1), ds.getZ(i), is4D ? ds.getW(i) : 0f));
 
             // check X-coord first over Y when X-axis of 3D graph is more back-to-front than side-to-side than Y axis
             double absRot = Math.abs(prj.getRotationAngle());
             P3DComparator c = new P3DComparator((absRot <= 45), 
                   prj.getBackSideX() > prj.getFrontSideX(), prj.getBackSideY() > prj.getFrontSideY());
             
-            Collections.sort(scatterPts, c);
+            scatterPts.sort(c);
          }
 
          
@@ -1383,7 +1373,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       
       /** 
        * Construct a copy of the specified shape producer.
-       * @param The shape producer to copy.
+       * @param src The shape producer to copy.
        */
       ShapeProducer(ShapeProducer src)
       {
@@ -1532,25 +1522,25 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
        * Maximum of the absolute values across the 3rd or 4th dimension of underlying data (depending on whether the
        * data is 3D or 4D) -- for computing symbol size. 
        */
-      double wDataAbsMax = 0;
+      final double wDataAbsMax;
       /** Defines the 3D-to-2D projection governing the parent 3D graph. */
       Projector prj = null;
       /** The scatter points listed in drawing order to minimize occlusion issues. */
-      List<Point4D> scatterPts = null;
+      final List<Point4D> scatterPts;
       /** The number of scatter points produced thus far. */
-      int nSoFar = 0;
+      int nSoFar;
 
       /** 
        * The 3D scatter plot's component symbol node. It governs the rendering of each plot symbol (except for the
        * background fill descriptor), but not the stem lines.
        */
-      SymbolNode symbol;
+      final SymbolNode symbol;
 
       /** 
        * The current shape location. This is reused to deliver each point. IT IS ASSUMED that the consumer will NOT 
        * store a reference to this point, but will make a copy if needed.
        */
-      Point2D pLoc = null;
+      final Point2D pLoc;
       /** 
        * The stem end point for the current shape location. Null if stems are not drawn. Otherwise, note that it is
        * reused to deliver each point. It is assumed that the consumer will NOT store a reference to it.
@@ -1568,13 +1558,13 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
        * The current shape to draw. If symbol size is fixed, this is determined at construction time and never
        * changes. Otherwise, it is calculated for each data point (X,Y,Z) in the source data set.
        */
-      GeneralPath shapePrimitive = null;
+      final GeneralPath shapePrimitive;
       /** 
        * The background fill for the current shape. If display mode is such that the fill does not change, this is
        * determined at construction time and never changes. In either of the "color bubble" display modes, its value is
        * prepared for each data point (X,Y,Z) in the source data set.
        */
-      BkgFill bkgFill = null;
+      BkgFill bkgFill;
    }
    
    /**
@@ -1618,14 +1608,14 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       /** Defines the 3D-to-2D projection governing the parent 3D graph. */
       Projector prj = null;
       /** The number of points produced thus far. */
-      int nSoFar = 0;
+      int nSoFar;
       /** The total number of points to be produced. */
       final int nTotal;
       /** 
        * The current point. This is reused to deliver each point. IT IS ASSUMED that the consumer will NOT store a 
        * reference to this point, but will make a copy if needed.
        */
-      Point2D pCurrent = null;
+      final Point2D pCurrent;
    }
    
    
@@ -1641,7 +1631,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
     * faces are iterated in the sequence: XY (face parallel to XY plane of 3D graph), YZ, XZ.</p>
     * 
     * <p>In the {@link DisplayMode#BARPLOT} mode, all bar faces will be filled with the same color as specified by the
-    * 3D scatter plot node's "fillColor" property. In the {@link DisplayMode#COLORBARBPLOT} mode, the YZ and XZ vertical
+    * 3D scatter plot node's "fillColor" property. In the {@link DisplayMode#COLORBARPLOT} mode, the YZ and XZ vertical
     * faces are filled with a linear color gradient IAW the 3D graph's current color map and the Z-coordinate range
     * spanned by the bar face, while the XY face is filled with the color that maps to the Z-coordinate for that face.
     * <i>However, the linear color gradient fill is not appropriate when the Z-axis is logarithmic. In this scenario, 
@@ -1665,7 +1655,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          // that ill-defined data points are skipped.
          DataSet ds = getDataSet();
          
-         scatterPts = new ArrayList<Point3D>();
+         scatterPts = new ArrayList<>();
          
          // note: no points generated if display mode is not one of the bar plot modes!
          Graph3DNode g3 = getParentGraph3D();
@@ -1683,7 +1673,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
             P3DComparator c = new P3DComparator((absRot <= 45), 
                   prj.getBackSideX() > prj.getFrontSideX(), prj.getBackSideY() > prj.getFrontSideY());
             
-            Collections.sort(scatterPts, c);
+            scatterPts.sort(c);
             
             // bar cross-section size in 3D world units
             barSz = prj.getXExtent() * ((double) getBarSize()) / 100.0;
@@ -1703,7 +1693,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          // the 3D graph's Z axis is logarithmic, the bars will be rendered in a single color that maps to the 
          // Z-coordinate of the data point represented by the bar 
          // bars were requested.
-         if(g3 == null || getMode() != DisplayMode.COLORBARBPLOT)
+         if(g3 == null || getMode() != DisplayMode.COLORBARPLOT)
          {
             zRange = null;
             colorLUT = null;
@@ -1752,6 +1742,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          barVerts = new Point2D[4];
          for(int i=0; i<4; i++) barVerts[i] = new Point2D.Double();
          fillPaint = Scatter3DNode.this.getFillColor();
+         packedRGB = 0;
       }
       
       @Override public Iterator<PaintedShape> iterator()  { return(new BarProducer(this)); }
@@ -1939,21 +1930,21 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       /** Defines the 3D-to-2D projection governing the parent 3D graph. */
       Projector prj = null;
       /** The 3D data points listed in drawing order to minimize occlusion issues. */
-      List<Point3D> scatterPts = null;
+      final List<Point3D> scatterPts;
 
       /** The number of 3D bars produced thus far. */
-      int nSoFar = 0;
+      int nSoFar;
       /** 
        * The stage indicates where we are in generating the 3D bar for the current data point. We have to render
        * each of the three visible faces: 0 = XY face, 1 = YZ, 2 = XZ.
        */
-      int stage = 0;
+      int stage;
 
       /** The bar face to be rendered next for the 3D bar currently being generated. */
-      GeneralPath barFace = null;
+      final GeneralPath barFace;
       
       /** The four 2D vertices defining the next bar face to render in the 2D projection of the 3D bar plot. */
-      Point2D[] barVerts = null;
+      final Point2D[] barVerts;
       /** 
        * For the color-mapped bar plot, this is the packed RGB color that maps to the Z-coordinate of the data point 
        * represented by the current bar face.
@@ -1965,7 +1956,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
        * should be filled; for the XY face it will be a single color corresponding to the Z-coordinate for that face.
        * For a single-color bar plot, this is set to the scatter plot node's fill color.
        */
-      Paint fillPaint = null;
+      Paint fillPaint;
       
       /** 
        * The shape location. This is set to (0,0) and never changes, because the vertices of the bar faces are computed
@@ -1974,10 +1965,10 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       Point2D shapeLoc = new Point2D.Double();
       
       /** Point used to compute the vertices of each bar face. */
-      Point2D p2 = new Point2D.Double();
+      final Point2D p2 = new Point2D.Double();
       /** When a bar is color-mapped, this is the start point for the linear gradient paint for the current bar face. */
-      Point2D startP = new Point2D.Double();
+      final Point2D startP = new Point2D.Double();
       /** When a bar is color-mapped, this is the end point for the linear gradient paint for the current bar face. */
-      Point2D endP = new Point2D.Double();
+      final Point2D endP = new Point2D.Double();
    }
 }

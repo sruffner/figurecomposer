@@ -280,23 +280,23 @@ public class JUnicodeCharacterMap extends JPanel implements ActionListener, Hier
 	 */
 	public void setAvailableCharacterSets(UnicodeSubset[] sets)
 	{
-	   UnicodeSubset[] unicodeSets = sets;
-      if( unicodeSets == null || unicodeSets.length == 0 )
-      {
-         unicodeSets = new UnicodeSubset[3];
-         unicodeSets[0] = UnicodeSubset.LATIN_LETTERS;
-         unicodeSets[1] = UnicodeSubset.GREEK_LETTERS;
-         unicodeSets[2] = UnicodeSubset.PUNCTUATION;
-      }
-	      
-      charSetCombo.removeActionListener(this);
-      charSetCombo.removeAllItems();
-	  for (UnicodeSubset unicodeSet : unicodeSets) charSetCombo.addItem(unicodeSet);
-      charSetCombo.setSelectedIndex(0);
-      charSetCombo.setEnabled(unicodeSets.length > 1);
-      charSetCombo.addActionListener(this);
+		UnicodeSubset[] unicodeSets = sets;
+		if( unicodeSets == null || unicodeSets.length == 0 )
+		{
+			unicodeSets = new UnicodeSubset[3];
+			unicodeSets[0] = UnicodeSubset.LATIN_LETTERS;
+			unicodeSets[1] = UnicodeSubset.GREEK_LETTERS;
+			unicodeSets[2] = UnicodeSubset.PUNCTUATION;
+		}
 
-      characterModel.updateDisplayableCharacters(characterTable.getFont(), getSelectedCharSubset());
+		charSetCombo.removeActionListener(this);
+		charSetCombo.removeAllItems();
+		for (UnicodeSubset unicodeSet : unicodeSets) charSetCombo.addItem(unicodeSet);
+		charSetCombo.setSelectedIndex(0);
+		charSetCombo.setEnabled(unicodeSets.length > 1);
+		charSetCombo.addActionListener(this);
+
+		characterModel.updateDisplayableCharacters(characterTable.getFont(), getSelectedCharSubset());
 	}
 	
 	/**

@@ -8,7 +8,7 @@ package com.srscicomp.fc.fig;
  * contents to its state immediately befor or immediately after the change. <code>FGraphicModel</code> itself maintains 
  * an "action" history of up to the fifty (50) most recent reversible changes made to the model. The most recent change
  * applied to the model can be undone, and the most recent undone operation can be redone. For more information, see
- * {@link FGraphicModel#undo()}.</p>
+ * {@link FGraphicModel#undoOrRedo}.</p>
  * 
  * @author  sruffner
  */

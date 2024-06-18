@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.FileSystems;
 import java.text.AttributedString;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,7 +69,7 @@ public class PDFSupport
     * when drawing to the PDF graphics context versus the normal Java2D context.
     * 
     * @param g2 The graphics context to test.
-    * @return True if the context is an instance of the custom context prepared by {@link #exportFigure()} in order to
+    * @return True if the context is an instance of the custom context prepared by {@link #exportFigure} in order to
     * use the existing render infrastructure to export a <i>FypML</i> figure to a PDF document.
     */
    public static boolean isPDFGraphics(Graphics2D g2) { return(g2 instanceof PdfGraphics2DEx); }
@@ -117,14 +118,17 @@ public class PDFSupport
       float right = 36;
       float top = 36;
       float bot = 36;
+      float imageableW = w - left - right, imageableH = h - top - bot;
       if(pgFmt != null)
       {
          w = (float) pgFmt.getWidth();
          h = (float) pgFmt.getHeight();
+         imageableW = (float) pgFmt.getImageableWidth();
+         imageableH = (float) pgFmt.getImageableHeight();
          left = (float) pgFmt.getImageableX();
-         right = w - (float) (pgFmt.getImageableX() + pgFmt.getImageableWidth());
+         right = w - (float) (pgFmt.getImageableX() + imageableW);
          top = (float) pgFmt.getImageableY();
-         bot = h - (float) (pgFmt.getImageableY() + pgFmt.getImageableHeight());
+         bot = h - (float) (pgFmt.getImageableY() + imageableH);
       }
       
       // create the PDF document and prepare the writer
@@ -143,7 +147,7 @@ public class PDFSupport
          g2 = new PdfGraphics2DEx(cb, w, h, fontMapper);
          g2.translate(left, h-bot);
          g2.scale(1, -1);
-         g2.clipRect(0, 0, (int) pgFmt.getImageableWidth(), (int) pgFmt.getImageableHeight());
+         g2.clipRect(0, 0, (int) imageableW, (int) imageableH);
           
          // now rescale to milli-inches
          g2.scale(72.0/1000.0, 72.0/1000.0);
@@ -189,49 +193,6 @@ public class PDFSupport
    public AttributedString doFontSubstitutionIfNeeded(String s, Font awtFont)
    {
       return(null);
-      /*
-      if(awtFont == null || s == null || s.isEmpty()) return(null);
-      
-      BaseFont pdfFont = fontMapper.awtToPdf(awtFont);
-
-      List<Integer> missingChars = null;
-      for(int i=0; i<s.length(); i++)
-      {
-         if(!pdfFont.charExists(s.charAt(i)))
-         {
-            if(missingChars == null) missingChars = new ArrayList<Integer>();
-            missingChars.add(new Integer(i));
-         }
-      }
-      if(missingChars == null) return(null);
-      
-      AttributedString as = new AttributedString(s);
-      as.addAttribute(TextAttribute.FONT, awtFont);
-      
-      BaseFont pdfSubstFont = fontMapper.getSubstituteBuiltInFont(awtFont);
-      if(pdfSubstFont.getPostscriptFontName().toLowerCase().contains("symbol"))
-      {
-         // for the silly case in which user chooses to use "Symbol" as the AWT font. We need a Latin font to handle
-         // most supported characters!
-         String name = awtFont.getFontName().toLowerCase(Locale.ENGLISH);
-         String logFont = Font.SANS_SERIF;
-         if(name.indexOf("courier") >= 0) logFont = Font.MONOSPACED;
-         else if(name.indexOf("times") >= 0) logFont = Font.SERIF;
-         pdfSubstFont = fontMapper.getSubstituteBuiltInFont(new Font(logFont, awtFont.getSize(), awtFont.getStyle()));
-      }
-      BaseFont pdfSymFont = fontMapper.getBuiltInSymbolFont();
-      
-      Font awtSubstFont = fontMapper.pdfToAwt(pdfSubstFont, awtFont.getSize());
-      Font awtSymFont = fontMapper.pdfToAwt(pdfSymFont, awtFont.getSize());
-      
-      for(Integer pos : missingChars)
-      {
-         char c = s.charAt(pos);
-         as.addAttribute(TextAttribute.FONT, pdfSubstFont.charExists(c) ? awtSubstFont : awtSymFont, pos, pos+1);
-      }
-      
-      return(as);
-      */
    }
    
    /**
@@ -239,9 +200,7 @@ public class PDFSupport
     */
    public List<String> getMappedFonts()
    {
-      List<String> out = new ArrayList<String>();
-      out.addAll(this.fontMapper.getMapper().keySet());
-      return out;
+      return new ArrayList<>(this.fontMapper.getMapper().keySet());
    }
    
    /**
@@ -290,10 +249,6 @@ public class PDFSupport
 
    /**
     * For test/development only.
-    * 
-    * @param args no arguments needed
-    * @throws IOException
-    * @throws DocumentException
     */
    public static void main(String[] args) throws IOException, DocumentException 
    {
@@ -316,28 +271,35 @@ public class PDFSupport
       String path = scanIn.nextLine().trim();
       
       tStart = System.currentTimeMillis();
-      if(choice.equals("1")) 
-         pdfSupport.testFonts(new File(path));
-      else if(choice.equals("2")) 
-         pdfSupport.testGraphics(new File(path));
-      else if(choice.equals("3"))
+      switch(choice)
       {
+      case "1":
+         pdfSupport.testFonts(new File(path));
+         break;
+      case "2":
+         pdfSupport.testGraphics(new File(path));
+         break;
+      case "3":
          System.out.print("Specify font family name >> ");
          String family = scanIn.nextLine().trim();
          System.out.print("Specify style [b=bold, i=italic, I=bolditalic; else plain] >> ");
          String style = scanIn.nextLine().trim();
          FontStyle fs = FontStyle.PLAIN;
-         if("b".equals(style)) fs = FontStyle.BOLD;
-         else if("i".equals(style)) fs = FontStyle.ITALIC;
-         else if("I".equals(style)) fs = FontStyle.BOLDITALIC;
+         switch(style)
+         {
+         case "b": fs = FontStyle.BOLD; break;
+         case "i": fs = FontStyle.ITALIC; break;
+         case "I":  fs = FontStyle.BOLDITALIC; break;
+         }
          tStart = System.currentTimeMillis();
          pdfSupport.testAllCharsEx(path, family, fs);
-      }
-      else if(choice.equals("4"))
+         break;
+      case "4":
          pdfSupport.testExport(new File(path));
-      else
-      {
+         break;
+      default:
          System.out.println("Sorry, [" + choice + "] is not a valid choice.");
+         break;
       }
        
       scanIn.close();
@@ -350,21 +312,19 @@ public class PDFSupport
     * replaced by a substitute font from among the built-in standard Type 1 fonts.
     * 
     * @param dst File to which results are written (plain-text).
-    * @throws IOException 
-    * @throws DocumentException
     */
    private void testFonts(File dst) throws IOException, DocumentException
    {
       PrintStream out = new PrintStream(new FileOutputStream(dst));
       out.println("Fonts discovered by iText (n=" + fontMapper.getNumFontsMapped() + "):");
       Set<String> keys = fontMapper.getMapper().keySet();
-      List<String> sortedKeys = new ArrayList<String>(keys);
+      List<String> sortedKeys = new ArrayList<>(keys);
       Collections.sort(sortedKeys);
       for(String name : sortedKeys) out.println("   " + name);
 
       out.println();
       out.println("PDF font aliases:");
-      sortedKeys = new ArrayList<String>(fontMapper.getAliases().keySet());
+      sortedKeys = new ArrayList<>(fontMapper.getAliases().keySet());
       Collections.sort(sortedKeys);
       for(String name : sortedKeys) out.println("   " + name + "  -->  " + fontMapper.getAliases().get(name));
       
@@ -380,12 +340,12 @@ public class PDFSupport
          out.println(family + ":");
          Font[] variants = LocalFontEnvironment.getInstalledVariants(family);
          if(variants == null) out.println("   ??? No variants found ???");
-         else for(int i=0; i<variants.length; i++)
+         else for(Font variant : variants)
          {
-            BaseFont pdfFont = fontMapper.awtToPdf(variants[i]);
-            String substituted = fontMapper.wasSubstituted(variants[i]) ? "SUB" : "   ";
+            BaseFont pdfFont = fontMapper.awtToPdf(variant);
+            String substituted = fontMapper.wasSubstituted(variant) ? "SUB" : "   ";
             String encoding = pdfFont.getEncoding();
-            
+
             Iterator<Character> iterC = allChars.getCharIterator();
             int nValid = 0;
             while(iterC.hasNext())
@@ -393,8 +353,8 @@ public class PDFSupport
                Character c = iterC.next();
                if(Character.isWhitespace(c) || pdfFont.charExists(c)) ++nValid;
             }
-            out.println(String.format("   %40s ==> %40s %s %3d  [%s]", 
-                  variants[i].getFontName(), pdfFont.getPostscriptFontName(), substituted, nValid, encoding));
+            out.printf("   %40s ==> %40s %s %3d  [%s]%n",
+                  variant.getFontName(), pdfFont.getPostscriptFontName(), substituted, nValid, encoding);
          }
       }
       
@@ -409,8 +369,6 @@ public class PDFSupport
     * single-page PDF.
     * 
     * @param dst The destination PDF file path
-    * @throws IOException
-    * @throws DocumentException
     */
    private void testGraphics(File dst) throws IOException, DocumentException
    {
@@ -448,19 +406,19 @@ public class PDFSupport
       painter.setFilled(true);
       painter.setSize(1000);
       painter.setStyle(style);
-      List<Point2D> locs = new ArrayList<Point2D>(1);
-      locs.add(new Point2D.Double(w/2,h/2));
+      List<Point2D> locs = new ArrayList<>(1);
+      locs.add(new Point2D.Double(w/2.0,h/2.0));
       painter.setLocationProducer(locs);
       painter.render(g2, null);
        
-      Point2D textLoc = new Point2D.Double(w/2, h/2 + 520);
+      Point2D textLoc = new Point2D.Double(w/2.0, h/2.0 + 520);
       StringPainter textPainter = new StringPainter();
       textPainter.setStyle(style);
       textPainter.setAlignment(TextAlign.CENTERED, TextAlign.TRAILING);
       textPainter.setTextAndLocation("Pear", textLoc);
       textPainter.render(g2, null);
 
-      textLoc.setLocation(w/2, h/3);
+      textLoc.setLocation(w/2.0, h/3.0);
       textPainter.setAlignment(TextAlign.LEADING, TextAlign.TRAILING);
       textPainter.setTextAndLocation("Left and bottom aligned", textLoc);
       textPainter.render(g2, null);
@@ -469,7 +427,7 @@ public class PDFSupport
       textPainter.setTextAndLocation("Right and top aligned", textLoc);
       textPainter.render(g2, null);
        
-      textLoc.setLocation(w/2, 2*h/3);
+      textLoc.setLocation(w/2.0, 2.0*h/3);
       textPainter.setRotation(-45);
       textPainter.setAlignment(TextAlign.CENTERED, TextAlign.CENTERED);
       textPainter.setTextAndLocation("Centered, rotated 45deg", textLoc);
@@ -483,7 +441,7 @@ public class PDFSupport
    /**
     * A test fixture that prepares a PDF document displaying all FC-supported Unicode characters using the specified 
     * font family and style. 
-    * 
+    * <p>
     * Each character that lacks a glyph code in the mapped PDF font -- and which is rendered instead by drawing and 
     * filling the glyph vector supplied by the corresponding AWT font (AWT fonts are better at covering all of the
     * Unicode characters in FC's supported character set than ITextPDF's BaseFont class) -- is rendered in RED in the 
@@ -494,8 +452,6 @@ public class PDFSupport
     * generated PDF will have the file name "{font-family}-{style}.pdf"
     * @param fam Desired font family name.
     * @param fs Desired font style.
-    * @throws IOException
-    * @throws DocumentException
     */
    private void testAllCharsEx(String dirPath, String fam, FontStyle fs) throws IOException, DocumentException
    {
@@ -507,7 +463,7 @@ public class PDFSupport
       }
       if(fs == null) fs = FontStyle.PLAIN;
       
-      String fileName = fam + "-" + fs.toString() + ".pdf";
+      String fileName = fam + "-" + fs + ".pdf";
       File f = new File(dirPath, fileName);
       
       Document document = new Document(PageSize.LEGAL, 36, 36, 36, 36);
@@ -546,7 +502,7 @@ public class PDFSupport
                   12*Measure.PT2IN*1000.0), 10, null, Color.BLACK, Color.BLACK));
       ssPainter.setAlignment(TextAlign.CENTERED, TextAlign.TRAILING);
       Point2D textLoc = new Point2D.Double(3500, 12700);
-      ssPainter.setTextAndLocation("FC-Supported Characters in " + fam + "-" + fs.toString(), textLoc);
+      ssPainter.setTextAndLocation("FC-Supported Characters in " + fam + "-" + fs, textLoc);
       ssPainter.render(g2, null);
       
       // draw a centered text line under title that displays the PS name of the physical font actually used
@@ -573,11 +529,11 @@ public class PDFSupport
       {
          Character c = iterC.next();
          boolean iso = Character.isISOControl(c) || Character.isWhitespace(c);
-         String s = null;
+         String s;
          if(iso)
             s = String.format("u%04x=  ", (int) c);
          else
-            s = String.format("u%04x= %s", (int) c, c.toString());
+            s = String.format("u%04x= %s", (int) c, c);
          
          if(!iso)
          {
@@ -625,7 +581,7 @@ public class PDFSupport
       FGraphicModel fgm = FGModelSchemaConverter.fromXML(figFile, eBuf);
       if(fgm == null)
       {
-         System.out.println("Failed to load figure: " + eBuf.toString());
+         System.out.println("Failed to load figure: " + eBuf);
          return;
       }
       
@@ -662,7 +618,7 @@ public class PDFSupport
     * OpenType fonts that permit font-embedding will be supported. If an AWT font does not have a matching supported
     * PDF font, the mapper returns a substitute font rather than throwing an exception.
     */
-   private SubstFontMapper fontMapper = null;
+   private final SubstFontMapper fontMapper;
     
    private class SubstFontMapper extends DefaultFontMapper
    {
@@ -673,11 +629,11 @@ public class PDFSupport
        */
       SubstFontMapper() 
       { 
-         List<File> fontDirs = new ArrayList<File>();
+         List<File> fontDirs = new ArrayList<>();
          if(Utilities.isWindows())
          {
             String windir = System.getenv("windir");
-            String fileSep = System.getProperty("file.separator");
+            String fileSep = FileSystems.getDefault().getSeparator();
             if(windir != null && fileSep != null)
             {
                fontDirs.add(new File(System.getProperty("java.home") + fileSep + "lib" + fileSep + "fonts"));
@@ -703,8 +659,10 @@ public class PDFSupport
        
          for(File dir : fontDirs) if(dir != null && dir.isDirectory())
          {
-            File files[] = dir.listFiles();
-            for(File f : files) insertFile(f);
+            File[] files = dir.listFiles();
+            if(files != null)
+               for(File f : files)
+                  insertFile(f);
          }
       }
 
@@ -739,7 +697,7 @@ public class PDFSupport
          // if no AWT font provided, then use default Type 1 Helvetica font
          if(font == null)
          {
-            BaseFont bf = null;
+            BaseFont bf;
             try { bf = BaseFont.createFont(); } catch(Exception e) { throw new NeverOccursException(e); }
             return(bf);
          }
@@ -819,7 +777,7 @@ public class PDFSupport
 
             
          HashMap<String, String> aliases = fontMapper.getAliases();
-         List<String> italicFaces = new ArrayList<String>();
+         List<String> italicFaces = new ArrayList<>();
          for(Font f : variants)
          {
              faceName = f.getFontName();
@@ -827,7 +785,7 @@ public class PDFSupport
                 italicFaces.add(faceName);
          }
 
-         if(italicFaces.size() == 0)
+         if(italicFaces.isEmpty())
             return variants[0].getFontName();
          else if(!awtFont.isBold())
             return italicFaces.get(0);
@@ -857,7 +815,7 @@ public class PDFSupport
        * substitute fonts.
        * 
        * @param font An AWT font.
-       * @return
+       * @return True if font was substituted.
        */
       boolean wasSubstituted(Font font) { return(font != null && substitutedFonts.contains(font.getFontName())); }
       
@@ -873,7 +831,7 @@ public class PDFSupport
          // handle logical font names, plus any fonts that were not mapped. We use one of the built-in standard fonts,
          // so this should always work. Finally, if the ever-present Symbol font was requested but was not mapped to a
          // physical font, use the built-in Type1 Symbol font
-         String fontKey = null;
+         String fontKey;
          String name = font.getName().toLowerCase(Locale.ENGLISH);
          boolean isItalic = font.isItalic();
          boolean isBold = font.isBold();
@@ -886,13 +844,11 @@ public class PDFSupport
             // since isBold() and isItalic() may not work for font face variants. Use a sans-serif substitute unless the
             // font name contains keywords that suggest a monospaced or serif font.
             name = font.getFontName().toLowerCase(Locale.ENGLISH);
-            isItalic = isItalic || name.indexOf("italic") >= 0 || name.indexOf("oblique") >= 0 ||
-                  name.indexOf("inclined") >= 0;
-            isBold = isBold || name.indexOf("bold") >= 0;
+            isItalic = isItalic || name.contains("italic") || name.contains("oblique") || name.contains("inclined");
+            isBold = isBold || name.contains("bold");
             
-            if(name.indexOf("courier") >= 0) useMono = true;
-            else if(name.indexOf("times") >= 0) useSerif = true;
-            else useSansSerif = true;
+            if(name.contains("courier")) useMono = true;
+            else if(name.contains("times")) useSerif = true;
          }
 
          if(useMono) 
@@ -915,10 +871,10 @@ public class PDFSupport
          if(font.getFontName().toLowerCase(Locale.ENGLISH).equals("symbol"))
             fontKey = BaseFont.SYMBOL;
          
-         BaseFont bf = null;
+         BaseFont bf;
          try 
          { 
-            bf = BaseFont.createFont(fontKey, fontKey==BaseFont.SYMBOL ? "symbol" : BaseFont.CP1252, false); 
+            bf = BaseFont.createFont(fontKey, fontKey.equals(BaseFont.SYMBOL) ? "symbol" : BaseFont.CP1252, false);
          }
          catch(Exception e) { throw new NeverOccursException(e); }
          
@@ -932,13 +888,13 @@ public class PDFSupport
       @SuppressWarnings("unused")
       private BaseFont getBuiltInSymbolFont()
       {
-         BaseFont bf = null;
+         BaseFont bf;
          try {  bf = BaseFont.createFont(BaseFont.SYMBOL, "symbol", false); }
          catch(Exception e) { throw new NeverOccursException(e); }
          return(bf);
       }
       
       /** A substitute font was provided for any AWT font name found in this hash. */
-      private HashSet<String> substitutedFonts = new HashSet<String>();
+      private final HashSet<String> substitutedFonts = new HashSet<>();
    }
 }

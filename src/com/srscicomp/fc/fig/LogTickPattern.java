@@ -27,8 +27,8 @@ public class LogTickPattern implements Cloneable
     * Compare two <code>LogTickPattern</code>s for equality. Equality holds iff neither pattern is <code>null</code> and 
     * (i) both reference the same Java object, or (ii) they enable the same set of log decade tick marks.
     * 
-    * @param m1 The first log-decade tick mark pattern.
-    * @param m2 The second log-decade tick mark pattern.
+    * @param p1 The first log-decade tick mark pattern.
+    * @param p2 The second log-decade tick mark pattern.
     * @return <code>True</code> iff the tick mark patterns are considered equal, as described.
     */
    public static boolean equal(LogTickPattern p1, LogTickPattern p2)
@@ -54,7 +54,7 @@ public class LogTickPattern implements Cloneable
    public static LogTickPattern fromString(String defn)
    {
       if(defn == null) return(null);
-      if(defn.length() == 0) return(new LogTickPattern());
+      if(defn.isEmpty()) return(new LogTickPattern());
 
       StringTokenizer tokenizer = new StringTokenizer(defn);
       int nTokens = tokenizer.countTokens();
@@ -184,12 +184,17 @@ public class LogTickPattern implements Cloneable
     */
    public boolean isTickEnabledAt(int n)
    {
-      return((n < 1 || n > 9) ? false : ((tickEnaBits & (1<<n)) != 0));
+      return(n >= 1 && n <= 9 && ((tickEnaBits & (1 << n)) != 0));
    }
 
    @Override
    public String toString()
    {
       return(Utilities.toString(getEnabledTicks()));
+   }
+
+   @Override public LogTickPattern clone() throws CloneNotSupportedException
+   {
+      return (LogTickPattern) super.clone();
    }
 }

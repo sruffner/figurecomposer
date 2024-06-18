@@ -38,7 +38,7 @@ import com.srscicomp.common.util.Utilities;
  * 
  * <p>As of v5.4.0 (schema version 24), <b>AxisNode</b> supports a "styled text" label, in which text color, font
  * style, underline state, superscript, and subscript can vary on a per-character basis. See {@link 
- * FGraphicNode#toStyledText()}.</p>
+ * FGraphicNode#toStyledText}.</p>
  * 
  * @author sruffner
  */
@@ -72,7 +72,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
     * Flag, set at construction time, which defines this as the primary (horizontal or angular coord) or secondary 
     * (vertical or radial coord) axis of its parent graph.
     */
-   private boolean isPrimary;
+   private final boolean isPrimary;
    
    /**
     * Does this axis node represent the primary axis of its parent graph? 
@@ -109,9 +109,9 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
    public double getStart() { return(start); }
 
    /**
-    * Set the start of the range spanned by this axis. If a change was made, {@link #onNodeModified()} is invoked. 
+    * Set the start of the range spanned by this axis. If a change was made, {@link #onNodeModified} is invoked.
     * 
-    * @param New value for the start of axis range. Rejected if infinite, NaN.
+    * @param d New value for the start of axis range. Rejected if infinite, NaN.
     * @return True if successful; false if value rejected OR if auto axis-scaling is enabled on the parent graph.
     */
    public boolean setStart(double d)
@@ -119,14 +119,14 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       if(isAutoranged() || !Utilities.isWellDefined(d)) return(false);
       if(start != d)
       {
-         if(doMultiNodeEdit(FGNProperty.START, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.START, d)) return(true);
          
-         Double old = new Double(start);
+         Double old = start;
          start = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.START);
-            FGNRevEdit.post(this, FGNProperty.START, new Double(start), old, "Change start of axis range");
+            FGNRevEdit.post(this, FGNProperty.START, start, old, "Change start of axis range");
          }
       }
       return(true);
@@ -145,9 +145,9 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
    public double getEnd() { return(end); }
 
    /**
-    * Set the end of the range spanned by this axis. If a change was made, {@link #onNodeModified()} is invoked.
+    * Set the end of the range spanned by this axis. If a change was made, {@link #onNodeModified} is invoked.
     * 
-    * @param New value for the end of axis range. Rejected if infinite, NaN.
+    * @param d New value for the end of axis range. Rejected if infinite, NaN.
     * @return True if successful; false if value rejected OR if auto axis-scaling is enabled on the parent graph.
     */
    public boolean setEnd(double d)
@@ -155,14 +155,14 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       if(isAutoranged() || !Utilities.isWellDefined(d)) return(false);
       if(end != d)
       {
-         if(doMultiNodeEdit(FGNProperty.END, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.END, d)) return(true);
          
-         Double old = new Double(end);
+         Double old = end;
          end = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.END);
-            FGNRevEdit.post(this, FGNProperty.END, new Double(end), old, "Change end of axis range");
+            FGNRevEdit.post(this, FGNProperty.END, end, old, "Change end of axis range");
          }
       }
       return(true);
@@ -187,7 +187,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
 
    /**
     * Set the axis scale factor -- an integer exponent N such that numeric axis tick mark labels are scaled by 10^N.
-    * If a change was made, {@link #onNodeModified()} is invoked.
+    * If a change was made, {@link #onNodeModified} is invoked.
     * 
     * @param n New value for scale factor exponent. Rejected if outside allowed range. See {@link #getPowerScale()}.
     * @return True if successful; false if value rejected.
@@ -197,21 +197,21 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       if(n < MINPOWERSCALE || n > MAXPOWERSCALE) return(false);
       if(powerScale != n)
       {
-         if(doMultiNodeEdit(FGNProperty.SCALE, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.SCALE, n)) return(true);
          
-         Integer old = new Integer(powerScale);
+         Integer old = powerScale;
          powerScale = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.SCALE);
-            FGNRevEdit.post(this, FGNProperty.SCALE, new Double(powerScale), old, "Change axis power scale");
+            FGNRevEdit.post(this, FGNProperty.SCALE, (double) powerScale, old, "Change axis power scale");
          }
       }
       return(true);
    }
 
    /** A string token representing the units in which coordinates are measured along this axis. It may be empty. */
-   private String units = "";
+   private String units;
 
    /**
     * Get the units token for this axis node.
@@ -220,7 +220,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
    public String getUnits() { return(units); }
 
    /**
-   * Set the units token for this axis node. If a change is made, {@link #onNodeModified()} is invoked.
+   * Set the units token for this axis node. If a change is made, {@link #onNodeModified} is invoked.
    * 
    * @param u The new units token. A null value is treated as the equivalent of an empty string.
    * @return True if successful; false if the new token had any unsupported characters; any such characters are replaced
@@ -264,7 +264,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
 
    /**
     * Set the perpendicular distance between the axis line and the closest parallel edge of the parent graph's data box.
-    * If a change is made, {@link #onNodeModified()} is invoked.
+    * If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new axis spacer distance. The measure is constrained to satisfy {@link #SPACERCONSTRAINTS}. A null
     * value is rejected.
@@ -303,7 +303,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
 
    /**
     * Set the perpendicular distance between the axis line and the bottom or top of the axis label (whichever is 
-    * closer). If a change is made, {@link #onNodeModified()} is invoked.
+    * closer). If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new axis label offset. The measure will be constrained to satisfy {@link #SPACERCONSTRAINTS}. A null 
     * value is rejected. 
@@ -341,29 +341,29 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
    public boolean getHide() { return(hide); }
 
    /**
-    * Set the hide state for this axis node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the hide state for this axis node. If a change is made, {@link #onNodeModified} is invoked.
     * @param b True to hide axis, false to show it.
     */
    public void setHide(boolean b)
    {
       if(hide != b)
       {
-         if(doMultiNodeEdit(FGNProperty.HIDE, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.HIDE, b)) return;
          
-         Boolean old = new Boolean(hide);
+         Boolean old = hide;
          hide = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = hide ? "Hide " : "Show ";
             desc += isPrimary ? "horizontal (or theta) axis" : "vertical (or radial) axis";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hide), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hide, old, desc);
          }
       }
    }
 
    /**
-    * Same as {@link #setHide()}, but without posting an "undo" operation or calling {@link #onNodeModified()}. It is
+    * Same as {@link #setHide}, but without posting an "undo" operation or calling {@link #onNodeModified}. It is
     * meant to be used only when multiple properties are being modified in a single, atomic operation.
     * @param b True to hide axis, false to show it.
     */
@@ -384,28 +384,28 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
    public boolean getLog2() { return(log2); }
 
    /**
-    * Select the logarithmic base for this axis. If a change is made, {@link #onNodeModified()} is invoked.
+    * Select the logarithmic base for this axis. If a change is made, {@link #onNodeModified} is invoked.
     * @param b True for base 2, false for base 10.
     */
    public void setLog2(boolean b)
    {
       if(log2 != b)
       {
-         if(doMultiNodeEdit(FGNProperty.LOG2, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.LOG2, b)) return;
          
-         Boolean old = new Boolean(log2);
+         Boolean old = log2;
          log2 = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LOG2);
             String desc = "Set axis logarithmic base = " + (log2 ? "2" : "10");
-            FGNRevEdit.post(this, FGNProperty.LOG2, new Boolean(log2), old, desc);
+            FGNRevEdit.post(this, FGNProperty.LOG2, log2, old, desc);
          }
       }
    }
 
-   /** Text line height, as a fraction of the element's font size. Defaults to 1.2; range-restricted to [0.8, 3.0]. */
-   private double lineHeight = 1.2;
+   /** Text line height, as a fraction of the element's font size. Range-restricted to [0.8, 3.0]. */
+   private double lineHeight;
 
    /**
     * Get the text line height for the axis label (in the event it is laid out over multiple text lines).
@@ -425,15 +425,15 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       lh = Utilities.rangeRestrict(0.8, 3.0, lh);
       if(lineHeight != lh)
       {
-         if(doMultiNodeEdit(FGNProperty.LINEHT, new Double(lh))) return(true);
+         if(doMultiNodeEdit(FGNProperty.LINEHT, lh)) return(true);
          
-         Double old = new Double(lineHeight);
+         Double old = lineHeight;
          lineHeight = lh;
          
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LINEHT);
-            FGNRevEdit.post(this, FGNProperty.LINEHT, new Double(lineHeight), old);
+            FGNRevEdit.post(this, FGNProperty.LINEHT, lineHeight, old);
         }
       }
       return(true);
@@ -441,7 +441,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case END : ok = setEnd((Double) propValue); break;
@@ -460,18 +460,18 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
    
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case END : value = new Double(getEnd()); break;
-         case START : value = new Double(getStart()); break;
-         case SCALE : value = new Integer(getPowerScale()); break;
+         case END : value = getEnd(); break;
+         case START : value = getStart(); break;
+         case SCALE : value = getPowerScale(); break;
          case LABELOFFSET: value = getLabelOffset(); break;
          case SPACER: value = getSpacer();  break;
          case UNITS: value = getUnits(); break;
-         case HIDE: value = new Boolean(getHide()); break;
-         case LOG2: value = new Boolean(getLog2()); break;
-         case LINEHT : value = new Double(getLineHeight()); break;
+         case HIDE: value = getHide(); break;
+         case LOG2: value = getLog2(); break;
+         case LINEHT : value = getLineHeight(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -555,7 +555,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
             FGraphicNode.updateAncestorRenderBounds(g2d, this); 
             if(!getHide()) dirtyShape = getCachedGlobalShape();      // global bounds after the change
 
-            List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+            List<Rectangle2D> dirtyAreas = new ArrayList<>();
             dirtyAreas.add( dirtyShape.getBounds2D() );
             model.onChange(this, 0, true, dirtyAreas);
          }
@@ -657,8 +657,8 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       styleSet.putStyle(FGNProperty.SPACER, getSpacer());
       styleSet.putStyle(FGNProperty.LABELOFFSET, getLabelOffset());
       styleSet.putStyle(FGNProperty.UNITS, getUnits());
-      styleSet.putStyle(FGNProperty.LOG2, new Boolean(getLog2()));
-      styleSet.putStyle(FGNProperty.LINEHT, new Double(getLineHeight()));
+      styleSet.putStyle(FGNProperty.LOG2, getLog2());
+      styleSet.putStyle(FGNProperty.LINEHT, getLineHeight());
       
       for(int i=0; i<getChildCount(); i++)
       {
@@ -713,7 +713,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.LOG2, getNodeType(), Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.LOG2, null, Boolean.class)))
       {
-         log2 = b.booleanValue();
+         log2 = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.LOG2);
@@ -721,7 +721,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       Double lineHt = (Double) applied.getCheckedStyle(FGNProperty.LINEHT, isTB ? null : nt, Double.class);
       if(lineHt != null && !lineHt.equals(restore.getStyle(FGNProperty.LINEHT)))
       {
-         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt.doubleValue());
+         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt);
          changed = true;
       }
       else restore.removeStyle(FGNProperty.LINEHT); 
@@ -833,7 +833,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
    {
       GraphNode g = (GraphNode) getParentGraph();
       if(g == null) return(false);
-      return(g.isPolar() ? !isPrimary : isPrimary);
+      return(g.isPolar() != isPrimary);
    }
 
    /**
@@ -866,7 +866,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       GraphNode g = (GraphNode) getParentGraph();
       if(g == null) return(0);
       Rectangle2D rBox = g.getBoundingBoxLocal();
-      double len = 0;
+      double len;
       if(!g.isPolar()) len = isPrimary ? rBox.getWidth() : rBox.getHeight();
       else if(isPrimary) len = 0;
       else
@@ -1289,7 +1289,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       }
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    //
@@ -1407,7 +1407,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
       // cannot handle transparency). Note that label is rendered as multi-line text even if it does not contain any
       // linebreaks.
       String title = getAxisLabel();
-      if(title.length() > 0 && getFillColor().getAlpha() > 0)
+      if((!title.isEmpty()) && getFillColor().getAlpha() > 0)
       {
          double yOffset = labelOffset.toMilliInches();
          TextAlign vAlign = TextAlign.TRAILING;
@@ -1454,7 +1454,7 @@ public class AxisNode extends FGNGraphAxis implements Cloneable
     * This override ensures that the cloned axis node's internal rendering resources are completely independent of the 
     * resources allocated to this node.
     */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       AxisNode copy = (AxisNode) super.clone();
       copy.labelPainter = null;

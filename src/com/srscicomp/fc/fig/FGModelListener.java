@@ -24,5 +24,5 @@ public interface FGModelListener
     * a node definition change, this is the node modified. For all other model changes, this is ignored.
     * @param change The type of change that occurred.
     */
-   public void modelChanged(FGraphicModel model, FGraphicNode n, FGraphicModel.Change change);
+   void modelChanged(FGraphicModel model, FGraphicNode n, FGraphicModel.Change change);
 }

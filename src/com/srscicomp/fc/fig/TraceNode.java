@@ -153,7 +153,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    public DisplayMode getMode() { return(mode); }
 
    /**
-    * Set the data display mode for this data trace. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the data display mode for this data trace. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * <p>Upon switching to the {@link DisplayMode#MULTITRACE}, a couple of other changes are made automatically: (1) The 
     * <i>avg</i> flag is set to false because users rarely want the average trace rendered on top of the multitrace 
@@ -219,14 +219,14 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(xoff)) return(false);
       if(xOffset != xoff)
       {
-         if(doMultiNodeEdit(FGNProperty.XOFF, new Float(xoff))) return(true);
+         if(doMultiNodeEdit(FGNProperty.XOFF, xoff)) return(true);
          
-         Float old = new Float(xOffset);
+         Float old = xOffset;
          xOffset = xoff;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.XOFF);
-            FGNRevEdit.post(this, FGNProperty.XOFF, new Float(xOffset), old);
+            FGNRevEdit.post(this, FGNProperty.XOFF, xOffset, old);
          }
       }
       return(true);
@@ -257,14 +257,14 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(yoff)) return(false);
       if(yOffset != yoff)
       {
-         if(doMultiNodeEdit(FGNProperty.YOFF, new Float(yoff))) return(true);
+         if(doMultiNodeEdit(FGNProperty.YOFF, yoff)) return(true);
          
-         Float old = new Float(yOffset);
+         Float old = yOffset;
          yOffset = yoff;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.YOFF);
-            FGNRevEdit.post(this, FGNProperty.YOFF, new Float(yOffset), old);
+            FGNRevEdit.post(this, FGNProperty.YOFF, yOffset, old);
          }
       }
       return(true);
@@ -280,7 +280,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    public float getBarWidth() { return(barWidth); }
     
    /**
-    * Set the histogram bar width. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the histogram bar width. If a change is made, {@link #onNodeModified} is invoked.
     * @param w The new histgoram bar width, in user units. Negative numbers, NaN and +/-infinity are rejected.
     * @return True iff new value was accepted.
     */
@@ -289,14 +289,14 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(w) || w < 0) return(false);
       if(barWidth != w)
       {
-         if(doMultiNodeEdit(FGNProperty.BARWIDTH, new Float(w))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BARWIDTH, w)) return(true);
          
-         Float old = new Float(barWidth);
+         Float old = barWidth;
          barWidth = w;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BARWIDTH);
-            FGNRevEdit.post(this, FGNProperty.BARWIDTH, new Float(barWidth), old);
+            FGNRevEdit.post(this, FGNProperty.BARWIDTH, barWidth, old);
          }
       }
       return(true);
@@ -312,7 +312,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    public float getBaseline() { return(baseline); }
     
    /**
-    * Set the histogram baseline. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the histogram baseline. If a change is made, {@link #onNodeModified} is invoked.
     * @param base The new baseline, in user units. NaN and +/-infinity are rejected.
     * @return True iff new value was accepted.
     */
@@ -321,21 +321,21 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(base)) return(false);
       if(baseline != base)
       {
-         if(doMultiNodeEdit(FGNProperty.BASELINE, new Float(base))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BASELINE, base)) return(true);
          
-         Float old = new Float(baseline);
+         Float old = baseline;
          baseline = base;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BASELINE);
-            FGNRevEdit.post(this, FGNProperty.BASELINE, new Float(baseline), old);
+            FGNRevEdit.post(this, FGNProperty.BASELINE, baseline, old);
          }
       }
       return(true);
    }
 
    /** Enable/disable rendering of the average trace in the <i>multitrace</i> display mode. */
-   private boolean avg = false;
+   private boolean avg;
 
    /**
     * Is the nominal or average trace rendered in the {@link DisplayMode#MULTITRACE} mode? The flag attribute is not 
@@ -347,7 +347,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
    /**
     * Enable/disable rendering of the nominal trace in {@link DisplayMode#MULTITRACE} mode. If a change is made, {@link 
-    * #onNodeModified()} is invoked. <i>Note that changing this property has no effect in the other display modes.</i>
+    * #onNodeModified} is invoked. <i>Note that changing this property has no effect in the other display modes.</i>
     * 
     * @param b True to enable, false to disable rendering of the nominal or sliding average trace. 
     */
@@ -355,14 +355,14 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    {
       if(b != avg)
       {
-         if(doMultiNodeEdit(FGNProperty.AVG, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.AVG, b)) return;
          
-         Boolean old = new Boolean(avg);
+         Boolean old = avg;
          avg = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.AVG);
-            FGNRevEdit.post(this, FGNProperty.AVG, new Boolean(avg), old);
+            FGNRevEdit.post(this, FGNProperty.AVG, avg, old);
          }
       }
    }
@@ -381,23 +381,23 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
    /**
     * Set the plot skip size, ie, the number of points to skip per point actually rendered. If a change is made, the 
-    * method {@link #onNodeModified()} is invoked.
+    * method {@link #onNodeModified} is invoked.
     * @param n The new plot skip size. Any negative integer or zero will be rejected.
-    * @returns True iff argument was accepted.
+    * @return True iff argument was accepted.
     */
    public boolean setSkip(int n)
    {
       if(n < 1) return(false);
       if(skip != n)
       {
-         if(doMultiNodeEdit(FGNProperty.SKIP, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.SKIP, n)) return(true);
          
-         Integer old = new Integer(skip);
+         Integer old = skip;
          skip = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.SKIP);
-            FGNRevEdit.post(this, FGNProperty.SKIP, new Integer(skip), old);
+            FGNRevEdit.post(this, FGNProperty.SKIP, skip, old);
          }
       }
       return(true);
@@ -420,7 +420,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    
    /**
     * Set the window length for computing the sliding average trace in {@link DisplayMode#TRENDLINE} mode. If a change
-    * is made, {@link #onNodeModified()] is invoked.
+    * is made, {@link #onNodeModified} is invoked.
     * 
     * <p>Note that the window lengths exceeding the number of data points in the set will be accepted, but the sliding
     * average trace will not be rendered in that case.</p>
@@ -434,14 +434,14 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       
       if(slidingWindowLen != n)
       {
-         if(doMultiNodeEdit(FGNProperty.LEN, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.LEN, n)) return(true);
          
-         Integer old = new Integer(slidingWindowLen);
+         Integer old = slidingWindowLen;
          slidingWindowLen = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LEN);
-            FGNRevEdit.post(this, FGNProperty.LEN, new Integer(slidingWindowLen), old,
+            FGNRevEdit.post(this, FGNProperty.LEN, slidingWindowLen, old,
                   String.format("Set window length for sliding average trace to %d data points (1=regression line)",
                         slidingWindowLen));
          }
@@ -451,7 +451,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case MODE : ok = setMode((DisplayMode)propValue); break;
@@ -469,17 +469,17 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case MODE : value = getMode(); break;
-         case BARWIDTH: value = new Float(getBarWidth()); break;
-         case BASELINE: value = new Float(getBaseline()); break;
-         case XOFF: value = new Float(getXOffset()); break;
-         case YOFF: value = new Float(getYOffset()); break;
-         case AVG: value = new Boolean(getShowAverage()); break;
-         case SKIP: value = new Integer(getSkip()); break;
-         case LEN: value = new Integer(getSlidingWindowLength()); break;
+         case BARWIDTH: value = getBarWidth(); break;
+         case BASELINE: value = getBaseline(); break;
+         case XOFF: value = getXOffset(); break;
+         case YOFF: value = getYOffset(); break;
+         case AVG: value = getShowAverage(); break;
+         case SKIP: value = getSkip(); break;
+         case LEN: value = getSlidingWindowLength(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -500,8 +500,8 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
       styleSet.putStyle(FGNProperty.MODE, getMode());
-      styleSet.putStyle(FGNProperty.AVG, new Boolean(getShowAverage()));
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
+      styleSet.putStyle(FGNProperty.AVG, getShowAverage());
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
    }
    
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -525,7 +525,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.AVG, null, Boolean.class);
       if(b != null && !b.equals(restore.getStyle(FGNProperty.AVG)))
       {
-         avg = b.booleanValue();
+         avg = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.AVG);
@@ -566,7 +566,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       // polyline sub-sampling algorithm is engaged, the Postscript output will replicate what's rendered onscreen.
       Iterator<Point2D> iterator = 
             isStair ? new StairPointProducer(allowSubSampling) : new DataPointProducer(allowSubSampling);
-      List<Point2D> ptList = new ArrayList<Point2D>();
+      List<Point2D> ptList = new ArrayList<>();
       while(iterator.hasNext())
       {
          Point2D next = (Point2D) iterator.next().clone();    // must clone, b/c DataPointProducer reuses a Point2D
@@ -577,7 +577,6 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       
       // in case the point list is really large
       ptList.clear();
-      ptList = null;
       
       return(coords);
    }
@@ -785,7 +784,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
    @Override protected Rectangle2D getRenderBoundsForSelf(Graphics2D g2d, boolean forceRecalc)
    {
-      if(forceRecalc || rBoundsSelf == null || painters.size() == 0)
+      if(forceRecalc || rBoundsSelf == null || painters.isEmpty())
       {
          updatePainters();
          rBoundsSelf = new Rectangle2D.Double();
@@ -814,7 +813,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    {
       if(needsRendering(task))
       {
-         if(painters.size() == 0) 
+         if(painters.isEmpty())
             updatePainters();
 
          for(Painter p : painters)
@@ -831,7 +830,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    //
 
    /** The painters which are responsible for rendering this data trace node IAW its current state. */
-   private List<Painter> painters = new ArrayList<Painter>();
+   private List<Painter> painters = new ArrayList<>();
 
    /**
     * The display mode for which the internal painter list has been configured. The painter list is reinitialized
@@ -848,11 +847,11 @@ public class TraceNode extends FGNPlottableData implements Cloneable
     * <p>{@link DisplayMode#POLYLINE}. In this case, the referenced dataset is rendered as a "connect the dots" 
     * polyline, possibly adorned with error bars and/or marker symbols. The following painters are configured:
     * <ul>
-    * <li>An {@link #ErrorBarPainter} renders any error bars defined on the data set, styled IAW the trace node's 
-    * {@link ErrorBarNode} component.</li>
+    * <li>A {@link TraceNode.ErrorBarPainter} renders any error bars defined on the data set, styled IAW the
+    * trace node's {@link ErrorBarNode} component.</li>
     * <li>A {@link PolylinePainter} is configured to connect the well-defined data points in the set with a polyline 
     * styled IAW the element's own draw styles. Any ill-defined points introduce gaps in the polyline. The inner class 
-    * {@link #DataPointProducer} serves as the location producer for this painter.</li>
+    * {@link TraceNode.DataPointProducer} serves as the location producer for this painter.</li>
     * <li>A {@link ShapePainter} is configured to render a symbol (if any) at all well-defined points in the set, 
     * styled IAW the node's {@link SymbolNode} component.</li>
     * </ul>
@@ -872,10 +871,10 @@ public class TraceNode extends FGNPlottableData implements Cloneable
     * between the STD polylines is optionally filled. This graphical rendering is handled by a set of three painters:
     * <ul>
     * <li>A {@link PolylinePainter} is configured to fill but not stroke the region bounded by the +1 and -1STD 
-    * polylines. A {@link #StdDevPointProducer} generates the locations for this painter, tracing the +1STD polyline in 
-    * one direction and the -1STD polyline in the other. If the referenced data source lacks any nonzero standard 
-    * deviations or if the error band is not filled, this painter will have an empty location producer and thus will 
-    * render nothing.</li>
+    * polylines. A {@link TraceNode.StdDevPointProducer} generates the locations for this painter, tracing the +1STD
+    * polyline in one direction and the -1STD polyline in the other. If the referenced data source lacks any nonzero
+    * standard deviations or if the error band is not filled, this painter will have an empty location producer and thus
+    * will render nothing.</li>
     * <li>A second {@link PolylinePainter} is configured to stroke the two +1 and -1STD polyline. Again, a {@link 
     * StdDevPointProducer} generates the points for this painter, which is styled IAW the {@link ErrorBarNode} 
     * component. If the referenced data source lacks any nonzero standard deviations, the location producer will be 
@@ -892,11 +891,11 @@ public class TraceNode extends FGNPlottableData implements Cloneable
     * and the type of graph in which the data appears. If the bar width is zero, the histogram bars are just lines, and 
     * a {@link LineSegmentPainter} is used. Otherwise, if the graph is polar, the histogram bars are circular pie 
     * wedges, requiring a {@link CircularArcPainter}; if the graph is not polar, a {@link PolylinePainter}> is 
-    * configured to draw the bars. A {@link #HistogramVertexProducer}  generates the locations for each of these 
+    * configured to draw the bars. A {@link TraceNode.HistogramVertexProducer} generates the locations for each of these
     * alternative painters. <i>NOTE</i> that whenever the histogram bar width or the display type of the enclosing graph
     * changes, this method must be invoked so that the histogram painter can be updated accordingly.</li>
-    * <li>An {@link #ErrorBarPainter} renders any error bars defined by the data source, styled IAW the trace node's
-    * {@link ErrorBarNode} component.</li>
+    * <li>An {@link TraceNode.ErrorBarPainter} renders any error bars defined by the data source, styled IAW the trace
+    * node's {@link ErrorBarNode} component.</li>
     * <li>A {@link ShapePainter} is configured to render a symbol (if any) at all well-defined points in the data set, 
     * styled IAW this node's {@link SymbolNode} component. <i>Special case for "compass plots": If the graph is polar, 
     * the bar width is zero, the symbol size is nonzero, and the symbol is not a circle, a "rotation angle producer" is 
@@ -913,16 +912,16 @@ public class TraceNode extends FGNPlottableData implements Cloneable
     * maintains a list of four painters, as follows:
     * <ul>
     * <li>A {@link PolylinePainter} for rendering the individual point sets as polylines. The inner class {@link 
-    * #MultiSetPointProducer} generates the locations for this painter, traversing all well-defined points in all the 
-    * data sets, and inserting an ill-defined point between sets so the individual polylines are not connected. Styled 
-    * IAW this node's {@link ErrorBarNode}, since the individual point sets typically capture the variability or 
+    * TraceNode.MultiSetPointProducer} generates the locations for this painter, traversing all well-defined points in
+    * all the data sets, and inserting an ill-defined point between sets so the individual polylines are not connected.
+    * Styled IAW this node's {@link ErrorBarNode}, since the individual point sets typically capture the variability or
     * uncertainty in the observed phenomenon.</li>
     * <li>A {@link ShapePainter} configured to render symbols for the individual polylines. The marker symbol is defined
     * by the "endcap" of the component {@link ErrorBarNode} and is styled IAW the draw styles of that node. Again, the 
-    * location producer for this painter is {@link #MultiSetPointProducer}.</li>
+    * location producer for this painter is {@link TraceNode.MultiSetPointProducer}.</li>
     * <li>A second {@link PolylinePainter} is configured to render the <i>average</i> data trace as a polyline styled 
-    * IAW this trace node's own draw styles. Here the location producer {@link #DataPointProducer}. The average trace is
-    * not rendered when <i>avg==false</i>, in which case this painter has an empty location producer.</li>
+    * IAW this trace node's own draw styles. Here the location producer {@link TraceNode.DataPointProducer}. The average
+    * trace is not rendered when <i>avg==false</i>, in which case this painter has an empty location producer.</li>
     * <li>A second {@link ShapePainter} is configured to render a symbol (if any) at all well-defined points in the 
     * <i>average</i> trace, styled IAW this node's {@link SymbolNode} component.</li>
     * </ul>
@@ -941,7 +940,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
       if(mode == DisplayMode.POLYLINE || mode == DisplayMode.STAIRCASE)
       {
-         if(painters.size() == 0)
+         if(painters.isEmpty())
          {
             painters.add( new ErrorBarPainter() );
             
@@ -964,7 +963,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       }
       else if(mode == DisplayMode.TRENDLINE)
       {
-         if(painters.size() == 0)
+         if(painters.isEmpty())
          {
             painters.add( new ErrorBarPainter() );
             
@@ -986,7 +985,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       else if(mode == DisplayMode.ERRORBAND)
       {
          ErrorBarNode ebar = getErrorBarNode();
-         if(painters.size() == 0)
+         if(painters.isEmpty())
          {
             PolylinePainter polyPainter = new PolylinePainter(ebar, null);
             polyPainter.setConnectionPolicy(PolylinePainter.ConnectPolicy.CONNECTED);
@@ -1006,18 +1005,18 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       }
       else if(mode == DisplayMode.HISTOGRAM)
       {
+         FViewport2D parentVP = getParentViewport();
+         boolean isPolar = (parentVP != null) && parentVP.isPolar();
          boolean isFill = getFillColor().getAlpha() != 0;
-         if(painters.size() == 0)
+         if(painters.isEmpty())
          {
-            FViewport2D parentVP = getParentViewport();
             HistogramVertexProducer vertexProvider = new HistogramVertexProducer(false);
-            Painter painter = null;
+            Painter painter;
             if(barWidth == 0)
             {
-               LineSegmentPainter linePainter = new LineSegmentPainter(this, vertexProvider);
-               painter = linePainter;
+               painter = new LineSegmentPainter(this, vertexProvider);
             }
-            else if(parentVP.isPolar())
+            else if(isPolar)
             {
                Point2D origin = parentVP.getPhysicalUserOrigin();
                CircularArcPainter arcPainter = new CircularArcPainter(this, vertexProvider, origin);
@@ -1052,7 +1051,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
             float sz = (float) symbol.getSizeInMilliInches();
             ShapePainter symbolPainter = 
                new ShapePainter(symbol, new DataPointProducer(), symType, sz, symbol.getCharacter());
-            if(parentVP.isPolar() && getBarWidth() == 0 && symType != Marker.CIRCLE && sz > 0)
+            if(isPolar && getBarWidth() == 0 && symType != Marker.CIRCLE && sz > 0)
                symbolPainter.setRotationProducer(new CompassPlotAngleProducer());
             
             painters.add(symbolPainter);
@@ -1060,17 +1059,16 @@ public class TraceNode extends FGNPlottableData implements Cloneable
          else
          {
             Painter histPainter = painters.get(0);
-            FViewport2D parentVP = getParentViewport();
             HistogramVertexProducer vertexProvider = new HistogramVertexProducer(false);
             if(barWidth == 0)
             {
                if( !(histPainter instanceof LineSegmentPainter) )
                   painters.set(0, new LineSegmentPainter(this, vertexProvider));
             }
-            else if(parentVP.isPolar())
+            else if(isPolar)
             {
                Point2D origin = parentVP.getPhysicalUserOrigin();
-               CircularArcPainter arcPainter = null;
+               CircularArcPainter arcPainter;
                if( !(histPainter instanceof CircularArcPainter) )
                {
                   arcPainter = new CircularArcPainter(this, vertexProvider, origin);
@@ -1114,7 +1112,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
             symbolPainter.setPaintedShape(symType);
             symbolPainter.setSize(sz);
             symbolPainter.setTextLabel(symbol.getCharacter()); 
-            if(parentVP.isPolar() && getBarWidth() == 0 && symType != Marker.CIRCLE && sz > 0)
+            if(isPolar && getBarWidth() == 0 && symType != Marker.CIRCLE && sz > 0)
                symbolPainter.setRotationProducer(new CompassPlotAngleProducer());
             else
                symbolPainter.setRotationProducer(null);
@@ -1122,9 +1120,9 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       }
       else if(mode == DisplayMode.MULTITRACE)
       {
-         if(painters.size() == 0)
+         ErrorBarNode ebar = getErrorBarNode();
+         if(painters.isEmpty())
          {
-            ErrorBarNode ebar = getErrorBarNode();
             painters.add( new PolylinePainter(ebar, new MultiSetPointProducer()) );
 
             painters.add( new ShapePainter(ebar, new MultiSetPointProducer(), ebar.getEndCap(), 
@@ -1138,7 +1136,6 @@ public class TraceNode extends FGNPlottableData implements Cloneable
          }
          else
          {
-            ErrorBarNode ebar = getErrorBarNode();
             ShapePainter symbolPainter = (ShapePainter) painters.get(1);
             symbolPainter.setPaintedShape(ebar.getEndCap());
             symbolPainter.setSize((float)ebar.getEndCapSizeInMilliInches());
@@ -1207,7 +1204,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
          xMean += isLogX ? Math.log10(x) : x;
          if((iMin == -1) || (ds.getX(iMin, -1) > x)) iMin = i;
          if((iMax == -1) || (ds.getX(iMax, -1) < x)) iMax = i;
-         yMean += isLogY ? Math.log10(y) : y;;
+         yMean += isLogY ? Math.log10(y) : y;
       }
       if(nPts == 2)
       {
@@ -1349,7 +1346,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
       // finally, draw the trend line itself: either a line segment representing the LMS regression line, or the sliding
       // average trace.
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       TrendLineProducer tlp = new TrendLineProducer();
       while(tlp.hasNext())
       {
@@ -1359,7 +1356,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       if(pts.size() == 2) psDoc.renderLine(pts.get(0), pts.get(1));
       else if(pts.size() > 2)
       {
-         coords = pts.toArray(new Point2D[pts.size()]);
+         coords = pts.toArray(new Point2D[0]);
          psDoc.renderPolyline(coords, null, 0.0, null, null, false);
       }
       
@@ -1418,7 +1415,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
          // use StdDevPointProducer to traverse the +1/-1 STD polylines that bound the error band, connecting them with 
          // an ill-defined point so that the stroked lines are not connected.
          Iterator<Point2D> iterator = new StdDevPointProducer();
-         List<Point2D> ptList = new ArrayList<Point2D>();
+         List<Point2D> ptList = new ArrayList<>();
          while(iterator.hasNext())
          {
             Point2D next = (Point2D) iterator.next().clone();    // must clone, b/c StdDevPointProducer reuses a Point2D
@@ -1459,7 +1456,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
       // use HistogramVertexProducer to generate the vertices for the histogram bar shapes.
       Iterator<Point2D> iterator = new HistogramVertexProducer(true);
-      List<Point2D> vertices = new ArrayList<Point2D>();
+      List<Point2D> vertices = new ArrayList<>();
       while(iterator.hasNext())
       {
          Point2D next = (Point2D) iterator.next().clone();    // must clone, b/c HistogramVertexProducer reuses point
@@ -1468,12 +1465,12 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
       // if there are some histogram bars to render, invoke the Postscript document's appropriate utility method. 
       boolean filled = getFillColor().getAlpha() != 0;
-      if((vertices.size() > 0) && (isStroked() || (filled && (barWidth > 0))))
+      if((!vertices.isEmpty()) && (isStroked() || (filled && (barWidth > 0))))
       {
          if(barWidth == 0) 
          {
             Point2D[] coords = new Point2D[vertices.size()];
-            for(int i = 0; i < coords.length; i++) coords[i] = (Point2D) vertices.get(i);
+            for(int i = 0; i < coords.length; i++) coords[i] = vertices.get(i);
             psDoc.renderPolyline(coords, null, 0, null, null, false);
          }
          else if(!parentVP.isPolar()) 
@@ -1535,7 +1532,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       // individual point sets. This ensures that, in the event that the polyline sub-sampling algorithm is engaged,
       // the Postscript output will replicate what's rendered onscreen.
       Iterator<Point2D> iterator = new MultiSetPointProducer();
-      List<Point2D> ptList = new ArrayList<Point2D>();
+      List<Point2D> ptList = new ArrayList<>();
       while(iterator.hasNext())
       {
          Point2D next = (Point2D) iterator.next().clone();    // must clone, b/c StdDevPointProducer reuses a Point2D
@@ -1546,7 +1543,6 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       
       // in case the point list is really large
       ptList.clear();
-      ptList = null;
       
       // if the composite polyline is not empty, render it IAW properties defined on subordinate ErrorBarNode
       if(coords.length > 1)
@@ -1581,7 +1577,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
    /**
     * Helper method for <code>toPostscript()</code>. It prepares the Postscript code to render any error bars defined 
     * for individual data points in this <code>TraceNode</code>.
-    * @param doc The Postscript document into which this <code>TraceNode</code> is rendered.
+    * @param psDoc The Postscript document into which this <code>TraceNode</code> is rendered.
     */
    private void renderErrorBars(PSDoc psDoc)
    {
@@ -1595,6 +1591,8 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
       // we'll need the parent graph viewport to convert user to physical coordinates
       FViewport2D parentVP = getParentViewport();
+      if(parentVP == null)
+         return;
       
       DataSet set = getDataSet();
       int nPts = set.getDataSize(-1);
@@ -1688,11 +1686,11 @@ public class TraceNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the <code>TraceNode</code> clone is independent of 
     * the node cloned. The clone will reference the same dataset, however!
     */
-   @Override protected Object clone()
+   @Override protected TraceNode clone() throws CloneNotSupportedException
    {
       TraceNode copy = (TraceNode) super.clone();
       copy.paintedDisplayMode = null;
-      copy.painters = new ArrayList<Painter>();
+      copy.painters = new ArrayList<>();
       copy.rBoundsSelf = null;
       return(copy);
    }
@@ -1792,7 +1790,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
        * The current data point. This is reused to deliver each point. IT IS ASSUMED that the consumer will NOT store
        * a reference to this point, but will make a copy if needed.
        */
-      Point2D pCurrent;
+      final Point2D pCurrent;
       /** Non-null if the polyline point sequence is being sub-sampled (when there are too many function samples). */
       RadialPolylineSubsampler subSampler = null;
    }
@@ -1846,10 +1844,9 @@ public class TraceNode extends FGNPlottableData implements Cloneable
          windowLen = getSlidingWindowLength();
          xOfs = getXOffset();
          yOfs = getYOffset();
-         endPts = new ArrayList<Point2D>();
+         endPts = new ArrayList<>();
          FGNGraph g = getParentGraph();
-         FGNGraph.CoordSys sys = g.getCoordSys();
-         boolean ok = (graphVP != null) && (g != null) && (!g.isPolar()) && (!g.is3D());
+         boolean ok = (g != null) && (graphVP != null) && (!g.isPolar()) && (!g.is3D());
          
          nPtsSoFar = nPtsTotal = 0;
          pCurrent = null; 
@@ -1863,6 +1860,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
             }
             else if(windowLen == 1)
             {
+               FGNGraph.CoordSys sys = g.getCoordSys();
                calculateRegressionLineSegment(set, endPts, sys.isLogX(), sys.isLogY());
                if(endPts.size() == 2)
                {
@@ -2027,7 +2025,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
        * viewport. The array is reused to deliver each point. IT IS ASSUMED that the consumer will NOT store a reference
        * to each point it receives, but will make a copy if needed.
        */
-      Point2D[] pCurrPair;
+      final Point2D[] pCurrPair;
       /** Index into the two-element point array, indicating the point to deliver next. */
       int nextIdx;
       /** Index (into underlying data source) of the last data point to be generated -- so we can get its Y value. */
@@ -2154,7 +2152,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
        * The current data point. This is reused to deliver each point. IT IS ASSUMED that the consumer will NOT store
        * a reference to this point, but will make a copy if needed.
        */
-      Point2D pCurrent;
+      final Point2D pCurrent;
       /** Non-null if the polyline point sequence is being sub-sampled (when there are too many function samples). */
       RadialPolylineSubsampler subSampler = null;
    }
@@ -2209,7 +2207,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
       
       int nPtsSoFar;
       int nVertsSoFar;
-      Point2D[] barVertices;
+      final Point2D[] barVertices;
 
       /**
        * Retrieve a new iterator for this <code>HistogramVertexProducer</code>. This merely returns a fresh copy of 
@@ -2245,8 +2243,16 @@ public class TraceNode extends FGNPlottableData implements Cloneable
             halfSignedBarW = barWidth / 2.0;
 
          isLines = (barWidth == 0.0);
-         isPolar = graphVP.isPolar();
-         polarOrigin = (graphVP != null) ? graphVP.getPhysicalUserOrigin() : new Point2D.Double(0,0);
+         if(graphVP != null)
+         {
+            isPolar = graphVP.isPolar();
+            polarOrigin = graphVP.getPhysicalUserOrigin();
+         }
+         else
+         {
+            isPolar = false;
+            polarOrigin = new Point2D.Double(0,0);
+         }
 
          nPtsSoFar = 0;
          nVertsSoFar = (barWidth==0 || isPolar) ? 2 : 5;
@@ -2329,7 +2335,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
             // The next call to hasNext() will return false.
             if(!gotNextBar)
             {
-               for(int i = 0; i<barVertices.length; i++) barVertices[i].setLocation(Double.NaN, Double.NaN);
+               for(Point2D barVertex : barVertices) barVertex.setLocation(Double.NaN, Double.NaN);
             }
 
             nVertsSoFar = 0;
@@ -2374,8 +2380,8 @@ public class TraceNode extends FGNPlottableData implements Cloneable
          baseline = getBaseline();
          
          SymbolNode sn = getSymbolNode();
-         applicable = graphVP.isPolar() && (getMode() == DisplayMode.HISTOGRAM) && (getBarWidth() == 0) && 
-               (sn.getSizeInMilliInches() > 0) && (sn.getType() != Marker.CIRCLE);
+         applicable = (graphVP != null) && graphVP.isPolar() && (getMode() == DisplayMode.HISTOGRAM) &&
+               (getBarWidth() == 0) && (sn.getSizeInMilliInches() > 0) && (sn.getType() != Marker.CIRCLE);
          nPtsSoFar = 0;
       }
 
@@ -2392,7 +2398,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
          nPtsSoFar += nSkipBy;
 
-         return(new Float(angle));
+         return((float) angle);
       }
 
 
@@ -2515,12 +2521,12 @@ public class TraceNode extends FGNPlottableData implements Cloneable
        * Flag set if next point should be (NaN,NaN) to insert a discontinuity between end of the polyline for one
        * member point set and the start of the polyline for the next member set.
        */
-      boolean insertGap = false;
+      boolean insertGap;
       /** 
        * The current data point. This is reused to deliver each point. IT IS ASSUMED that the consumer will NOT store
        * a reference to this point, but will make a copy if needed.
        */
-      Point2D pCurrent;
+      final Point2D pCurrent;
       /** Non-null if the polyline point sequence is being sub-sampled (when there are too many function samples). */
       RadialPolylineSubsampler subSampler = null;
    }
@@ -2618,7 +2624,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
          if(parentVP == null) return(true);
 
          // we use a LineSegmentPainter or CircularArcPainter to render each error bar separately. 
-         List<Point2D> endPts = new ArrayList<Point2D>();
+         List<Point2D> endPts = new ArrayList<>();
          Point2D pStart = new Point2D.Double();
          Point2D pEnd = new Point2D.Double();
          endPts.add(pStart);
@@ -2670,10 +2676,12 @@ public class TraceNode extends FGNPlottableData implements Cloneable
                boolean isTwoSided = (ecode==0);
                boolean isPlusOne = (ecode>0);
                boolean isMinusOne = (ecode<0);
+               double xStart = x + ((isTwoSided||isMinusOne) ? -xStd : 0);
+               double xEnd = x + ((isPlusOne||isTwoSided) ? xStd : 0);
 
                // compute user coords of error bar endpoints
-               pStart.setLocation( x + ((isTwoSided||isMinusOne) ? -xStd : 0), y );
-               pEnd.setLocation( x + ((isPlusOne||isTwoSided) ? xStd : 0), y );
+               pStart.setLocation( xStart, y );
+               pEnd.setLocation( xEnd, y );
 
                // translate to physical coords WRT parent SVG viewport; either point may become ill-defined
                parentVP.userUnitsToThousandthInches( pStart );
@@ -2682,12 +2690,12 @@ public class TraceNode extends FGNPlottableData implements Cloneable
                // if physical endpoints are well-defined, render the appropriately adorned error bar
                if(!Double.isNaN(pStart.getX()) && !Double.isNaN(pEnd.getX()))
                {
-                  if(isPolar)
+                  if(isPolar && arcPainter != null)
                   {
                      // endpoints need to be in polar coordinates, with radius in logical units of graphic context
                      double r = pGraphOrigin.distance(p0);
-                     pStart.setLocation(x + ((isTwoSided||isMinusOne) ? -xStd : 0), r);
-                     pEnd.setLocation(x + ((isPlusOne||isTwoSided) ? xStd : 0), r);
+                     pStart.setLocation(xStart, r);
+                     pEnd.setLocation(xEnd, r);
                      arcPainter.setAdornment(endCapStyle, endCapShape, (float)endCapSz, null,
                            isTwoSided||isMinusOne, isTwoSided||isPlusOne, false, true);
                      arcPainter.render(g2d, null);
@@ -2759,6 +2767,7 @@ public class TraceNode extends FGNPlottableData implements Cloneable
 
          // we'll need the parent graph viewport to convert user to physical coordinates
          FViewport2D parentVP = getParentViewport();
+         if(parentVP == null) return;
 
          // bounds of rectangle that encompasses all well-defined error bars
          boolean gotValidBar = false;
@@ -2794,10 +2803,12 @@ public class TraceNode extends FGNPlottableData implements Cloneable
                boolean isTwoSided = (ecode==0);
                boolean isPlusOne = (ecode>0);
                boolean isMinusOne = (ecode<0);
+               double xStart = x + ((isTwoSided||isMinusOne) ? -xStd : 0);
+               double xEnd = x + ((isPlusOne||isTwoSided) ? xStd : 0);
 
                // compute user coords of error bar endpoints
-               pStart.setLocation( x + ((isTwoSided||isMinusOne) ? -xStd : 0), y );
-               pEnd.setLocation( x + ((isPlusOne||isTwoSided) ? xStd : 0), y );
+               pStart.setLocation( xStart, y );
+               pEnd.setLocation( xEnd, y );
 
                // translate to physical coords WRT parent SVG viewport; either point may become ill-defined
                parentVP.userUnitsToThousandthInches( pStart );
@@ -2823,15 +2834,14 @@ public class TraceNode extends FGNPlottableData implements Cloneable
                   // if error bar arc passes thru 0, 90, 180 or 270, then the arc's bounds include one or more of the 
                   // edges of the quare that bounds the containing circle
                   Point2D center = parentVP.getPhysicalUserOrigin();
-                  double start = x + ((isTwoSided||isMinusOne) ? -xStd : 0);
-                  double end = x + ((isPlusOne||isTwoSided) ? xStd : 0);
-                  if(end < start) end += 360;
+                  double end = xEnd;
+                  if(end < xStart) end += 360;
 
                   
-                  while(end >= start)
+                  while(end >= xStart)
                   {
                      int qtrAngle = (((int)(end/90)) * 90);
-                     if(qtrAngle <= start) break;
+                     if(qtrAngle <= xStart) break;
 
                      qtrAngle = qtrAngle % 360;
                      if(qtrAngle == 0 && (center.getX() + y) > xMax) xMax = center.getX() + y;

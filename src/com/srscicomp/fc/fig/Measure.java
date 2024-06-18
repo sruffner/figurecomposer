@@ -20,6 +20,11 @@ import com.srscicomp.common.util.Utilities;
  */
 public class Measure implements Cloneable
 {
+   @Override public Measure clone() throws CloneNotSupportedException
+   {
+      return (Measure) super.clone();
+   }
+
    /** An enumeration of the different measurement units supported by <b>Measure</b>. */
    public enum Unit
    {
@@ -61,17 +66,22 @@ public class Measure implements Cloneable
     */
    public static Measure fromString(String s)
    {
-      if(s == null || s.length() == 0) return(null);
-      for(int i=0; i < ALLUNITS.length; i++)
+      if(s == null || s.isEmpty()) return(null);
+      for(Unit allunit : ALLUNITS)
       {
-         int unitIndex = s.indexOf(ALLUNITS[i].toString());
+         int unitIndex = s.indexOf(allunit.toString());
          if(unitIndex > 0)
          {
-            double val = 0;
-            try { val = Double.parseDouble(s.substring(0,unitIndex)); }
-            catch(NumberFormatException nfe) { return(null); }
-            
-            return(new Measure(val, ALLUNITS[i]));
+            double val;
+            try
+            {
+               val = Double.parseDouble(s.substring(0, unitIndex));
+            } catch(NumberFormatException nfe)
+            {
+               return (null);
+            }
+
+            return (new Measure(val, allunit));
          }
       }
       return(null);
@@ -82,7 +92,7 @@ public class Measure implements Cloneable
     * specified constraints.
     * 
     * @param value Numerical value of measurement. An ill-defined value is treated as 0.
-    * @param u Units of measurement. Null is interpreted as {@link Unit#Pct}.
+    * @param u Units of measurement. Null is interpreted as {@link Unit#PCT}.
     * @param c The constraints object. If null, the measure is unconstrained. Otherwise, the value and units of the
     * measure will be altered as necessary to satisfy the constraints.
     * @return The constrained measure.
@@ -171,8 +181,8 @@ public class Measure implements Cloneable
       if(from == null || from == Unit.PCT || from == Unit.USER || to == null || to == Unit.PCT || to == Unit.USER)
          throw new IllegalArgumentException( "Cannot convert from or to unspecified/percentage/user units" );
 
-      nFrac = (nFrac<0) ? 0 : ((nFrac>MAXFRACDIGITS) ? MAXFRACDIGITS : nFrac);
-      nSig = (nSig<1) ? 1 : (nSig>MAXSIGDIGITS ? MAXSIGDIGITS : nSig);
+      nFrac = Utilities.rangeRestrict(0, MAXFRACDIGITS, nFrac);
+      nSig = Utilities.rangeRestrict(1, MAXSIGDIGITS, nSig);
       
       // the silly case -- but limit # of significant and fractional digits!
       if(from == to) return(Utilities.limitSigAndFracDigits(m, nSig, nFrac));
@@ -251,7 +261,7 @@ public class Measure implements Cloneable
    {
       if(m1 == null || m2 == null) return(false);
       if(Measure.equal(m1,m2)) return(true);
-      nFrac = (nFrac < 0) ? 0 : (nFrac > MAXFRACDIGITS ? MAXFRACDIGITS : nFrac);
+      nFrac = Utilities.rangeRestrict(0, MAXFRACDIGITS, nFrac);
       
       Unit unit1 = m1.getUnits();
       Unit unit2 = m2.getUnits();
@@ -262,7 +272,7 @@ public class Measure implements Cloneable
          return(false);
       else if(unit1 == unit2) 
          return(Math.abs(m1.getValue()-m2.getValue()) <= threshold);
-      else if(isRel1 || isRel2) 
+      else if(isRel1)
          return(false);
 
       double unitMI1 = Measure.realUnitsToMI(1, unit1);
@@ -274,10 +284,10 @@ public class Measure implements Cloneable
    }
 
    /** The numerical value of this measure. */
-   private double value;
+   private final double value;
 
    /** The units for this measure. */
-   private Unit units;
+   private final Unit units;
 
    /** 
     * Construct a measure.
@@ -357,8 +367,8 @@ public class Measure implements Cloneable
     */
    public String toString(int nSig, int nFrac)
    {
-      nSig = (nSig<1) ? 1 : (nFrac>MAXSIGDIGITS ? MAXSIGDIGITS : nSig);
-      nFrac = (nFrac<0) ? 0 : (nFrac>MAXFRACDIGITS ? MAXFRACDIGITS : nFrac);
+      nSig = Utilities.rangeRestrict(1, MAXSIGDIGITS, nSig);
+      nFrac = Utilities.rangeRestrict(0, MAXFRACDIGITS, nFrac);
       return(Utilities.toString(value, nSig, nFrac) + units.toString());
    }
 
@@ -461,8 +471,8 @@ public class Measure implements Cloneable
       {
          this.allowPct = allowPct;
          this.allowUser = allowUser;
-         this.nMaxSigDigits = (nSig < 1) ? 1 : (nSig > MAXSIGDIGITS ? MAXSIGDIGITS : nSig);
-         this.nMaxFracDigits = (nFrac < 0) ? 0 : (nFrac > MAXFRACDIGITS ? MAXFRACDIGITS : nFrac);
+         this.nMaxSigDigits = Utilities.rangeRestrict(1, MAXSIGDIGITS, nSig);
+         this.nMaxFracDigits = Utilities.rangeRestrict(0, MAXFRACDIGITS, nFrac);
          
          double d1, d2;
          d1 = Utilities.isWellDefined(min) && Math.abs(min) <= MAXABSVAL ? min : -MAXABSVAL;
@@ -566,7 +576,6 @@ public class Measure implements Cloneable
                if(u==Unit.PCT && milliInPrec) nLimFrac = 1;
                
                value = Utilities.limitSigAndFracDigits(value, nMaxSigDigits, nLimFrac);
-               value = Utilities.rangeRestrict(min, max, value);
             }
             else
             {
@@ -581,8 +590,8 @@ public class Measure implements Cloneable
                if(milliInPrec) nLimFrac = (u==Unit.PT) ? 1 : (u==Unit.MM ? 2 : 3); 
                
                value = Utilities.limitSigAndFracDigits(value, nMaxSigDigits, nLimFrac);
-               value = Utilities.rangeRestrict(min, max, value);
             }
+            value = Utilities.rangeRestrict(min, max, value);
             return(new Measure(value, u));
          }
       }

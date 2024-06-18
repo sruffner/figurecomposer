@@ -53,7 +53,7 @@ import com.srscicomp.fc.fig.TickSetNode.LabelFormat;
  * <p>Unlike its more general counterpart {@link AxisNode}, {@link PolarAxisNode} requires that the specified axis
  * range <i>[S, E}</i> always be valid. As a minimum, <i>S&lt;E</i>; there are further restrictions on the allowed 
  * values for the theta axis range, which cannot span more than 360 deg. For these reasons, the axis range endpoints 
- * are set as a single composite property to ensure the range is always valid -- see {@link #setRange()}.</p>
+ * are set as a single composite property to ensure the range is always valid -- see {@link #setRange}.</p>
  *
  * @author sruffner
  */
@@ -122,7 +122,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
     * The axis range ("user" units): [A, B], where A must be less than B. For a theta axis, implied units are degrees,
     * A and B must lie in the unit circle and the total span cannot exceed 360 degrees.
     */
-   private double[] range = null;
+   private final double[] range;
 
    /**
     * Get the minimum value of the coordinate range spanned by this polar graph axis.
@@ -158,14 +158,13 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
          { 
             span = 360; 
             min = (min < -360) ? -360 : (min > 0 ? 0 : min);
-            max = min + span; 
          }
          else
          {
             if(min < -360) min = -360;
             if(min + span > 360) min = 360 - span;
-            max = min + span;
          }
+         max = min + span;
       }
       
       if(min == range[0] && max == range[1]) return(true);
@@ -198,7 +197,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
     * regularly spaced grid and/or custom grid divisions. However, there can be no more than {@link #MAXDIVS} divisions
     * in total; the grid divisions are populated in increasing order until that limit is reached.
     */
-   private double[] gridDivs = null;
+   private double[] gridDivs;
    
    /**
     * Get the current grid divisions for this polar axis. 
@@ -217,7 +216,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    public double[] getGridDivisions() { return(Arrays.copyOf(gridDivs, gridDivs.length)); }
    
    /**
-    * Set the current grid divisions for this polar axis. If any change is made, {@link #onNodeModified()} is invoked.
+    * Set the current grid divisions for this polar axis. If any change is made, {@link #onNodeModified} is invoked.
     * 
     * <p>Note that only those grid divisions that fall within the current axis range [A..B] will actually be rendered.
     * Also, the rendered grid divisions are populated in increasing order starting with the first division &ge;A and 
@@ -305,7 +304,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
     * <ul>
     * <li>If true, the string argument is a simple list of 3 or more whitespace-separated tokens, where the first
     * 3 tokens "S E M ..." define the regularly spaced grid divisions of size M starting at S and not exceeding E. See
-    * {@link #getGridDivisionsAsString()} for full details. Any additional tokens are custom divisions. In this form, if 
+    * {@link #getGridDivisionsAsString} for full details. Any additional tokens are custom divisions. In this form, if
     * the string is empty or has fewer than 3 tokens, it is ignored and the polar axis will have neither a regular grid 
     * nor any custom grid divisions.</li>
     * <li>If false and a regular grid is desired, the first token must take the form "S/E/M"; any remaining tokens are 
@@ -371,7 +370,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    
    /**
     * Get the array of custom grid labels assigned to this polar axis. For further details on how custom grid
-    * labels are used, see {@link #getCustomGridLabelsAsCommaSeparatedList()}.
+    * labels are used, see {@link #getCustomGridLabelsAsString()}.
     * @return The custom tick labels, in order of appearance. If there are none, an empty array is returned.
     */
    public String[] getCustomGridLabels() {return( Arrays.copyOf(customGridLabels, customGridLabels.length)); }
@@ -397,7 +396,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    
    /**
     * Set the ordered list of custom grid labels assigned to this polar axis. No label may contain a comma. For further
-    * details on how custom grid labels are used, see {@link #getCustomGridLabelsAsCommaSeparatedList()}.
+    * details on how custom grid labels are used, see {@link #getCustomGridLabelsAsString}.
     * @param labels The custom grid labels. A null or empty array will restore the standard auto-generated numeric 
     * labels. Otherwise, each element of the array is trimmed of whitespace and any commas are removed. Any null entry
     * is replaced by an empty string.
@@ -432,7 +431,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    
    /**
     * Assign custom grid labels to be used in place of the standard numeric labels for this polar axis. See {@link 
-    * #getCustomGridLabelsAsCommaSeparatedList()} for further details.
+    * #getCustomGridLabelsAsString} for further details.
     * @param csTokens A comma-separated list of string tokens, each of which is trimmed of whitespace and saved as a
     * custom grid label. The label tokens are applied in the order they appear in the comma-separated list. Note that 
     * empty labels are allowed. For example, "A,,C" is a list of 3 label tokens, the second of which is an empty string;
@@ -483,7 +482,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    
    /**
     * Set the reference angle for this polar axis. See {@link #getReferenceAngle()} for details. If any change is
-    * made, {@link #onNodeModified()} is invoked.
+    * made, {@link #onNodeModified} is invoked.
     * 
     * @param angle The new reference angle in whole degrees. Must lie in [-359..359].
     * @return True if successful, false if specified angle is invalid.
@@ -494,14 +493,14 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       
       if(angle != refAngle)
       {
-         if(doMultiNodeEdit(FGNProperty.ANGLE, new Integer(angle))) return(true);
+         if(doMultiNodeEdit(FGNProperty.ANGLE, angle)) return(true);
          
-         Integer old = new Integer(refAngle);
+         Integer old = refAngle;
          refAngle = angle;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.ANGLE);
-            FGNRevEdit.post(this, FGNProperty.ANGLE, new Integer(refAngle), old, 
+            FGNRevEdit.post(this, FGNProperty.ANGLE, refAngle, old,
                   "Change reference angle for " + (isTheta ? "theta" : "radial") + " axis");
          }
       }
@@ -518,23 +517,23 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    public boolean getHide() { return(hide); }
 
    /**
-    * Set the visibility state for this polar axis. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the visibility state for this polar axis. If a change is made, {@link #onNodeModified} is invoked.
     * @param b True to hide axis, false to show it.
     */
    public void setHide(boolean b)
    {
       if(hide != b)
       {
-         if(doMultiNodeEdit(FGNProperty.HIDE, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.HIDE, b)) return;
          
-         Boolean old = new Boolean(hide);
+         Boolean old = hide;
          hide = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = hide ? "Hide " : "Show ";
             desc += isTheta ? "theta axis" : "radial axis";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hide), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hide, old, desc);
          }
       }
    }
@@ -552,7 +551,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    public boolean getReversed() { return(reversed); }
 
    /**
-    * Set the direction of increasing values for this polar axis. If a change is made, {@link #onNodeModified()} is 
+    * Set the direction of increasing values for this polar axis. If a change is made, {@link #onNodeModified} is
     * invoked.
     * @param b False to select the normal direction (CCW for theta, increasing from origin for radial axis), true to
     * select the reversed direction (CW for theta, increasing toward origin for radial axis).
@@ -561,16 +560,16 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    {
       if(reversed != b)
       {
-         if(doMultiNodeEdit(FGNProperty.DIR, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.DIR, b)) return;
          
-         Boolean old = new Boolean(reversed);
+         Boolean old = reversed;
          reversed = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.DIR);
             String desc = "Set " + (reversed ? "reversed" : "normal") + " direction for the ";
             desc += isTheta ? "theta axis" : "radial axis";
-            FGNRevEdit.post(this, FGNProperty.DIR, new Boolean(reversed), old, desc);
+            FGNRevEdit.post(this, FGNProperty.DIR, reversed, old, desc);
          }
       }
    }
@@ -586,7 +585,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the numeric format for the grid labels rendered by this polar axis. If a change is made, the method {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
     * @param fmt The new grid label numeric format. Null is rejected.
     * @return True if successful; false if argument is invalid.
@@ -629,7 +628,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the measured gap between a grid label and the endpoint of the corresponding grid line/arc. If a change is 
-    * made, {@link #onNodeModified()} is invoked.
+    * made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new polar axis grid label gap. It is constrained to satisfy {@link AxisNode#SPACERCONSTRAINTS}. Null
     * is rejected.
@@ -660,7 +659,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case RANGE: 
@@ -681,15 +680,15 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case RANGE : value = new double[] {getRangeMin(), getRangeMax()}; break;
          case PDIVS: value = getGridDivisions(); break;
          case CUSTOMTCKLBL: value = getCustomGridLabels(); break;
-         case ANGLE: value = new Integer(getReferenceAngle()); break;
-         case HIDE: value = new Boolean(getHide()); break;
-         case DIR : value = new Boolean(getReversed()); break;
+         case ANGLE: value = getReferenceAngle(); break;
+         case HIDE: value = getHide(); break;
+         case DIR : value = getReversed(); break;
          case FMT: value = getGridLabelFormat(); break;
          case GAP: value = getGridLabelGap();  break;
          default : value = super.getPropertyValue(p); break;
@@ -750,9 +749,9 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
     */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      styleSet.putStyle(FGNProperty.HIDE, new Boolean(getHide()));
-      styleSet.putStyle(FGNProperty.DIR, new Boolean(getReversed()));
-      styleSet.putStyle(FGNProperty.ANGLE, new Integer(getReferenceAngle()));
+      styleSet.putStyle(FGNProperty.HIDE, getHide());
+      styleSet.putStyle(FGNProperty.DIR, getReversed());
+      styleSet.putStyle(FGNProperty.ANGLE, getReferenceAngle());
       styleSet.putStyle(FGNProperty.GAP, getGridLabelGap());
       styleSet.putStyle(FGNProperty.FMT, getGridLabelFormat());
    }
@@ -772,7 +771,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.HIDE, nt, Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.HIDE, null, Boolean.class)))
       {
-         hide = b.booleanValue();
+         hide = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.HIDE);
@@ -780,7 +779,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       b = (Boolean) applied.getCheckedStyle(FGNProperty.DIR, nt, Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.DIR, null, Boolean.class)))
       {
-         reversed = b.booleanValue();
+         reversed = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.DIR);
@@ -788,7 +787,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       Integer angle = (Integer) applied.getCheckedStyle(FGNProperty.ANGLE, nt, Integer.class);
       if(angle != null && !angle.equals(restore.getCheckedStyle(FGNProperty.ANGLE, null, Integer.class)))
       {
-         refAngle = angle.intValue();
+         refAngle = angle;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.ANGLE);
@@ -915,13 +914,14 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       }
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
    
    public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException 
    { 
       // don't bother if axis is not rendered
-      if(!isRendered()) return;
+      PolarPlotNode pp = getParentPolarGraph();
+      if(pp == null || !isRendered()) return;
 
       // make sure the rendering infrastructure is prepared. We take advantage of the already prepared primitives, 
       // labels, and label locations to render in the PSDoc...
@@ -932,13 +932,13 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
 
       if(isTheta)
       {
-         for(int i=0; i<gridPrimitives.size(); i++)
+         for(Shape gridPrimitive : gridPrimitives)
          {
-            Line2D line2d = (Line2D) gridPrimitives.get(i);
+            Line2D line2d = (Line2D) gridPrimitive;
             psDoc.renderLine(line2d.getP1(), line2d.getP2());
          }
       }
-      else if(getParentPolarGraph().isFullCircleGrid())
+      else if(pp.isFullCircleGrid())
       {
          double[] radii = new double[gridPrimitives.size()];
          Point2D origin = null;
@@ -953,7 +953,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       }
       else
       {
-         boolean isCW = getParentPolarGraph().getThetaAxis().getReversed();
+         boolean isCW = pp.getThetaAxis().getReversed();
          double[] radii = new double[gridPrimitives.size()];
          Point2D origin = null;
          double thetaStart = 0;
@@ -1016,7 +1016,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
    
    /**
     * Helper method updates internal infrastructure used to render the grid and associated labels for this polar axis 
-    * node. It must be invoked when certain axis properties are changed; this happens via the {@link #onNodeModified()}
+    * node. It must be invoked when certain axis properties are changed; this happens via the {@link #onNodeModified}
     * method, which will force a recalculation of the node's render bounds whenever a property changes.
     * 
     * @param force If true, the rendering infrastructure is regenerated IAW current node properties; otherwise, it is
@@ -1029,11 +1029,11 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       
       if((!force) && gridPrimitives != null) return;
       
-      if(gridPrimitives == null) gridPrimitives = new ArrayList<Shape>();
+      if(gridPrimitives == null) gridPrimitives = new ArrayList<>();
       else gridPrimitives.clear();
-      if(labelLocs == null) labelLocs = new ArrayList<Point2D>();
+      if(labelLocs == null) labelLocs = new ArrayList<>();
       else labelLocs.clear();
-      if(labels == null) labels = new ArrayList<String>();
+      if(labels == null) labels = new ArrayList<>();
       else labels.clear();
       if(labelPainter == null)
       {
@@ -1046,7 +1046,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       
       // from user-defined axis range and grid divisions, calculate actual rendered grid division locations in 
       // increasing order.
-      List<Double> divsList = new ArrayList<Double>();
+      List<Double> divsList = new ArrayList<>();
       if(gridDivs[2] > 0)
       {
          // regular grid defined by first 3 elements [S E M], with M>0. If S>=E, then S and E are replaced by the 
@@ -1061,36 +1061,36 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
          while(div < range[0]) div += gridDivs[2];
          while(div <= range[1] && div <= end && divsList.size() < MAXDIVS)
          {
-            divsList.add(new Double(div));
+            divsList.add(div);
             div += gridDivs[2];
          }
       }
       for(int i=3; i<gridDivs.length; i++) if(range[0] <= gridDivs[i] && gridDivs[i] <= range[1] &&
-            !divsList.contains(new Double(gridDivs[i])))
+            !divsList.contains(gridDivs[i]))
       {
          if(divsList.size() < MAXDIVS)
          {
-            divsList.add(new Double(gridDivs[i]));
+            divsList.add(gridDivs[i]);
             if(divsList.size() == MAXDIVS) Collections.sort(divsList);
          }
          else 
          {
             int pos = 0;
-            while(pos < MAXDIVS && divsList.get(pos).doubleValue() < gridDivs[i]) ++pos;
+            while(pos < MAXDIVS && divsList.get(pos) < gridDivs[i]) ++pos;
             if(pos < MAXDIVS) 
             {
-               divsList.add(pos, new Double(gridDivs[i]));
+               divsList.add(pos, gridDivs[i]);
                divsList.remove(MAXDIVS);
             }
          }
       }
 
       // for the radial axis, do NOT include a grid division at a value that maps to the polar origin!
-      if((!isTheta) && divsList.size() > 0)
+      if((!isTheta) && !divsList.isEmpty())
       {
-         if((!getReversed()) && (divsList.get(0).doubleValue() == range[0])) 
+         if((!getReversed()) && (divsList.get(0) == range[0]))
             divsList.remove(0);
-         else if(getReversed() && divsList.get(divsList.size()-1).doubleValue() == range[1])
+         else if(getReversed() && (divsList.get(divsList.size() - 1) == range[1]))
             divsList.remove(divsList.size()-1);
       }
       
@@ -1107,15 +1107,15 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       if(!Utilities.isWellDefined(pOriginMils)) return;
       
       PolarAxisNode otherAxis = isTheta ? g.getRadialAxis() : g.getThetaAxis();
+      Point2D p = new Point2D.Double();
       if(isTheta)
       {
          // for each division of theta axis, draw a radius from origin to the outermost circle of the polar grid. 
          // Labels are centered on each radius drawn, but pushed further out IAW the grid label gap parameter.
-         Point2D p = new Point2D.Double();
          double rOuterCircle = otherAxis.getReversed() ? otherAxis.getRangeMin() : otherAxis.getRangeMax();
          for(int i=0; i<divsList.size(); i++)
          {
-            double div = divsList.get(i).doubleValue();
+            double div = divsList.get(i);
             p.setLocation(div, rOuterCircle);
             vp.userUnitsToThousandthInches(p);
             if(Utilities.isWellDefined(p))
@@ -1138,7 +1138,6 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
          // for each division of radial axis, draw a circular arc centered on the polar origin and spanning the range
          // of the theta axis (full circle if 360deg). But remember that 0deg may point in any direction, depending on
          // the orientation angle for the theta axis.
-         Point2D p = new Point2D.Double();
          boolean isCW = otherAxis.getReversed();
          
          // angles at which theta axis starts/ends, measured CCW from "east" in standard right-handed coord system,
@@ -1164,7 +1163,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
          {
             double diff0 = Math.abs(otherAxis.getRangeMin()-getReferenceAngle()); 
             double diff1 = Math.abs(otherAxis.getRangeMax()-rAxisTheta);
-            boolean above = false;
+            boolean above;
             if(diff0 > diff1)
             {
                thetaForRadLabels = otherAxis.getRangeMax();
@@ -1187,7 +1186,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
          
          for(int i=0; i<divsList.size(); i++)
          {
-            double div = divsList.get(i).doubleValue();
+            double div = divsList.get(i);
             p.setLocation(thetaStart, div);
             double r = vp.convertUserDistanceToThousandthInches(pOrigin, p);
             if(r <= 0) continue;
@@ -1208,8 +1207,6 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
             {
                p.setLocation(rAxisTheta, div);
                vp.userUnitsToThousandthInches(p);
-               labels.add(formatGridLabel(i, div));
-               labelLocs.add(new Point2D.Double(p.getX(), p.getY()));
             }
             else
             {
@@ -1220,9 +1217,9 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
                vp.userUnitsToThousandthInches(p);
                LineXY perpLine = labelsLine.getPerpendicularLine(p.getX(), p.getY());
                labelsLine.getIntersection(perpLine, p);
-               labels.add(formatGridLabel(i, div));
-               labelLocs.add(new Point2D.Double(p.getX(), p.getY()));
             }
+            labels.add(formatGridLabel(i, div));
+            labelLocs.add(new Point2D.Double(p.getX(), p.getY()));
          }
       }
    }
@@ -1278,45 +1275,6 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
       double scale = Math.pow(10, nDigits);
       long truncValue = Math.round(value * Math.pow(10, nDigits));
       return(Utilities.toString(((double)truncValue)/scale, 7, nDigits));
-
-      /*
-      // if the absolute value is less than 0.001, then value reads as "0" in all numeric label formats
-      double absV = Math.abs(value);
-      if(absV < 0.001) return("0");
-      
-      int nDigits = 0;
-      if(fmt == LabelFormat.F1) nDigits = 1; 
-      else if(fmt == LabelFormat.F2) nDigits = 2;
-      else if(fmt == LabelFormat.F3) nDigits = 3;
- 
-      // big numbers
-      if(absV >= 1.0e6)
-      {
-         int exp = (int) Math.floor(Math.log10(absV));
-         value /= Math.pow(10, exp);
-         
-         double scale = Math.pow(10, nDigits);
-         long truncValue = Math.round(value * Math.pow(10, nDigits));
-         String strVal = Utilities.toString(((double)truncValue)/scale, 7, nDigits);
-         return(strVal + "e" + exp);
-      }
-      
-      // everything else
-      int exp = 0;
-      double thresh = Math.pow(10, -nDigits);
-      if(absV >= 0.001 && nDigits < 3)
-      {
-         while(absV < thresh) { ++nDigits; thresh = Math.pow(10, -nDigits); }
-      }
-      
-      if(absV < thresh) exp = -((int) Math.floor(Math.log10(absV)));
-
-      double scale = Math.pow(10, nDigits);
-      long truncValue = Math.round(value * Math.pow(10, nDigits+exp));
-
-      String strVal = Utilities.toString(((double)truncValue)/scale, 7, nDigits);
-      return(exp == 0 ? strVal : (strVal + "e-" + exp));
-      */
    }
 
    /**
@@ -1353,7 +1311,7 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
     * This override ensures that the cloned polar axis node's internal rendering resources are completely independent of 
     * the resources allocated to this node.
     */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       PolarAxisNode copy = (PolarAxisNode) super.clone();
       copy.rBoundsSelf = null;

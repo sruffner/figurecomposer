@@ -337,10 +337,9 @@ public class UnicodeSubset extends Character.Subset
 	public boolean containsAll( char[] characters )
 	{
 		if( characters == null ) return( true );
-        for (char character : characters) {
-            if (!contains(character))
-                return (false);
-        }
+		for (char character : characters)
+			if (!contains(character)) return (false);
+
 		return( true );
 	}
 
@@ -376,10 +375,9 @@ public class UnicodeSubset extends Character.Subset
 	public boolean containsAny( char[] characters )
 	{
 		if( characters == null ) return( false );
-        for (char character : characters) {
-            if (contains(character))
-                return (true);
-        }
+		for (char character : characters)
+			if (contains(character)) return (true);
+
 		return( false );
 	}
 

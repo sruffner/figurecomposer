@@ -56,7 +56,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
    protected FGNGraph getParentGraph()
    {
       FGraphicNode p = getParent();
-      if(p == null || !(p instanceof FGNGraph)) return(null);
+      if(!(p instanceof FGNGraph)) return(null);
       return((FGNGraph)p);
    }
 
@@ -71,7 +71,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
    }
    
    /** The last computed data range <i>[x0, x1, y0, y1, z0, z1]</i> for this data presentation node. */
-   protected float[] cachedDataRange = new float[] {0, 0, 0, 0, 0, 0};
+   protected final float[] cachedDataRange = new float[] {0, 0, 0, 0, 0, 0};
    private boolean isRangeInitd = false;
    
    /**
@@ -83,7 +83,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
     * <p>Implementing classes are expected to cache the current data range in the protected 6-element array member
     * <i>cachedDataRange</i>. This ensures that the presentation node can detect whenever a change in the data range 
     * occurs (due to a change in the underlying data set or in some node property that impacts the data range) -- see 
-    * {@link #recalcDataRange()}. This method returns a cloned copy of <i>cachedDataRange</i>.</p>
+    * {@link #recalcDataRange}. This method returns a cloned copy of <i>cachedDataRange</i>.</p>
     * 
     * @return An array of six values, in order: minimum X-coordinate, maximum X-coordinate, minimum Y-coordinate, 
     * maximum Y-coordinate, minimum Z-coordinate, maximum Z-coordinate. If the node has no well-defined data for some 
@@ -106,7 +106,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
     * the cached range to determine whether or not the range actually changed.
     * 
     * <p>This method is an important part of the graph axis auto-scaling mechanism for the 2D graph container, {@link
-    * GraphNode}. It is invoked whenever a node property changes (via {@link #onNodeModified()}. Implementing classes 
+    * GraphNode}. It is invoked whenever a node property changes (via {@link #onNodeModified}. Implementing classes
     * should check the hint object for an indication of what property changed. If that property cannot affect the data 
     * range, then a recalculation is unnecessary.</p>
     * 
@@ -200,7 +200,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
 
    /**
     * Include or exclude an entry for this data presentation node in the parent graph's automated legend. If a change is
-    * made, the method {@link #onNodeModified()} in invoked. If this node does not support a legend entry, this method 
+    * made, the method {@link #onNodeModified} in invoked. If this node does not support a legend entry, this method
     * has no effect.
     * @param b True to enable, false to disable the legend entry.
     */
@@ -208,20 +208,20 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
    {
       if(isLegendEntrySupported() && (b != showInLegend))
       {
-         if(doMultiNodeEdit(FGNProperty.LEGEND, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.LEGEND, b)) return;
          
-         Boolean old = new Boolean(showInLegend);
+         Boolean old = showInLegend;
          showInLegend = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LEGEND);
-            FGNRevEdit.post(this, FGNProperty.LEGEND, new Boolean(showInLegend), old);
+            FGNRevEdit.post(this, FGNProperty.LEGEND, showInLegend, old);
          }
       }
    }
 
    /**
-    * Same as {@link #setShowInLegend()}, but no undo operation is posted, and {@link #onNodeModified()} is not invoked.
+    * Same as {@link #setShowInLegend}, but no undo operation is posted, and {@link #onNodeModified} is not invoked.
     * @param b True to enable, false to disable the legend entry.
     */
    protected void setShowInLegendNoNotify(boolean b) { if(isLegendEntrySupported()) showInLegend = b; }
@@ -246,7 +246,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
    public List<LegendEntry> getLegendEntries()
    {
       if(!getShowInLegend()) return(null);
-      List<LegendEntry> out = new ArrayList<LegendEntry>();
+      List<LegendEntry> out = new ArrayList<>();
       out.add(new LegendEntry(this, null));
       return(out);
    }
@@ -261,7 +261,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
    /**
     * Overridden to trigger the axis auto-scaling feature in the parent graph container when this data presentation 
     * node's data range has changed. If the modified property is not one of the special cases below, the method calls 
-    * {@link #recalcDataRange()}, passing along the provided hint. This function will return true if and only if the 
+    * {@link #recalcDataRange}, passing along the provided hint. This function will return true if and only if the
     * node's data range changed, in which case the parent graph is auto-scaled. If the graph is indeed rescaled, no 
     * further action is taken, since that will trigger a re-rendering of the graph and all of its children. If the graph
     * is not rescaled, the property change is forwarded to the super-class implementation for default handling.
@@ -292,7 +292,7 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
       if((!skip) && (hint instanceof FGNProperty) && FGNProperty.isFontProperty((FGNProperty)hint))
       {
          SymbolNode sn = getSymbolNode();
-         skip = (sn == null) || (sn.getSizeInMilliInches() == 0) || (sn.getCharacter().length() == 0);
+         skip = (sn == null) || (sn.getSizeInMilliInches() == 0) || (sn.getCharacter().isEmpty());
       }
       if(skip)
          model.onChange(this, 0, false, null);
@@ -333,6 +333,11 @@ public abstract class FGNPlottable extends FGraphicNode implements Cloneable
    
    @Override Object getPropertyValue(FGNProperty p)
    {
-      return((p == FGNProperty.LEGEND) ? new Boolean(getShowInLegend()) : super.getPropertyValue(p));
+      return((p == FGNProperty.LEGEND) ? Boolean.valueOf(getShowInLegend()) : super.getPropertyValue(p));
+   }
+
+   @Override protected FGNPlottable clone() throws CloneNotSupportedException
+   {
+      return((FGNPlottable) super.clone());
    }
 }

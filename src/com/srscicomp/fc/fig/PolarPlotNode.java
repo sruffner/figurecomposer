@@ -165,21 +165,21 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
    {
       if(gridOnTop != onTop)
       {
-         if(doMultiNodeEdit(FGNProperty.GRIDONTOP, new Boolean(onTop))) return;
+         if(doMultiNodeEdit(FGNProperty.GRIDONTOP, onTop)) return;
          
-         Boolean old = new Boolean(gridOnTop);
+         Boolean old = gridOnTop;
          gridOnTop = onTop;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.GRIDONTOP);
-            FGNRevEdit.post(this, FGNProperty.CLIP, new Boolean(this.gridOnTop), old, 
+            FGNRevEdit.post(this, FGNProperty.CLIP, this.gridOnTop, old,
                   "Render polar grid " + (gridOnTop ? "on top of " : "underneath ") + "the data nodes");
          }
       }
    }
    
    /** The background color for the polar coordinate grid. */
-   private Color bkgColor = null;
+   private Color bkgColor;
    
    /** 
     * Get the background color for the polar coordinate grid.
@@ -234,10 +234,10 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
-         case GRIDONTOP : setGridOnTop(((Boolean)propValue).booleanValue()); ok = true; break;
+         case GRIDONTOP : setGridOnTop((Boolean) propValue); ok = true; break;
          case BOXC : ok = setGridBkgColor((Color) propValue); break;
          default: ok = super.setPropertyValue(p, propValue); break;
       }
@@ -246,10 +246,10 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case GRIDONTOP: value = new Boolean(getGridOnTop()); break;
+         case GRIDONTOP: value = getGridOnTop(); break;
          case BOXC: value = getGridBkgColor(); break;
          default: value = super.getPropertyValue(p); break;
       }
@@ -324,7 +324,7 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
     */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      styleSet.putStyle(FGNProperty.GRIDONTOP, new Boolean(getGridOnTop()));
+      styleSet.putStyle(FGNProperty.GRIDONTOP, getGridOnTop());
       styleSet.putStyle(FGNProperty.BOXC, getGridBkgColor());
       super.putNodeSpecificStyles(styleSet);  // for styles handled by super-class
    }
@@ -336,7 +336,7 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.GRIDONTOP, getNodeType(), Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.GRIDONTOP, null, Boolean.class)))
       {
-         gridOnTop = b.booleanValue();
+         gridOnTop = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.GRIDONTOP);
@@ -426,9 +426,7 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
       if(rect == null) return(identity);
 
       // translate origin so that it is in coord system of parent viewport
-      AffineTransform at = AffineTransform.getTranslateInstance(rect.getX(), rect.getY());
-
-      return(at);
+      return(AffineTransform.getTranslateInstance(rect.getX(), rect.getY()));
    }
 
    /**
@@ -526,7 +524,7 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
       // could be touch points, as can the polar origin. In addition, touch points include any tangent point at angle 
       // 0, 90, 180 and 270 that is part of the "arc". We find the touch point coordinates WRT the polar origin and a 
       // radius of 1.
-      List<Point2D> touchPoints = new ArrayList<Point2D>();
+      List<Point2D> touchPoints = new ArrayList<>();
       touchPoints.add(new Point2D.Double());
       touchPoints.add(new Point2D.Double(Math.cos(thetaStart*Math.PI/180.0), Math.sin(thetaStart*Math.PI/180.0)));
       touchPoints.add(new Point2D.Double(Math.cos(thetaEnd*Math.PI/180.0), Math.sin(thetaEnd*Math.PI/180.0)));
@@ -538,16 +536,16 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
       if(!isCW)
       {
          if(s > e) touchPoints.add(new Point2D.Double(1,0));
-         if((s < 90 && (e > 90 || e < s)) || (s > 90 && e > 90 && e < s)) touchPoints.add(new Point2D.Double(0,1));
-         if((s < 180 && (e > 180 || e < s)) || (s > 180 && e > 180 && e < s)) touchPoints.add(new Point2D.Double(-1,0));
-         if((s < 270 && (e > 270 || e < s)) || (s > 270 && e > 270 && e < s)) touchPoints.add(new Point2D.Double(0,-1));
+         if((s < 90 && (e > 90 || e < s)) || (e > 90 && e < s)) touchPoints.add(new Point2D.Double(0,1));
+         if((s < 180 && (e > 180 || e < s)) || (e > 180 && e < s)) touchPoints.add(new Point2D.Double(-1,0));
+         if((s < 270 && (e > 270 || e < s)) || (e > 270 && e < s)) touchPoints.add(new Point2D.Double(0,-1));
       }
       else
       {
          if(s < e) touchPoints.add(new Point2D.Double(1,0));
-         if((s > 90 && (e < 90 || e > s)) || (s < 90 && e < 90 && e > s)) touchPoints.add(new Point2D.Double(0,1));
-         if((s > 180 && (e < 180 || e > s)) || (s < 180 && e < 180 && e > s)) touchPoints.add(new Point2D.Double(-1,0));
-         if((s > 270 && (e < 270 || e > s)) || (s < 270 && e < 270 && e > s)) touchPoints.add(new Point2D.Double(0,-1));
+         if((s > 90 && (e < 90 || e > s)) || (e < 90 && e > s)) touchPoints.add(new Point2D.Double(0,1));
+         if((s > 180 && (e < 180 || e > s)) || (e < 180 && e > s)) touchPoints.add(new Point2D.Double(-1,0));
+         if((s > 270 && (e < 270 || e > s)) || (e < 270 && e > s)) touchPoints.add(new Point2D.Double(0,-1));
       }
       
       // width of box bounding the polar grid is the difference between the maximum and minimum X-coordinates among the
@@ -651,11 +649,7 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
          
          // render the color bar and legend, the axes if the grid is on top of the data, and the semi-automated
          // title -- all unclipped
-         if(isClipped)
-         {
-            g2dCopy.setClip(clipOrig);
-            isClipped = false;
-         }
+         if(isClipped) g2dCopy.setClip(clipOrig);
          if(gridOnTop)
          { 
             if(!getThetaAxis().render(g2dCopy,  task)) return(false);
@@ -686,7 +680,7 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
 
       // if the polar grid is full-circle, the clip shape is that circle with the origin in the center of the bounding
       // box and a diameter = the smaller box dimension.
-      Shape clip = null;
+      Shape clip;
       double w = rBox.getWidth();
       double h = rBox.getHeight();
       double minDim = Math.min(w, h);
@@ -807,7 +801,7 @@ public class PolarPlotNode extends FGNGraph implements Cloneable
     * This override ensures that the cloned polar graph node's calculate polar origin is independent of this node's
     * origin. 
     */
-   @Override protected Object clone()
+   @Override protected PolarPlotNode clone() throws CloneNotSupportedException
    {
       PolarPlotNode copy = (PolarPlotNode) super.clone();
       copy.polarOrigin = new Point2D.Double(Double.NaN, Double.NaN);

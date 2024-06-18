@@ -27,7 +27,7 @@ public class FGNStyleSet
 {
    /**
     * Construct a graphic style set based on properties extracted from the specified <i>FypML</i> node type. The style 
-    * set is populated by calls to {@link #putStyle()}.
+    * set is populated by calls to {@link #putStyle}.
     * @param src Type of <i>FypML</i> graphic node from which style set will be extracted.
     */
    FGNStyleSet(FGNodeType src)
@@ -89,23 +89,6 @@ public class FGNStyleSet
    }
    
    /**
-    * Does this style set contain a style property applicable to a specific graphic node type and having a specific 
-    * value class? If both optional arguments are null, this is the same as {@link #hasStyle(FGNProperty)) }.
-    * @param prop The property type. 
-    * @param nodeType (Optional) The type of <i>FypML</i> graphic node to which the property applies. If non-null and
-    * does not match the type of node that sourced this style set, then method returns false.
-    * @param c (Optional) The expected class for the property value. If non-null and the specified property is present,
-    * the method checks the class of the property value and returns false if there's no match.
-    * @return True if style set includes the specified style property; else false.
-    */
-   boolean hasCheckedStyle(FGNProperty prop, FGNodeType nodeType, Class<?> c)
-   {
-      if((prop == null) || (nodeType != null && nodeType != srcNodeType)) return(false);
-      Object value = styleMap.get(prop);
-      return(value != null && (c == null) || value.getClass().equals(c));
-   }
-   
-   /**
     * Get the specified style property value within this style set, if present. If both optional arguments are null,
     * this is the same as {@link #getStyle(FGNProperty) }.
     * 
@@ -160,13 +143,13 @@ public class FGNStyleSet
    private final FGNodeType srcNodeType;
    
    /** The node property values comprising this style set, keyed by property ID. */
-   private HashMap<FGNProperty, Object> styleMap = new HashMap<FGNProperty, Object>();
+   private final HashMap<FGNProperty, Object> styleMap = new HashMap<>();
    
    /** 
     * This list contains the style set for each component node of the node that sourced this style set. Will be empty if
     * the source node lacks any component nodes.
     */
-   private List<FGNStyleSet> componentStyling = new ArrayList<FGNStyleSet>();
+   private final List<FGNStyleSet> componentStyling = new ArrayList<>();
    
    /**
     * Test whether or not the source and destination style sets "match". This is NOT a test for equality. The source
@@ -233,7 +216,7 @@ public class FGNStyleSet
     * </pre>
     * </p>
     * 
-    * <p>Property values are converted to string form using {@link FGModelSchemaConverter#fgnPropertyToString()}.</p>
+    * <p>Property values are converted to string form using {@link FGModelSchemaConverter#fgnPropertyToString}.</p>
     * 
     * @param styleSet The style set.
     * @return A JSON object encapsulating the style set's contents, as described. Returns null if conversion fails.
@@ -273,7 +256,7 @@ public class FGNStyleSet
    /**
     * The inverse of {@link #toJSON(FGNStyleSet)}.
     * 
-    * @param jsonStyleSet A JSONObject encapsulating a graphic node style set, as prepared by {@link #toJSON()}.
+    * @param jsonStyleSet A JSONObject encapsulating a graphic node style set, as prepared by {@link #toJSON}.
     * @return The style set represented by the argument. If the argument does not conform to the format expected, method
     * returns null.
     */
@@ -312,7 +295,7 @@ public class FGNStyleSet
             String strValue = jsonStyleSet.getString(strProp);
             FGNProperty prop = Utilities.getEnumValueFromString(strProp, FGNProperty.values());
             if(prop == null) 
-               throw new JSONException("Bad property ID: " + prop);
+               throw new JSONException("Bad property ID: " + strProp);
             Object value = FGModelSchemaConverter.fgnPropertyFromString(nt, prop, strValue);
             if(value == null) 
                throw new JSONException("Unable to convert property value: " + strProp + "=" + strValue);

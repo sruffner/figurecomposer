@@ -9,13 +9,13 @@ import java.util.List;
  * restoring default styles on a node and its descendants, moving the currently selected nodes in a figure as one
  * operation, etcetera.
  * 
- * <p>For each property changed, the method {@link #addPropertyChange()} is invoked to save a reference to the node 
+ * <p>For each property changed, the method {@link #addPropertyChange} is invoked to save a reference to the node
  * changed, the identity of the property changed, and its values before and after the change. Undoing or redoing
  * these changes is simply a matter of setting each property to the old or new value, respectively.</p>
  * 
  * @author  sruffner
  */
-class MultiRevEdit implements ReversibleEdit
+public class MultiRevEdit implements ReversibleEdit
 {
    /** 
     * Construct an initially empty instance of a reversible edit encapsulating one or more property changes.
@@ -106,19 +106,19 @@ class MultiRevEdit implements ReversibleEdit
     * The model containing all nodes affected by this multiple-step edit. After all changes are undone or redone, 
     * any font changes are propagated throughout the model and the model is re-rendered entirely.
     */
-   private FGraphicModel owner;
+   private final FGraphicModel owner;
    
    /** The graphic nodes that changed. */
-   private List<FGraphicNode> nodes = new ArrayList<FGraphicNode>();
+   private List<FGraphicNode> nodes = new ArrayList<>();
 
    /** The properties changed; will be the same size as the list of graphic nodes. */
-   private List<FGNProperty> properties = new ArrayList<FGNProperty>();
+   private List<FGNProperty> properties = new ArrayList<>();
    
    /** The property values post-change; will be the same size as the list of graphic nodes. */
-   private List<Object> values = new ArrayList<Object>();
+   private List<Object> values = new ArrayList<>();
    
    /** The property values pre-change; will be the same size as the list of graphic nodes. */
-   private List<Object> oldValues = new ArrayList<Object>();
+   private List<Object> oldValues = new ArrayList<>();
    
    /** A short description of the reversible change. */
    private String description;

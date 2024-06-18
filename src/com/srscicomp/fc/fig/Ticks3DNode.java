@@ -108,7 +108,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    public double getStart() { return(start); }
    
    /**
-    * Set the start of this tick set's range. If a change was made, the method {@link #onNodeModified()} is invoked.
+    * Set the start of this tick set's range. If a change was made, the method {@link #onNodeModified} is invoked.
     * 
     * @param d New value for the start of tick set range. Rejected if value is not well-defined or greater than the 
     * current end of the range.
@@ -120,14 +120,14 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
       
       if(start != d)
       {
-         if(doMultiNodeEdit(FGNProperty.START, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.START, d)) return(true);
          
-         Double old = new Double(start);
+         Double old = start;
          start = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.START);
-            FGNRevEdit.post(this, FGNProperty.START, new Double(start), old, "Change start of 3D tick set range");
+            FGNRevEdit.post(this, FGNProperty.START, start, old, "Change start of 3D tick set range");
          }
       }
       return(true);
@@ -143,7 +143,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    public double getEnd() { return(end); }
    
    /**
-    * Set the end of this tick set's range. If a change was made, the method {@link #onNodeModified()} is invoked.
+    * Set the end of this tick set's range. If a change was made, the method {@link #onNodeModified} is invoked.
     * 
     * @param d New value for the end of tick set range. Rejected if value is not well-defined or less than the current
     * start of the range.
@@ -155,14 +155,14 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
       
       if(end != d)
       {
-         if(doMultiNodeEdit(FGNProperty.END, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.END, d)) return(true);
          
-         Double old = new Double(end);
+         Double old = end;
          end = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.END);
-            FGNRevEdit.post(this, FGNProperty.END, new Double(end), old, "Change end of 3D tick set range");
+            FGNRevEdit.post(this, FGNProperty.END, end, old, "Change end of 3D tick set range");
          }
       }
       return(true);
@@ -181,7 +181,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    public double getInterval() { return(interval); }
    
    /**
-    * Set the tick mark interval. If a change was made, the method {@link #onNodeModified()} is invoked.
+    * Set the tick mark interval. If a change was made, the method {@link #onNodeModified} is invoked.
     * 
     * @param d New value for the tick inteval. Rejected if value is not well-defined or non-positive.
     * @return True if successful; false otherwise.
@@ -192,14 +192,14 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
       
       if(interval != d)
       {
-         if(doMultiNodeEdit(FGNProperty.INTV, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.INTV, d)) return(true);
          
-         Double old = new Double(interval);
+         Double old = interval;
          interval = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.INTV);
-            FGNRevEdit.post(this, FGNProperty.INTV, new Double(interval), old, "Change 3D tick set interval");
+            FGNRevEdit.post(this, FGNProperty.INTV, interval, old, "Change 3D tick set interval");
          }
       }
       return(true);
@@ -209,7 +209,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
     * Set the tick set range and interval, silently auto-correcting any invalid values. 
     * 
     * <p>This method is used to initialize the 3D tick set node when it is constructed from its <i>FypML</i> or
-    * <i>Matlab FIG</i> counterpart. Calling {@link #setStart()} and {@link #setEnd()} individually may not work 
+    * <i>Matlab FIG</i> counterpart. Calling {@link #setStart} and {@link #setEnd} individually may not work
     * depending on the before and after values of the range. Also, the <i>FypML</i> element does not enforce the 
     * constraints on the range and interval that this 3D tick set object enforces. For example, if <i>start &gt; 
     * end</i>, this method will swap the two values to ensure <i>start &le; end</i>. It will also replace any 
@@ -247,7 +247,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the pattern of tick marks rendered within a log decade by this tick set when its parent axis is base10-
-    * logarithmic. If a change is made, the method {@link #onNodeModified()} is invoked.
+    * logarithmic. If a change is made, the method {@link #onNodeModified} is invoked.
     * 
     * @param p The new log-decade tick pattern. A null value is rejected.
     * @return True if successful; false if argument was null.
@@ -282,7 +282,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    public Orientation getTickOrientation() { return(tickOrientation); }
 
    /**
-    * Set the orientation of tick marks in this 3D tick set. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the orientation of tick marks in this 3D tick set. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param o The new tick mark orientation.
     * @return True if successful; false if argument was null.
@@ -318,7 +318,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    public Measure getTickLength() { return(tickLength); }
 
    /**
-    * Set the length of tick marks in this 3D tick set. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the length of tick marks in this 3D tick set. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new tick length. It is constrained to satisfy {@link TickSetNode#TICKLENCONSTRAINTS}. A null value
     * is rejected.
@@ -358,7 +358,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    public Measure getTickGap() { return(tickGap); }
 
    /**
-    * Set the tick-label gap (see also {@link #getTickGap()}. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the tick-label gap (see also {@link #getTickGap()}. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new tick-label gap. It is constrained to satisfy {@link TickSetNode#TICKLENCONSTRAINTS}. A null value
     * is rejected.
@@ -396,8 +396,8 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    public LabelFormat getTickLabelFormat() { return(tickLabelFormat); }
 
    /**
-    * Set the format for tick mark labels in this 3D tick set. If a change is made, {@link #onNodeModified() is invoked.
-    * 
+    * Set the format for tick mark labels in this 3D tick set. If a change is made, {@link #onNodeModified} is invoked.
+    * <p>
     * @param fmt The new tick mark label format.
     * @return True if successful; false if argument is null.
     */
@@ -520,7 +520,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case START: ok = setStart((Double)propValue); break;
@@ -539,12 +539,12 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-      case START: value = new Double(getStart()); break;
-         case END: value = new Double(getEnd()); break;
-         case INTV: value = new Double(getInterval()); break;
+      case START: value = getStart(); break;
+         case END: value = getEnd(); break;
+         case INTV: value = getInterval(); break;
          case PERLOGINTV: value = getDecadeTicks(); break;
          case DIR: value = getTickOrientation(); break;
          case LEN: value = getTickLength(); break;
@@ -942,11 +942,11 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    {
       // the location/string providers and the painters themselves are lazily created
       if(tickPolyline == null)
-         tickPolyline = new ArrayList<Point2D>();
+         tickPolyline = new ArrayList<>();
       if(labelLocs == null)
-         labelLocs = new ArrayList<Point2D>();
+         labelLocs = new ArrayList<>();
       if(labels == null)
-         labels = new ArrayList<String>();
+         labels = new ArrayList<>();
       if(tickPainter == null)
          tickPainter = new PolylinePainter(this, null);
       if(labelPainter == null)
@@ -963,13 +963,15 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
       labels.clear();
       if(!isRendered())
       {
-         tickPainter.setLocationProducer(new ListBasedProducer<Point2D>(tickPolyline));
-         labelPainter.setLocationProducer(new ListBasedProducer<Point2D>(labelLocs));
-         labelPainter.setStringProducer(new ListBasedProducer<String>(labels));
+         tickPainter.setLocationProducer(new ListBasedProducer<>(tickPolyline));
+         labelPainter.setLocationProducer(new ListBasedProducer<>(labelLocs));
+         labelPainter.setStringProducer(new ListBasedProducer<>(labels));
          return;
       }
       
       Axis3DNode parent = getParentAxis3D();
+      if(parent == null)
+         return;
       
       double tickLenMI = tickLength.toMilliInches();
       double gapMI = tickGap.toMilliInches();
@@ -984,8 +986,8 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
       // separation of G + L or G + L/2 (where G = tick label gap and L = tick length), depending on the tick mark
       // orientation. The intersection of the X=T line with this third line gives the label location.
       
-      TextAlign hAlign = TextAlign.CENTERED;
-      TextAlign vAlign = TextAlign.LEADING;
+      TextAlign hAlign;
+      TextAlign vAlign;
       LineXY axisLine, tickMarksLine1, tickMarksLine2, labelsLine;
 
       axisLine = parent.getLineXYContainingAxis();
@@ -1031,7 +1033,6 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
 
          p.setLocation(pInt);
          tickMarkXY.getPointAlongLine(p, gapMI + (inward ? 0 : tickLenMI), pRef, which);
-         labelsLine = axisLine.getParallelLine(p.getX(), p.getY());
       }
       else
       {
@@ -1046,9 +1047,9 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
          boolean labelsFlag = (tickMarksLine1.getDistanceFromPoint(pRef.getX(), pRef.getY()) >
                tickMarksLine2.getDistanceFromPoint(pRef.getX(), pRef.getY()));
          tickMarkXY.getPointAlongLine(p, tickLenMI/2.0 + gapMI, pRef, labelsFlag);
-         labelsLine = axisLine.getParallelLine(p.getX(), p.getY());
       }
-      
+      labelsLine = axisLine.getParallelLine(p.getX(), p.getY());
+
       // for each tick location, find 3D grid line for that tick and project it to 2D, then intersect it with the
       // computed lines above to get tick mark end points and label location!
       for(int i=0; i<tickLocations.length; i++)
@@ -1073,9 +1074,9 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
       if(aoi >= 80) vAlign = TextAlign.CENTERED;
       
       // update the painters
-      tickPainter.setLocationProducer(new ListBasedProducer<Point2D>(tickPolyline));
-      labelPainter.setLocationProducer(new ListBasedProducer<Point2D>(labelLocs));
-      labelPainter.setStringProducer(new ListBasedProducer<String>(labels));
+      tickPainter.setLocationProducer(new ListBasedProducer<>(tickPolyline));
+      labelPainter.setLocationProducer(new ListBasedProducer<>(labelLocs));
+      labelPainter.setStringProducer(new ListBasedProducer<>(labels));
       labelPainter.setAlignment(hAlign, vAlign);
    }
 
@@ -1108,13 +1109,14 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    private String formatTickLabel(int pos, double value)
    {
       LabelFormat fmt = getTickLabelFormat();
-      if(fmt == LabelFormat.NONE) return( "" );
+      Axis3DNode parent = getParentAxis3D();
+      if(fmt == LabelFormat.NONE || parent == null) return( "" );
       
       if(customTickLabels.length > 0) return(customTickLabels[pos % customTickLabels.length]);
       
       if(value == 0) return("0");
       
-      double scaledVal = value / Math.pow(10, getParentAxis3D().getPowerScale());
+      double scaledVal = value / Math.pow(10, parent.getPowerScale());
       double absV = Math.abs(scaledVal);
       int nDigits = 0;
       if(fmt == LabelFormat.F1) nDigits = 1; 
@@ -1123,8 +1125,8 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
 
       // on a linear axis, if the tick value is non-zero but much closer to zero than the tick interval size, then 
       // treat it as exactly zero. This might happen due to the floating-math used to compute tick mark values.
-      double scaledIntv = interval / Math.pow(10, getParentAxis3D().getPowerScale());
-      if((!getParentAxis3D().isLogarithmic()) && Math.abs(scaledIntv)/absV > Math.pow(10, nDigits))
+      double scaledIntv = interval / Math.pow(10, parent.getPowerScale());
+      if((!parent.isLogarithmic()) && Math.abs(scaledIntv)/absV > Math.pow(10, nDigits))
          return("0");
 
       // use scientific notation for values smaller than 0.001 and greater than or equal to 1e6
@@ -1142,46 +1144,6 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
       double scale = Math.pow(10, nDigits);
       long truncValue = Math.round(scaledVal * Math.pow(10, nDigits));
       return(Utilities.toString(((double)truncValue)/scale, 7, nDigits));
-
-      /*
-      // if the absolute value is less than 0.001, then value reads as "0" in all numeric label formats. (We don't
-      // support logarithmic axes in 3D graphs.)
-      double absV = Math.abs(value);
-      if(absV < 0.001) return("0");
-      
-      int nDigits = 0;
-      if(fmt == LabelFormat.F1) nDigits = 1; 
-      else if(fmt == LabelFormat.F2) nDigits = 2;
-      else if(fmt == LabelFormat.F3) nDigits = 3;
- 
-      // big numbers
-      if(absV >= 1.0e6)
-      {
-         int exp = (int) Math.floor(Math.log10(absV));
-         value /= Math.pow(10, exp);
-         
-         double scale = Math.pow(10, nDigits);
-         long truncValue = Math.round(value * Math.pow(10, nDigits));
-         String strVal = Utilities.toString(((double)truncValue)/scale, 7, nDigits);
-         return(strVal + "e" + exp);
-      }
-      
-      // everything else
-      int exp = 0;
-      double thresh = Math.pow(10, -nDigits);
-      if(absV >= 0.001 && nDigits < 3)
-      {
-         while(absV < thresh) { ++nDigits; thresh = Math.pow(10, -nDigits); }
-      }
-      
-      if(absV < thresh) exp = -((int) Math.floor(Math.log10(absV)));
-
-      double scale = Math.pow(10, nDigits);
-      long truncValue = Math.round(value * Math.pow(10, nDigits+exp));
-
-      String strVal = Utilities.toString(((double)truncValue)/scale, 7, nDigits);
-      return(exp == 0 ? strVal : (strVal + "e-" + exp));
-      */
    }
 
 
@@ -1190,7 +1152,7 @@ public class Ticks3DNode extends FGraphicNode implements Cloneable
    //
 
    /** Override ensures that rendering infrastructure for the 3D tick set clone is independent of the element cloned. */
-   @Override public Object clone()
+   @Override public Ticks3DNode clone() throws CloneNotSupportedException
    {
       Ticks3DNode copy = (Ticks3DNode) super.clone();
       copy.tickLocations = null;

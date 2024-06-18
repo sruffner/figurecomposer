@@ -16,7 +16,7 @@ public interface PSTransformable
 	 * Return a brief description of this object, suitable for use as a comment line in the Postscript output.
 	 * @return The comment string.
 	 */
-	public String getPSComment();
+   String getPSComment();
 
 	/**
 	 * Return the name of the Postscript Latin text font which should be used to render any text associated with this 
@@ -37,7 +37,7 @@ public interface PSTransformable
 	 * <code>PSTransformable</code> object. If <code>null</code>, then it is assumed that the object does not render any 
     * text. Otherwise, the name provided MUST be a valid font face from the "Standard 35" font set.
 	 */
-	public String getPSFontFace();
+   String getPSFontFace();
 
 	/**
 	 * Return the names of all Postscript Latin text fonts which are ACTUALLY used to render any text associated with 
@@ -56,26 +56,26 @@ public interface PSTransformable
 	 * @param traverse If false, only include the PS font faces utilized by this node itself; otherwise, traverse the
 	 * node's descendants and include the font faces they use as well.
 	 */
-	public void getAllPSFontFacesUsed(Map<String, String> fontFaceMap, boolean traverse);
+   void getAllPSFontFacesUsed(Map<String, String> fontFaceMap, boolean traverse);
 
 	/**
 	 * Return the font size of the Postscript-compatible font associated with this object.
 	 * @return Current font size in milli-inches.
 	 */
-	public double getPSFontSize();
+   double getPSFontSize();
 
 	/**
 	 * Return the line width applicable to this object.
 	 * @return Current line width in milli-inches. 
 	 */
-	public double getPSStrokeWidth();
+   double getPSStrokeWidth();
 
 	/**
 	 * Return the line endcap decoration to be applied to unclosed paths and dash segments when stroking this object.
 	 * @return The line endcap style: 0 = butt end (no decoration), 1 = rounded (radius = 1/2 stroke width), 2 = square
 	 * projection extending 1/2 stroke width past butt end.
 	 */
-	public int getPSStrokeEndcap();
+   int getPSStrokeEndcap();
 	
    /**
     * Return the line join style to be applied when joining segments in a path or when closing a path as this object is
@@ -83,7 +83,7 @@ public interface PSTransformable
     * @return The line join style: 0 = mitered (fixed miter limit of 10), 1 = rounded (radius = 1/2 stroke width), 
     * 2 = beveled.
     */
-	public int getPSStrokeJoin();
+   int getPSStrokeJoin();
 	
 	/**
 	 * Return the dash-gap pattern to be applied when stroking this object. The pattern is specified as an array of 
@@ -92,21 +92,21 @@ public interface PSTransformable
 	 * interpreted as no stroke whatsoever -- the same as setting the stroke width to 0!
 	 * @return The current stroke dash-gap pattern, as described.
 	 */
-	public int[] getPSStrokeDashPattern();
+   int[] getPSStrokeDashPattern();
 
 	/**
 	 * Return the initial offset into the dash-gap pattern as a distance in milli-inches (<em>NOT</em> an index into the 
 	 * integer array returned by <code>getPSStrokeDashPattern()</code>).
 	 * @return The stroke dash-gap pattern offset, as described.
 	 */
-	public int getPSStrokeDashOffset();
+   int getPSStrokeDashOffset();
 
 	/**
 	 * Return the current RGB color with which paths are stroked in the rendering of this object. <i><b>Note</b>. The
 	 * return value does not include an "alpha" channel because Postscript does not support translucent colors.</i>
 	 * @return Current stroke color as an opaque RGB value packed into a 32bit integer: 00rrggbb.
 	 */
-	public int getPSStrokeColor();
+   int getPSStrokeColor();
 
 	/**
 	 * Return the current RGB color with which paths are filled and text is drawn in the rendering of this object. 
@@ -114,7 +114,7 @@ public interface PSTransformable
 	 * translucent colors.</i>
 	 * @return Current text/fill color as an opaque RGB value packed into a 32bit integer: 00rrggbb.
 	 */
-	public int getPSTextAndFillColor();
+   int getPSTextAndFillColor();
 
    /**
     * Is the actual text/fill color for this PS transformable fully transparent (alpha == 0)? Postscript does not 
@@ -122,7 +122,7 @@ public interface PSTransformable
     * on this method to check for a transparent text/fill.
     * @return True if the current text/fill color is fully transparent. FypML does not allow for translucent colors.
     */
-   public boolean isPSNoFill();
+   boolean isPSNoFill();
    
    /**
     * Is the actual stroke color for this PS transformable fully transparent (alpha == 0)? Postscript does not support 
@@ -131,7 +131,7 @@ public interface PSTransformable
     * width to zero.
     * @return True if the current stroke color is fully transparent. FypML does not allow for translucent colors.
     */
-   public boolean isPSNoStroke();
+   boolean isPSNoStroke();
    
 	/**
 	 * Update the <em>DataNav</em> Postscript page description document's current state with a Postscript code fragment 
@@ -156,5 +156,5 @@ public interface PSTransformable
 	 * @param psDoc The <em>DataNav</em> Postscript page description document in which the object is to be rendered.
 	 * @throws UnsupportedOperationException if any method invoked on the document object is not supported.
 	 */
-	public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException;
+   void toPostscript(PSDoc psDoc) throws UnsupportedOperationException;
 }

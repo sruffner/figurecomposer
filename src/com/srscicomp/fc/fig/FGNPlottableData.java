@@ -26,7 +26,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
    FGNPlottableData(int attrFlags)
    {
       super(attrFlags);
-      if(hasDataGroups()) dataGrpInfo = new ArrayList<GrpInfo>();
+      if(hasDataGroups()) dataGrpInfo = new ArrayList<>();
       for(Fmt fmt : Fmt.values()) if(isSupportedDataFormat(fmt))
       {
          set = DataSet.createEmptySet(fmt);
@@ -49,7 +49,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
     * <p><b>NOTE</b>. Since {@link DataSet} is immutable, this method may be used to modify only the set identifier. The
     * method checks for this possibility, in which case the node is NOT re-rendered since the raw data itself is 
     * unchanged. The preferred way to change the set identifier without changing the data is to call {@link 
-    * #setDataSetID()}.</p>
+    * #setDataSetID}.</p>
     * 
     * @param ds The new data set.
     * @return True if successful; false if the argument is null or represents data in an unsupported format.
@@ -79,7 +79,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
     * Update the data set identifier for the data set currently rendered by this data presentation node. Since 
     * {@link DataSet} is immutable, this effectively generates a new data set object identical to the existing one 
     * except for the ID string (and backed by the same raw data array).
-    * @param The candidate ID.
+    * @param id The candidate ID.
     * @return True if successful; false if the ID is invalid.
     */
    public boolean setDataSetID(String id)
@@ -162,7 +162,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
          }
          if(ok)
          {
-            int pos = ((Integer) arObj[0]).intValue();
+            int pos = (Integer) arObj[0];
             ok = dataGrpInfo != null && pos >= 0 && pos < dataGrpInfo.size();
             if(ok) ok = setDataGroupColor(pos, (Color) arObj[1]);
          }
@@ -183,7 +183,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
          }
          if(ok)
          {
-            int pos = ((Integer) arObj[0]).intValue();
+            int pos = (Integer) arObj[0];
             ok = dataGrpInfo != null && pos >= 0 && pos < dataGrpInfo.size();
             if(ok) ok = setDataGroupLabel(pos, (String) arObj[1]);
          }
@@ -330,7 +330,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
    
    /**
     * Set the fill color for the specified data group in this grouped-data presentation node. If a change is made, 
-    * {@link #onNodeModified()} is invoked. 
+    * {@link #onNodeModified} is invoked.
     * @param pos Data group index. No action is taken if invalid, or if this is not a grouped-data presentation node.
     * @param c The desired fill color. A null value is rejected. Opaque or translucent color allowed.
     * @return True if value was accepted; false otherwise.
@@ -346,8 +346,8 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
          if(areNotificationsEnabled())
          {
             // index of the affected data group is included with old and new values of the data group color
-            Object[] oldInfo = new Object[] {new Integer(pos), old};
-            Object[] newInfo = new Object[] {new Integer(pos), c};
+            Object[] oldInfo = new Object[] {pos, old};
+            Object[] newInfo = new Object[] {pos, c};
             onNodeModified(FGNProperty.DGCOLOR);
             FGNRevEdit.post(this, FGNProperty.DGCOLOR, newInfo, oldInfo, "Change data group color, index " + (pos+1));
          }
@@ -357,7 +357,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
    
    /**
     * Get the legend label assigned to the specified data group in this grouped-data presentation node. The label may
-    * conform to <i>FypML</i> "styled text" format. See {@link FGraphicNode#toStyledText()}.
+    * conform to <i>FypML</i> "styled text" format. See {@link FGraphicNode#toStyledText}.
     * 
     * @param pos Data group index.
     * @return Null if index is invalid or if presentation node lacks data groups, else the assigned label.
@@ -370,7 +370,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
    /**
     * Set the legend label for the specified data group in this bar grouped-data presentation node. The label may be
     * a simple string, or it may conform to <i>FypML</i> "styled text" format. If a change is made, {@link 
-    * #onNodeModified()} is invoked. 
+    * #onNodeModified} is invoked.
     * 
     * <p>A data group label cannot contain the character sequence ";;", which is used to separate the data group colors
     * and labels when the presentation node is converted to <i>FypML</i>. Prior to V5.4.4, a comma was used as the 
@@ -387,7 +387,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
     */
    public boolean setDataGroupLabel(int pos, String s)
    {
-      if(pos < 0 || pos >= getNumDataGroups() || s==null || s.indexOf(";;") > -1) return(false);
+      if(pos < 0 || pos >= getNumDataGroups() || s==null || s.contains(";;")) return(false);
       
       s = s.trim();
       if(!s.equals(dataGrpInfo.get(pos).label))
@@ -397,8 +397,8 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
          if(areNotificationsEnabled())
          {
             // index of the affected data group is included with old and new values of the data group label
-            Object[] oldInfo = new Object[] {new Integer(pos), old};
-            Object[] newInfo = new Object[] {new Integer(pos), s};
+            Object[] oldInfo = new Object[] {pos, old};
+            Object[] newInfo = new Object[] {pos, s};
             onNodeModified(FGNProperty.DGLABEL);
             FGNRevEdit.post(this, FGNProperty.DGLABEL, newInfo, oldInfo, "Change data group label, index " + (pos+1));
          }
@@ -409,7 +409,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
    /**
     * Get the data group properties (fill color and legend label for each data group) defined on this grouped-data
     * presentation node as a list of tokens separated by semicolon pairs: <i>color1;;label1;;color2;;label2;;...</i>.
-    * The method {@link  BkgFill#colorToHexString()} is used to convert each color to string form. Also note that any or
+    * The method {@link BkgFill#colorToHexString} is used to convert each color to string form. Also note that any or
     * all legend labels could be empty strings.
     * 
     * <p>This method is used exclusively while preparing the grouped-data node's representation in <i>FypML</i>; the 
@@ -448,7 +448,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
     * 
     * <p>Typically, the list will take the same form as generated by {@link #getDataGroupInfoAsTokenizedString()}, but
     * this is not guaranteed since a <i>FypML</i> file could be created or modified outside <i>Figure Composer</i>. This
-    * method will attempt to parse each string token as a color using {@link BkgFill#colorFromHexStringStrict()}; any 
+    * method will attempt to parse each string token as a color using {@link BkgFill#colorFromHexStringStrict}; any
     * token that cannot be parsed as a color is interpreted as a data group legend label, which may be in the "styled 
     * text" format. Up to {@link #MAX_DATAGRPS} color-label pairs will be parsed from the list; any additional content 
     * is ignored.</p>
@@ -469,8 +469,8 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
       
       String separator = (csTokens.indexOf(";;")) > 0 ? ";;" : ",";
       String[] tokens = (csTokens.isEmpty()) ? new String[0] : csTokens.split(separator, -1);
-      List<Color> colors = new ArrayList<Color>();
-      List<String> labels = new ArrayList<String>();
+      List<Color> colors = new ArrayList<>();
+      List<String> labels = new ArrayList<>();
       for(String s : tokens)
       {
          Color c = BkgFill.colorFromHexStringStrict(s, true);
@@ -540,7 +540,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
     * 
     * @author sruffner
     */
-   class GrpInfo
+   static class GrpInfo
    {
       /**
        * Construct a data group properties object.
@@ -591,7 +591,7 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
       
       if(!getShowInLegend()) return(null);
       fixDataGroupInfo();
-      List<LegendEntry> out = new ArrayList<LegendEntry>();
+      List<LegendEntry> out = new ArrayList<>();
       int n = getNumDataGroups();
       for(int i=0; i<n; i++) out.add(new LegendEntry(this, dataGrpInfo.get(i)));
       return(out);
@@ -601,13 +601,13 @@ public abstract class FGNPlottableData extends FGNPlottable implements Cloneable
     * This override ensures that any data group information for the clone is an independent copy of this node's data
     * group information. The clone will reference the same data set, however.
     */
-   @Override protected Object clone()
+   @Override protected FGNPlottableData clone() throws CloneNotSupportedException
    {
       FGNPlottableData copy = (FGNPlottableData) super.clone();
       copy.dataGrpInfo = null;
       if(dataGrpInfo != null)
       {
-         copy.dataGrpInfo = new ArrayList<GrpInfo>();
+         copy.dataGrpInfo = new ArrayList<>();
          for(GrpInfo gi : dataGrpInfo) copy.dataGrpInfo.add(new GrpInfo(gi.fillC, gi.label));
       }
       return(copy);

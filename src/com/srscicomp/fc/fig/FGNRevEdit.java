@@ -53,8 +53,8 @@ class FGNRevEdit implements ReversibleEdit
          sb.append("(").append(c.getRed()).append(",").append(c.getGreen()).append(",").append(c.getBlue()).append(")");
          if(c.getAlpha() < 255) sb.append(" [alpha=").append(c.getAlpha()).append("]");
       }
-      else if(p == FGNProperty.FONTSIZE) sb.append( ((Integer)oldValue).toString() + " pt" );
-      else sb.append(oldValue.toString());
+      else if(p == FGNProperty.FONTSIZE) sb.append(oldValue).append(" pt");
+      else sb.append(oldValue);
       
       sb.append(" to ");
       
@@ -65,8 +65,8 @@ class FGNRevEdit implements ReversibleEdit
          sb.append("(").append(c.getRed()).append(",").append(c.getGreen()).append(",").append(c.getBlue()).append(")");
          if(c.getAlpha() < 255) sb.append(" [alpha=").append(c.getAlpha()).append("]");
       }
-      else if(p == FGNProperty.FONTSIZE) sb.append( ((Integer)value).toString() + " pt" );
-      else sb.append(value.toString());
+      else if(p == FGNProperty.FONTSIZE) sb.append(value).append(" pt");
+      else sb.append(value);
       
       sb.append(" on ").append(n.getNodeType().getNiceName().toLowerCase());
 
@@ -93,14 +93,14 @@ class FGNRevEdit implements ReversibleEdit
       FGraphicModel model = n.getGraphicModel();
       if(model == null) return;
 
-      if(desc == null || desc.trim().length() == 0)
+      if(desc == null || desc.trim().isEmpty())
          desc = "Change property '" + p.getNiceName() + "' on " + n.getNodeType().getNiceName().toLowerCase();
       model.postReversibleEdit(new FGNRevEdit(n, p, value, oldValue, desc));
    }
 
    /**
     * Construct a reversible edit changing the location a graphic node, then post it to the "edit history" of the node's
-    * figure graphic model. Do NOT use this method to move an instance of {@link LineNode}; use {@link #postMoveLine()}
+    * figure graphic model. Do NOT use this method to move an instance of {@link LineNode}; use {@link #postMoveLine}
     * instead.
     * 
     * @param n The graphic node that was moved. If this is null or is not currently attached to a graphic model, then no
@@ -114,14 +114,13 @@ class FGNRevEdit implements ReversibleEdit
       
       FGraphicModel model = n.getGraphicModel();
       if(model == null) return;
-      
-      StringBuilder sb = new StringBuilder();
-      sb.append("Move ").append(n.getNodeType().getNiceName().toLowerCase()).append(" from (");
-      sb.append(xOld.toString(5,2)).append(",").append(yOld.toString(5,2)).append(") to (");
-      sb.append(n.getX().toString(5,2)).append(",").append(n.getY().toString(5,2)).append(")");
+
+      String desc = "Move " + n.getNodeType().getNiceName().toLowerCase() + " from (" +
+            xOld.toString(5, 2) + "," + yOld.toString(5, 2) + ") to (" +
+            n.getX().toString(5, 2) + "," + n.getY().toString(5, 2) + ")";
     
       FGNRevEdit re = new FGNRevEdit(MOVE_NODE, n, new FGNProperty[] {FGNProperty.X, FGNProperty.Y}, 
-            new Object[] {n.getX(), n.getY()}, new Object[] {xOld, yOld}, sb.toString());
+            new Object[] {n.getX(), n.getY()}, new Object[] {xOld, yOld}, desc);
       model.postReversibleEdit(re);
    }
 
@@ -153,7 +152,7 @@ class FGNRevEdit implements ReversibleEdit
    /**
     * Construct a reversible edit which resizes a graphic node with a rectangular bounding box, then post it to the 
     * "edit history" of the node's figure graphic model. The method is appropriate only to resizing a 2D graph, text 
-    * box, image, or shape node. When resizing a line segment node, use {@link #postLineResize()}.
+    * box, image, or shape node. When resizing a line segment node, use {@link #postLineResize}.
 
     * @param n The graphic node that was resized. Must be a graph, text box, image, or shape node.
     * @param xOld X-coordinate of node's bounding box prior to resize. Null if unchanged by the resize operation.
@@ -261,7 +260,7 @@ class FGNRevEdit implements ReversibleEdit
     * standard node property), then post it to the "edit history" of the node's figure graphic model.
     * 
     * @param func The function node. If null, no action is taken.
-    * @param oldFormula The function's formula string prior to the change.
+    * @param formula The function's formula string prior to the change.
     */
    static void postFunctionFormulaChange(FunctionNode func, String formula)
    {
@@ -269,13 +268,12 @@ class FGNRevEdit implements ReversibleEdit
       FGraphicModel model = func.getGraphicModel();
       if(model == null) return;
 
-      StringBuilder sb = new StringBuilder();
-      sb.append("Change function formula to [");
-      sb.append((formula==null) ? "" : (formula.length() > 20 ? (formula.substring(0,20) + "...") : formula));
-      sb.append("]");
+      String desc = "Change function formula to [" +
+            ((formula == null) ? "" : (formula.length() > 20 ? (formula.substring(0, 20) + "...") : formula)) +
+            "]";
       
       FGNRevEdit re = new FGNRevEdit(FUNC_CHANGE, func, null, 
-            new Object[] {func.getFunctionString()}, new Object[] {formula}, sb.toString());
+            new Object[] {func.getFunctionString()}, new Object[] {formula}, desc);
       model.postReversibleEdit(re);
    }
    
@@ -302,8 +300,8 @@ class FGNRevEdit implements ReversibleEdit
       
       String desc = "Tick set " + (old ? "does not track" : "tracks") + " parent axis range";
       FGNRevEdit re = new FGNRevEdit(TRACKAXIS_CHANGE, tsn, null, 
-            new Object[] {old ? Boolean.FALSE : Boolean.TRUE, new Double(tsn.getStart()), new Double(tsn.getEnd())}, 
-            new Object[] {old ? Boolean.TRUE : Boolean.FALSE, new Double(oldStart), new Double(oldEnd)}, 
+            new Object[] {old ? Boolean.FALSE : Boolean.TRUE, tsn.getStart(), tsn.getEnd()},
+            new Object[] {old ? Boolean.TRUE : Boolean.FALSE, oldStart, oldEnd},
             desc);
       model.postReversibleEdit(re);
    }
@@ -350,19 +348,19 @@ class FGNRevEdit implements ReversibleEdit
    private static final int RESIZE_NODE = 5;
    
    /** The type of reversible change. */
-   private int changeType = -1;
+   private final int changeType;
 
    /** The graphic node that was changed. */
-   private FGraphicNode node = null;
+   private FGraphicNode node;
    
    /** The node properties affected by the reversible change. */
-   private FGNProperty[] affected = null;
+   private FGNProperty[] affected;
    
    /** The corresponding values applied to the affected properties to effect the change. */
-   private Object[] updatedValues = null;
+   private Object[] updatedValues;
    
    /** The corresponding values applied to the affected properties to undo the change. */
-   private Object[] oldValues = null;
+   private Object[] oldValues;
    
    /** A brief description of the change. */
    private String description;
@@ -399,7 +397,7 @@ class FGNRevEdit implements ReversibleEdit
          }
          else if(changeType == RESIZE_NODE)
          {
-            HashMap<FGNProperty, Measure> resizedProperties = new HashMap<FGNProperty, Measure>();
+            HashMap<FGNProperty, Measure> resizedProperties = new HashMap<>();
             for(int i=0; i<affected.length; i++) resizedProperties.put(affected[i], (Measure) values[i]);
             
             ok = node.undoOrRedoResize(resizedProperties);
@@ -409,7 +407,6 @@ class FGNRevEdit implements ReversibleEdit
       {
          System.out.println("Got exception in FGNRevEdit:undo() -- " + t.getMessage());
          t.printStackTrace();
-         ok = false;
       }
 
       return(ok);

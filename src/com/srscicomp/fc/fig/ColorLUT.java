@@ -61,7 +61,7 @@ public class ColorLUT
    
    /**
     * Get an entry in this color lookup table.
-    * @param idx Index of desired entry. Range-restricted to [0..L-1], where L = {@link #getLength()}.
+    * @param idx Index of desired entry. Range-restricted to [0.255].
     * @return An integer specifying the color in packed RGB form: 0xFFRRGGBB, where each component lies in [0..0xFF]. 
     * Note that the alpha component in bits 24-32 is 0xFF (255); all LUT colors are opaque.
     */
@@ -149,7 +149,7 @@ public class ColorLUT
     * Get the key colors which define this color lookup table (via piecewise-linear interpolation of color components
     * between key frames) -- suitable for defining a linear color gradient representing the map.
     * @return Array of key colors. 
-    * @see {@link #getKeyFrames(boolean)}
+    * @see #getKeyFrames
     */
    public Color[] getKeyColors() { return(colorMap.getKeyColors(reversed)); }
    

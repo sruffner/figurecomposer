@@ -49,7 +49,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
     * @param allowClip If true, the graph container can clip data to its data window. <b>FGNGraph</b> provides methods
     * for getting and setting the clip property.
     * @param enaClip If true, the graph container is initiallly configured to clip data to its data window. This 
-    * property may be modified via {@link #setClip()}. Ignored if <i>allowClip=false</i>.
+    * property may be modified via {@link #setClip}. Ignored if <i>allowClip=false</i>.
     */
    FGNGraph(boolean allowRotate, boolean allowClip, boolean enaClip) 
    { 
@@ -80,7 +80,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
 
    /**
     * Enable or disable clipping of data to the graph's data window. If the clip state is changed, {@link 
-    * #onNodeModified()} is invoked. Method has no effect if graph container does not support data clipping.
+    * #onNodeModified} is invoked. Method has no effect if graph container does not support data clipping.
     * @param clip True to enable clipping, false to disable.
     */
    public void setClip(boolean clip)
@@ -89,14 +89,14 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
       
       if(this.clip != clip)
       {
-         if(doMultiNodeEdit(FGNProperty.CLIP, new Boolean(clip))) return;
+         if(doMultiNodeEdit(FGNProperty.CLIP, clip)) return;
          
-         Boolean old = new Boolean(this.clip);
+         Boolean old = this.clip;
          this.clip = clip;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.CLIP);
-            FGNRevEdit.post(this, FGNProperty.CLIP, new Boolean(this.clip), old, 
+            FGNRevEdit.post(this, FGNProperty.CLIP, this.clip, old,
                   (this.clip ? "Enable " : "Disable ") + "clipping of graph data");
          }
       }
@@ -119,13 +119,13 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
    {
       if(hideTitle != b)
       {
-         Boolean old = new Boolean(hideTitle);
+         Boolean old = hideTitle;
          hideTitle = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = (hideTitle ? "Hide" : "Show") + " graph's title";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hideTitle), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hideTitle, old, desc);
          }
       }
    }
@@ -157,7 +157,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
    /**
     * Set the horizontal alignment of the graph's title with respect to its bounding box.
     * @param align The new horizontal alignment.
-    * @see {@link #getTitleHorizontalAlignment()}
+    * @see #getTitleHorizontalAlignment
     */
    public void setTitleHorizontalAlignment(TextAlign align)
    {
@@ -190,7 +190,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
 
    /**
     * Get the size of the gap separating the rendered title from the top or bottom edge of the graph's bounding box.
-    * If a change is made, {@link #onNodeModified()} is invoked.
+    * If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new title gap. The measure is constrained to satisfy {@link #TITLEGAPCONSTRAINTS}. A null value 
     * is rejected.
@@ -242,11 +242,11 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-      case CLIP: value = new Boolean(getClip()); break;
-      case HIDE: value = new Boolean(isTitleHidden()); break;
+      case CLIP: value = getClip(); break;
+      case HIDE: value = isTitleHidden(); break;
       case HALIGN: value = getTitleHorizontalAlignment(); break;
       case GAP: value = getTitleGap(); break;
       default : value = super.getPropertyValue(p); break;
@@ -262,8 +262,8 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
     */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      if(canClip) styleSet.putStyle(FGNProperty.CLIP, new Boolean(getClip()));
-      styleSet.putStyle(FGNProperty.HIDE, new Boolean(isTitleHidden()));
+      if(canClip) styleSet.putStyle(FGNProperty.CLIP, getClip());
+      styleSet.putStyle(FGNProperty.HIDE, isTitleHidden());
       styleSet.putStyle(FGNProperty.HALIGN, getTitleHorizontalAlignment());
       styleSet.putStyle(FGNProperty.GAP, getTitleGap());
    }
@@ -277,7 +277,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
          Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.CLIP, getNodeType(), Boolean.class);
          if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.CLIP, null, Boolean.class)))
          {
-            clip = b.booleanValue();
+            clip = b;
             changed = true;
          }
          else restore.removeStyle(FGNProperty.CLIP);
@@ -286,7 +286,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.HIDE, getNodeType(), Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.HIDE, null, Boolean.class)))
       {
-         hideTitle = b.booleanValue();
+         hideTitle = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.HIDE);
@@ -334,7 +334,10 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
       }
       return( new Rectangle2D.Double() );
    }
-   
+
+   /** Default implementation for graph containers: no rendering resources to release. */
+   @Override protected void releaseRenderResourcesForSelf() {}
+
    /** Get the legend component for this graph container. */
    public abstract LegendNode getLegend();
    
@@ -344,8 +347,13 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
     * gradient with an associated axis line.
     */
    public abstract ColorBarNode getColorBar();
-   
-   
+
+   @Override protected FGNGraph clone() throws CloneNotSupportedException
+   {
+      return (FGNGraph) super.clone();
+   }
+
+
    /** Enumeration of the different kinds of coordinate systems which may be available in a graph container. */
    public enum CoordSys
    {
@@ -357,7 +365,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
       /** A polar coordinate system in which the radial axis is logarithmic. */ SEMILOGR("semilogR"),
       /** A 3D Cartesian coordinate system. */ THREED("3D");
 
-      private String tag;
+      private final String tag;
       
       CoordSys(String tag) { this.tag = tag; }
       @Override public String toString() { return(tag); }
@@ -423,7 +431,7 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
     */
    public List<FGNPlottable> getPlottableNodes()
    {
-      List<FGNPlottable> plottables = new ArrayList<FGNPlottable>(5);
+      List<FGNPlottable> plottables = new ArrayList<>(5);
       for(int i=0; i < getChildCount(); i++ )
       {
          FGraphicNode n = getChildAt(i);
@@ -467,11 +475,11 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
       FGraphicModel model = getGraphicModel();
       if(model == null) return;
 
-      List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+      List<Rectangle2D> dirtyAreas = new ArrayList<>();
       for(FGNPlottable plottable : getPlottableNodes()) if(plottable.onColorMapChange())
          dirtyAreas.add(plottable.getCachedGlobalShape().getBounds2D());
 
-      if(dirtyAreas.size() > 0) model.onChange(this, -1, true, dirtyAreas);
+      if(!dirtyAreas.isEmpty()) model.onChange(this, -1, true, dirtyAreas);
    }
    
 
@@ -586,9 +594,6 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
    }
 
 
-   /** This method is a no-op, as no rendering resources are allocated. */
-   @Override protected void releaseRenderResourcesForSelf() {}
-
    /**
     * This implementation returns the graph container's bounding box, which should be the minimum rectangle for focus 
     * shape and hit test calculations. The rectangle bounding the graph's semi-automated title is also included, if
@@ -623,17 +628,18 @@ public abstract class FGNGraph extends FGraphicNode implements Cloneable
     * It is intended to be called in an implementing subclass during a render cycle. It should be called after all of
     * graph's children have been rendered; if graphed data is clipped to the bounding box, be sure to remove that clip
     * path before calling this method -- or the title won't be included.</p>
-    * 
-    * see {@link #prepareAutoTitlePainter()}.</p
+    *
     * @param g2d The graphics context in which to draw.
     * @param task The rendering task in progress
     * @return True if successful, false if an error occurred while rendering or the rendering task was cancelled.
-    * @see {@link #prepareAutoTitlePainter()}
+    * @see #prepareAutoTitlePainter
     */
    protected boolean renderAutoTitle(Graphics2D g2d, RenderTask task)
    {
       TextBoxPainter p = prepareAutoTitlePainter();
-      if(p != null) { if(!p.render(g2d, task)) return(false); }
+      if(p != null) {
+         return p.render(g2d, task);
+      }
       return(true);
    }
    

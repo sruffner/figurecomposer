@@ -36,7 +36,7 @@ import com.srscicomp.fc.uibase.FCIcons;
  * compile the list of Y-values, completely ignoring the X-coordinates. Any value that is NaN or non-positive is set to
  * zero.</li>
  * </li>
- * <li>{@link DataSet.MSET} or {@link Fmt#MSERIES} : Look at the first Nmax data points across the member sets
+ * <li>{@link Fmt#MSET} or {@link Fmt#MSERIES} : Look at the first Nmax data points across the member sets
  * in the collection. Again, ignore the X-coordinate of each point and find the average Y-value across the member sets. 
  * Ill-defined values are omitted when computing the average. Any computed average that is NaN or non-positive is set 
  * to 0. These averages comprise the list of Y-values represented in the pie chart.</li>
@@ -110,7 +110,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    public double getInnerRadius() { return(innerRadius); }
     
    /**
-    * Set the pie chart's inner radius. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the pie chart's inner radius. If a change is made, {@link #onNodeModified} is invoked.
     * @param r The new inner radius, in user units. Must be well-defined, non-negative, and less than the outer radius.
     * @return True if new value was accepted.
     */
@@ -119,14 +119,14 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
       if(!(Utilities.isWellDefined(r) && r >= 0f && r < outerRadius)) return(false);
       if(innerRadius != r)
       {
-         if(doMultiNodeEdit(FGNProperty.IRAD, new Double(r))) return(true);
+         if(doMultiNodeEdit(FGNProperty.IRAD, r)) return(true);
          
-         Double old = new Double(innerRadius);
+         Double old = innerRadius;
          innerRadius = r;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.IRAD);
-            FGNRevEdit.post(this, FGNProperty.IRAD, new Double(innerRadius), old);
+            FGNRevEdit.post(this, FGNProperty.IRAD, innerRadius, old);
          }
       }
       return(true);
@@ -139,7 +139,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    public double getOuterRadius() { return(outerRadius); }
     
    /**
-    * Set the pie chart's outer radius. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the pie chart's outer radius. If a change is made, {@link #onNodeModified} is invoked.
     * @param r The new outer radius, in user units. Must be well-defined, positive, and greater than the inner radius.
     * @return True if new value was accepted.
     */
@@ -148,14 +148,14 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
       if(!(Utilities.isWellDefined(r) && r > 0f && r > innerRadius)) return(false);
       if(outerRadius != r)
       {
-         if(doMultiNodeEdit(FGNProperty.ORAD, new Double(r))) return(true);
+         if(doMultiNodeEdit(FGNProperty.ORAD, r)) return(true);
          
-         Double old = new Double(outerRadius);
+         Double old = outerRadius;
          outerRadius = r;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.ORAD);
-            FGNRevEdit.post(this, FGNProperty.ORAD, new Double(outerRadius), old);
+            FGNRevEdit.post(this, FGNProperty.ORAD, outerRadius, old);
          }
       }
       return(true);
@@ -176,10 +176,10 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    public int getRadialOffset() { return(radialOffset); }
     
    /**
-    * Set the radial offset for any "exploded slice" in the pie chart. If a change is made, {@link #onNodeModified()} is
+    * Set the radial offset for any "exploded slice" in the pie chart. If a change is made, {@link #onNodeModified} is
     * invoked. 
     * @param ofs Radial offset, as a percentage of the outer radius. Values outside [{@link #MIN_RADOFS} .. {@link 
-    * #MAX_RAD_OFS}] are rejected.
+    * #MAX_RADOFS}] are rejected.
     * @return True if new value was accepted.
     */
    public boolean setRadialOffset(int ofs) 
@@ -187,14 +187,14 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
       if(ofs < MIN_RADOFS || ofs > MAX_RADOFS) return(false);
       if(radialOffset != ofs)
       {
-         if(doMultiNodeEdit(FGNProperty.SLICEOFS, new Integer(ofs))) return(true);
+         if(doMultiNodeEdit(FGNProperty.SLICEOFS, ofs)) return(true);
          
-         Integer old = new Integer(radialOffset);
+         Integer old = radialOffset;
          radialOffset = ofs;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.SLICEOFS);
-            FGNRevEdit.post(this, FGNProperty.SLICEOFS, new Integer(radialOffset), old);
+            FGNRevEdit.post(this, FGNProperty.SLICEOFS, radialOffset, old);
          }
       }
       return(true);
@@ -218,7 +218,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    
    /**
     * Set the bit flag vector that indicates which data groups in the pie chart are represented by pie slices radially
-    * displaced from the chart origin. Note that {@link #onNodeModified()} is not called by this package-private method,
+    * displaced from the chart origin. Note that {@link #onNodeModified} is not called by this package-private method,
     * which is intended only for use when reconstructing a figure model from <i>FypML</i>.
     * 
     * @param flags The bit flag vector, where bit N is set if the slice for data group N is radially displaced.
@@ -235,14 +235,14 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
     */
    public boolean isSliceDisplaced(int pos)
    {
-      return((pos >= 0 && pos < getNumDataGroups()) ? ((displacedBits & (1<<pos)) != 0) : false);
+      return(pos >= 0 && pos < getNumDataGroups() && ((displacedBits & (1 << pos)) != 0));
    }
    
    /**
     * Radially displace the pie slice representing the specified data group in this pie chart, or restore it to its
     * normal position in the pie chart.
     * @param pos Data group index position. No action is taken if invalid.
-    * @param displace True to displace the slice radially from the chart origin, false to restore it to its normal 
+    * @param ena True to displace the slice radially from the chart origin, false to restore it to its normal
     * position in the chart.
     * @return True if new value was accepted; false otherwise (invalid data group index).
     */
@@ -260,8 +260,8 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
          if(areNotificationsEnabled())
          {
             // index of the affected data group is included with old and new values of the data group color
-            Object[] oldInfo = new Object[] {new Integer(pos), new Boolean(!ena)};
-            Object[] newInfo = new Object[] {new Integer(pos), new Boolean(ena)};
+            Object[] oldInfo = new Object[] {pos, !ena};
+            Object[] newInfo = new Object[] {pos, ena};
             onNodeModified(FGNProperty.DGSLICE);
             FGNRevEdit.post(this, FGNProperty.DGSLICE, newInfo, oldInfo, 
                   (ena ? "Displace " : "Restore normal ") + " pie slice at index " + (pos+1));
@@ -291,7 +291,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    public LabelMode getSliceLabelMode() { return(sliceLabelMode); }
    
    /**
-    * Set the slice label mode for this pie chart. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the slice label mode for this pie chart. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param mode The new label mode. A null value is rejected.
     * @return False if argument was null; true otherwise.
@@ -316,7 +316,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case IRAD: ok = setInnerRadius((Double)propValue); break;
@@ -326,7 +326,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
          {
             // special case: The "property value" here is a mixed object array. The first is an Integer holding the
             // position of the affected pie slice; the second holds the state of the "displaced" bit for that slice.
-            Object[] arObj = null;
+            Object[] arObj;
             ok = propValue != null && propValue.getClass().equals(Object[].class);
             if(ok)
             {
@@ -334,7 +334,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
                ok = arObj.length == 2;
                if(ok) ok = arObj[0] != null && arObj[0].getClass().equals(Integer.class);
                if(ok) ok = arObj[1] != null && arObj[1].getClass().equals(Boolean.class);
-               if(ok) ok = setSliceDisplaced(((Integer) arObj[0]).intValue(), ((Boolean) arObj[1]).booleanValue());
+               if(ok) ok = setSliceDisplaced((Integer) arObj[0], (Boolean) arObj[1]);
             }
             break;
          }
@@ -347,12 +347,12 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    @Override Object getPropertyValue(FGNProperty p)
    {
       // NOTE: the DGSLICE property not supported for multi-object edit, as this requires the data group index
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case IRAD: value = new Double(getInnerRadius()); break;
-         case ORAD: value = new Double(getOuterRadius()); break;
-         case SLICEOFS: value = new Integer(getRadialOffset()); break;
+         case IRAD: value = getInnerRadius(); break;
+         case ORAD: value = getOuterRadius(); break;
+         case SLICEOFS: value = getRadialOffset(); break;
          case MODE: value = getSliceLabelMode(); break;
          default : value = super.getPropertyValue(p); break;
       }
@@ -372,7 +372,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
     */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
       styleSet.putStyle(FGNProperty.MODE, getSliceLabelMode());
    }
 
@@ -688,7 +688,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
    }
    
    /** Helper class encsapsulates information needed to render a pie slice label. */
-   private class SliceLabelInfo
+   private static class SliceLabelInfo
    {
       /** The label text in FypML styled text format. */
       String label;
@@ -749,13 +749,14 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
       Point2D p = vp.getPhysicalUserOrigin();
       double oriX = p.getX();
       double oriY = p.getY();
-      double displacedDX = 0, displacedDY = 0;
+      double displacedDX = 0, displacedDY = 0, displaceDist = 0;
       if(isSliceDisplaced(idx))
       {
          p.setLocation(midDeg, (outerRadius * radialOffset) / 100);
          vp.userUnitsToThousandthInches(p);
          displacedDX = p.getX() - oriX;
          displacedDY = p.getY() - oriY;
+         displaceDist = Math.sqrt(displacedDX*displacedDX + displacedDY*displacedDY);
       }
       
       SliceLabelInfo info = new SliceLabelInfo();
@@ -833,8 +834,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
          info.loc.setLocation(0, outerRadius*0.95);
          vp.userUnitsToThousandthInches(info.loc);
          if(isSliceDisplaced(idx))
-            info.loc.setLocation(info.loc.getX() + Math.sqrt(displacedDX*displacedDX + displacedDY*displacedDY), 
-                  info.loc.getY());
+            info.loc.setLocation(info.loc.getX() + displaceDist, info.loc.getY());
          rectLabel.setFrame(info.loc.getX()-rectLabel.getWidth(), info.loc.getY()-rectLabel.getHeight()/2, 
                rectLabel.getWidth(), rectLabel.getHeight());
          p = vp.getPhysicalUserOrigin(p);
@@ -871,7 +871,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
             vp.userUnitsToThousandthInches(info.loc);
             if(isSliceDisplaced(idx))
                info.loc.setLocation(info.loc.getX(),
-                     info.loc.getY() + Math.sqrt(displacedDX*displacedDX + displacedDY*displacedDY));
+                     info.loc.getY() + displaceDist);
             rectLabel.setFrame(info.loc.getX()-rectLabel.getWidth()/2, info.loc.getY()-rectLabel.getHeight()/2, 
                   rectLabel.getWidth(), rectLabel.getHeight());
             p = vp.getPhysicalUserOrigin(p);
@@ -917,6 +917,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
       Graphics2D g2BI = null;
       if(sliceLabelMode != LabelMode.OFF)
       {
+         assert FCIcons.V4_BROKEN != null;
          Image img = FCIcons.V4_BROKEN.getImage();
          BufferedImage bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
          g2BI = bi.createGraphics();
@@ -929,7 +930,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
          Point2D origin = vp.getPhysicalUserOrigin();
          
          // each pie slice is defined by its outer arc, which is defined its two endpoints.
-         List<Point2D> arcPoints = new ArrayList<Point2D>();
+         List<Point2D> arcPoints = new ArrayList<>();
          arcPoints.add(new Point2D.Double());
          arcPoints.add(new Point2D.Double());
          
@@ -982,7 +983,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
             }
             
             // because PSDoc will alter the list of arc points, we have to create a new list each time
-            List<Point2D> pts = new ArrayList<Point2D>(arcPoints);
+            List<Point2D> pts = new ArrayList<>(arcPoints);
             psDoc.renderConcentricWedges(origin, pts, baseRad, getDataGroupColor(i));
             
             theta += arcDeg;
@@ -1011,7 +1012,7 @@ public class PieChartNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of the pie chart node cloned. 
     * The clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected PieChartNode clone() throws CloneNotSupportedException
    {
       PieChartNode copy = (PieChartNode) super.clone();
       copy.rBoundsSelf = null;

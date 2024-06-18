@@ -81,7 +81,7 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
    public float getBaseline() { return(baseline); }
     
    /**
-    * Set the area chart baseline. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the area chart baseline. If a change is made, {@link #onNodeModified} is invoked.
     * @param base The new baseline, in user units. NaN and +/-infinity are rejected.
     * @return True if new value was accepted.
     */
@@ -90,14 +90,14 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(base)) return(false);
       if(baseline != base)
       {
-         if(doMultiNodeEdit(FGNProperty.BASELINE, new Float(base))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BASELINE, base)) return(true);
          
-         Float old = new Float(baseline);
+         Float old = baseline;
          baseline = base;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BASELINE);
-            FGNRevEdit.post(this, FGNProperty.BASELINE, new Float(baseline), old);
+            FGNRevEdit.post(this, FGNProperty.BASELINE, baseline, old);
          }
       }
       return(true);
@@ -123,7 +123,7 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
    public LabelMode getLabelMode() { return(labelMode); }
    
    /**
-    * Set the label display mode for this area chart. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the label display mode for this area chart. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param mode The new label mode. A null value is rejected.
     * @return False if argument was null; true otherwise.
@@ -149,7 +149,7 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case BASELINE: ok = setBaseline((Float)propValue); break;
@@ -161,10 +161,10 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case BASELINE: value = new Float(getBaseline()); break;
+         case BASELINE: value = getBaseline(); break;
          case MODE: value = getLabelMode(); break;
          default : value = super.getPropertyValue(p); break;
       }
@@ -184,7 +184,7 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
     */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
       styleSet.putStyle(FGNProperty.MODE, getLabelMode());
    }
 
@@ -266,10 +266,10 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
       boolean needRecalc = (hint == null || hint == FGNProperty.SRC || hint == FGNProperty.BASELINE);
       if(!needRecalc) return(false);
       
-      float minX = 0;
-      float maxX = 0;
-      float minY = 0;
-      float maxY = 0;
+      float minX;
+      float maxX;
+      float minY;
+      float maxY;
 
       DataSet set = getDataSet();
       minX = set.getXMin();
@@ -435,7 +435,7 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
    private Rectangle2D rBoundsSelf = null;
 
    /** Helper class encsapsulates information needed to render an area label. */
-   private class LabelInfo
+   private static class LabelInfo
    {
       /** The label text in FypML styled text format. */
       String label;
@@ -641,12 +641,12 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
       boolean done;
       boolean ptReady;
       
-      int nPtsInSet;
+      final int nPtsInSet;
       int nPtsSoFar;
       boolean onReturnPath;
 
-      Point2D pCurrent = new Point2D.Double();
-      Point2D pNext = new Point2D.Double();
+      final Point2D pCurrent = new Point2D.Double();
+      final Point2D pNext = new Point2D.Double();
       
       public Iterator<Point2D> iterator() { return(new AreaVertexProducer(setIdx)); }
 
@@ -764,13 +764,14 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
       Graphics2D g2BI = null;
       if(labelMode != LabelMode.OFF)
       {
+         assert FCIcons.V4_BROKEN != null;
          Image img = FCIcons.V4_BROKEN.getImage();
          BufferedImage bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
          g2BI = bi.createGraphics();
       }
 
       psDoc.startElement(this);
-      List<Point2D> vertices = new ArrayList<Point2D>();
+      List<Point2D> vertices = new ArrayList<>();
       for(int i=0; i<getNumDataGroups(); i++)
       {
          // get the vertices defining the area for the i-th data group
@@ -778,7 +779,7 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
          Iterator<Point2D> iterator = new AreaVertexProducer(i);
          while(iterator.hasNext()) 
             vertices.add((Point2D) iterator.next().clone());    // must clone, b/c producer reuses a Point2D
-         if(vertices.size() == 0) continue;
+         if(vertices.isEmpty()) continue;
          
          psDoc.renderPolygons(vertices, getDataGroupColor(i));
          
@@ -799,7 +800,7 @@ public class AreaChartNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of the area chart cloned. 
     * The clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected AreaChartNode clone() throws CloneNotSupportedException
    {
       AreaChartNode copy = (AreaChartNode) super.clone();
       copy.rBoundsSelf = null;

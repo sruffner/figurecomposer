@@ -2,6 +2,7 @@ package com.srscicomp.fc.fig;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -66,7 +67,7 @@ public class FGNPreferences
     */
    public void setPreferredFont(String fontName)
    {
-      if(fontName != null && fontName.length() > 0) font = fontName;
+      if(fontName != null && !fontName.isEmpty()) font = fontName;
    }
    
    private PSFont psfont = PSFont.HELVETICA;
@@ -163,7 +164,7 @@ public class FGNPreferences
    
    /**
     * Set user's preference for the stroke width of a newly created figure.
-    * @param c The preferred stroke width. <code>Null</code> value is ignored.
+    * @param m The preferred stroke width. <code>Null</code> value is ignored.
     */
    public void setPreferredStrokeWidth(Measure m) { if(m != null) strokeWidth = m; }
    
@@ -195,7 +196,7 @@ public class FGNPreferences
     */
    public void setPreferredStrokeJoin(StrokeJoin sj) { if(sj != null) strokeJoin = sj; }
    
-   private Boolean legendSymbolAtMidPoint = new Boolean(true);
+   private Boolean legendSymbolAtMidPoint = Boolean.TRUE;
    
    /**
     * Get user's preference on whether symbols should be rendered at the midpoint or endpoints of a legend entry's 
@@ -207,7 +208,7 @@ public class FGNPreferences
    /**
     * Set user's preference on whether symbols should be rendered at the midpoint or endpoints of a legend entry's 
     * line segment.
-    * @return atMid If <code>Boolean.TRUE</code>, midpoint legend symbols are preferred. <code>Null</code> is ignored.
+    * @param atMid If <code>Boolean.TRUE</code>, midpoint legend symbols are preferred. <code>Null</code> is ignored.
     */
    public void setPreferredLegendSymbolAtMidPoint(Boolean atMid) { if(atMid != null) legendSymbolAtMidPoint = atMid; }
 
@@ -333,7 +334,7 @@ public class FGNPreferences
    
    /** 
     * Set user's preference for the per-decade tick pattern along a logarithmic axis.
-    * @param m The new preferred value for the per-decade tick pattern. <code>Null</code> value is ignored.
+    * @param p The new preferred value for the per-decade tick pattern. <code>Null</code> value is ignored.
     */
    public void setPreferredLogTickPattern(LogTickPattern p) { if(p != null) logTickPattern = p; }
    
@@ -393,7 +394,7 @@ public class FGNPreferences
     */
    public void setPreferredTickGap(Measure m) { if(m != null) tickGap = m; }
    
-   private Boolean enaHMImageSmoothing = new Boolean(false);
+   private Boolean enaHMImageSmoothing = Boolean.FALSE;
    
    /**
     * Get user's preference on whether or not image smoothing should be enabled for a new heat map node.
@@ -403,18 +404,18 @@ public class FGNPreferences
    
    /**
     * Set user's preference on whether or not image smoothing should be enabled for a new heat map node.
-    * @return ena True/false to enable/disable image smoothing for a new heat map node. A null value is ignored.
+    * @param ena True/false to enable/disable image smoothing for a new heat map node. A null value is ignored.
     */
    public void setPreferredHeatMapImageSmoothingEnable(Boolean ena) { if(ena != null) enaHMImageSmoothing = ena; }
 
-   private List<ColorMap> customCMaps = new ArrayList<ColorMap>();
+   private final List<ColorMap> customCMaps = new ArrayList<>();
    
    /** 
     * Get the user's custom-defined color maps.
     * 
     * @return List of the user's custom color maps.
     */
-   public List<ColorMap> getCustomColorMaps() { return(new ArrayList<ColorMap>(customCMaps)); }
+   public List<ColorMap> getCustomColorMaps() { return(new ArrayList<>(customCMaps)); }
    
    /** 
     * Convenience method returns all available color maps: All built-in maps, followed by any additional custom maps
@@ -423,10 +424,10 @@ public class FGNPreferences
     */
    public ColorMap[] getAllAvailableColorMaps()
    {
-      List<ColorMap> maps = new ArrayList<ColorMap>();
-      for(ColorMap cm : ColorMap.getBuiltins()) maps.add(cm);
+      List<ColorMap> maps = new ArrayList<>();
+      maps.addAll(Arrays.asList(ColorMap.getBuiltins()));
       maps.addAll(customCMaps);
-      return(maps.toArray(new ColorMap[maps.size()]));
+      return(maps.toArray(new ColorMap[0]));
    }
    
    /**
@@ -534,7 +535,7 @@ public class FGNPreferences
          Integer sz = Integer.parseInt(s);
          setPreferredFontSize(sz);
       }
-      catch(NumberFormatException nfe) {}
+      catch(NumberFormatException ignored) {}
       
       s = wsSettings.getProperty(KEY_FIG_FONTSTYLE);
       setPreferredFontStyle(Utilities.getEnumValueFromString(s, FontStyle.values()));
@@ -549,7 +550,7 @@ public class FGNPreferences
       s = wsSettings.getProperty(KEY_FIG_STROKEJOIN);
       setPreferredStrokeJoin(Utilities.getEnumValueFromString(s, StrokeJoin.values()));
       s = wsSettings.getProperty(KEY_LEGEND_MID);
-      setPreferredLegendSymbolAtMidPoint(new Boolean("true".equals(s)));
+      setPreferredLegendSymbolAtMidPoint("true".equals(s));
       s = wsSettings.getProperty(KEY_LEGEND_SPACER);
       setPreferredLegendSpacer(Measure.fromString(s));
       s = wsSettings.getProperty(KEY_LEGEND_LABELOFFSET);
@@ -577,12 +578,12 @@ public class FGNPreferences
       s = wsSettings.getProperty(KEY_TICK_GAP);
       setPreferredTickGap(Measure.fromString(s));
       s = wsSettings.getProperty(KEY_HM_SMOOTH);
-      setPreferredHeatMapImageSmoothingEnable(new Boolean(s==null || "true".equals(s)));
+      setPreferredHeatMapImageSmoothingEnable(s == null || "true".equals(s));
 
       // reconstruct custom color maps (comma-separated list of string)
       s = wsSettings.getProperty(KEY_CMAPS);
       customCMaps.clear();
-      if(s != null && s.length() > 0)
+      if(s != null && !s.isEmpty())
       {
          String[] tokens = s.split(",");
          for(String token : tokens)
@@ -591,9 +592,7 @@ public class FGNPreferences
             if(cm != null) addCustomColorMap(cm);
          }
       }
-      
-      // remove deprecated preferences from the settings object, just in case.
-      wsSettings.remove(KEY_AXIS_AUTO);
+
    }
    
    /**

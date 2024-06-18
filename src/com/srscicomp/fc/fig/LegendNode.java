@@ -81,7 +81,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
       spacer = FGNPreferences.getInstance().getPreferredLegendSpacer();
       labelOffset = FGNPreferences.getInstance().getPreferredLegendLabelOffset();
       symbolSize = new Measure(0.1, Measure.Unit.IN);
-      mid = FGNPreferences.getInstance().getPreferredLegendSymbolAtMidPoint().booleanValue();
+      mid = FGNPreferences.getInstance().getPreferredLegendSymbolAtMidPoint();
       hide = true;
       borderWidth = new Measure(0, Measure.Unit.IN);
       boxColor = new Color(0f, 0f, 0f, 0f);
@@ -102,7 +102,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
          try
          {
             // legend's global render bounds before the change
-            List<Rectangle2D> dirty = new ArrayList<Rectangle2D>();
+            List<Rectangle2D> dirty = new ArrayList<>();
             Rectangle2D r = getCachedGlobalBounds();
             if(!r.isEmpty()) dirty.add(r);
             
@@ -112,9 +112,12 @@ public class LegendNode extends FGraphicNode implements Cloneable
             if(!r.isEmpty()) dirty.add(r);
             
             // notify model to re-render in the dirty regions, if any
-            if(dirty.size() > 0) model.onChange(this, -1, true, dirty);
+            if(!dirty.isEmpty()) model.onChange(this, -1, true, dirty);
          }
-         finally { if(g2d != null) g2d.dispose(); }
+         finally
+         {
+            g2d.dispose();
+         }
       }
       
    }
@@ -152,7 +155,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
    public Measure getLength() { return(length); }
 
    /**
-    * Set the length of the trace line segment for a legend entry. If a change is made, {@link #onNodeModified()} is 
+    * Set the length of the trace line segment for a legend entry. If a change is made, {@link #onNodeModified} is
     * invoked.
     * 
     * @param m The new legend entry line length. It is constrained to satisfy {@link #LENCONSTRAINTS}. Null is rejected.
@@ -195,7 +198,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the perpendicular distance between the trace line segments of successive legend entries. If a change is made, 
-    * {@link #onNodeModified()} is invoked.
+    * {@link #onNodeModified} is invoked.
     * 
     * @param m The new legend entry spacer. It is constrained to satisfy {@link #LENCONSTRAINTS}. Null is rejected.
     * @return True if change was accepted; false if rejected.
@@ -233,7 +236,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the horizontal offset from the right end point of a legend entry's line segment to the start of text label.
-    * If a change is made, {@link #onNodeModified()} is invoked.
+    * If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new legend label offset. The measure is constrained to satisfy {@link #LENCONSTRAINTS}. A null value 
     * is rejected.
@@ -277,7 +280,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the uniform symbol size applied to all marker symbols rendered in the legend. If a change is made, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
     * @param m The new uniform symbol size. It is constrained to satisfy {@link #LENCONSTRAINTS}. Null is rejected.
     * @return True if successful; false if value was rejected.
@@ -321,7 +324,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the flag which determines whether a marker symbol is rendered at the midpoint or the end points of a legend 
-    * entry. If a change is made, {@link #onNodeModified()} is invoked.
+    * entry. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param b True to draw markers at midpoint of a legend entry, false to draw them at the end points.
     */
@@ -329,16 +332,16 @@ public class LegendNode extends FGraphicNode implements Cloneable
    {
       if(mid != b)
       {
-         if(doMultiNodeEdit(FGNProperty.MID, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.MID, b)) return;
          
-         Boolean old = new Boolean(mid);
+         Boolean old = mid;
          mid = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.MID);
 
             String desc = this.mid ? "Put legend entry symbol at midpoint" : "Put legend entry symbols at endpoints";
-            FGNRevEdit.post(this, FGNProperty.MID, new Boolean(mid), old, desc);
+            FGNRevEdit.post(this, FGNProperty.MID, mid, old, desc);
          }
       }
    }
@@ -353,22 +356,22 @@ public class LegendNode extends FGraphicNode implements Cloneable
    public boolean getHide() { return(hide); }
 
    /**
-    * Set the hide state for this legend. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the hide state for this legend. If a change is made, {@link #onNodeModified} is invoked.
     * @param hide True to hide legend, false to show it.
     */
    public void setHide(boolean hide)
    {
       if(this.hide != hide)
       {
-         if(doMultiNodeEdit(FGNProperty.HIDE, new Boolean(hide))) return;
+         if(doMultiNodeEdit(FGNProperty.HIDE, hide)) return;
          
-         Boolean old = new Boolean(this.hide);
+         Boolean old = this.hide;
          this.hide = hide;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = this.hide ? "Hide legend" : "Show legend";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(this.hide), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, this.hide, old, desc);
          }
       }
    }
@@ -385,7 +388,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
    public Measure getBorderWidth() { return(borderWidth); }
 
    /**
-    * Set the width of the box border for this legend. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the width of the box border for this legend. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new box border width. The measure is constrained to satisfy {@link #STROKEWCONSTRAINTS}. A null 
     * value is rejected.
@@ -505,15 +508,15 @@ public class LegendNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case SIZE : ok = setSymbolSize((Measure) propValue); break;
          case LEN: ok = setLength((Measure) propValue); break;
          case SPACER: ok = setSpacer((Measure) propValue); break;
          case LABELOFFSET: ok = setLabelOffset((Measure) propValue); break;
-         case HIDE : setHide(((Boolean)propValue).booleanValue()); ok = true; break;
-         case MID: setMid(((Boolean)propValue).booleanValue()); ok = true; break;
+         case HIDE : setHide((Boolean) propValue); ok = true; break;
+         case MID: setMid((Boolean) propValue); ok = true; break;
          case BORDER: ok = setBorderWidth((Measure) propValue); break;
          case BOXC: ok = setBoxColor((Color) propValue); break;
          default : ok = super.setPropertyValue(p, propValue); break;
@@ -523,15 +526,15 @@ public class LegendNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case SIZE : value = getSymbolSize(); break;
          case LEN: value = getLength(); break;
          case SPACER: value = getSpacer(); break;
          case LABELOFFSET: value = getLabelOffset(); break;
-         case HIDE : value = new Boolean(getHide()); break;
-         case MID: value = new Boolean(getMid()); break;
+         case HIDE : value = getHide(); break;
+         case MID: value = getMid(); break;
          case BORDER: value = getBorderWidth(); break;
          case BOXC: value = getBoxColor(); break;
          default : value = super.getPropertyValue(p); break;
@@ -558,7 +561,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
       styleSet.putStyle(FGNProperty.SPACER, getSpacer());
       styleSet.putStyle(FGNProperty.SIZE, getSymbolSize());
       styleSet.putStyle(FGNProperty.LABELOFFSET, getLabelOffset());
-      styleSet.putStyle(FGNProperty.MID, new Boolean(getMid()));
+      styleSet.putStyle(FGNProperty.MID, getMid());
       styleSet.putStyle(FGNProperty.BORDER, getBorderWidth());
       styleSet.putStyle(FGNProperty.BOXC, getBoxColor());
    }
@@ -606,7 +609,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.MID, getNodeType(), Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.MID, null, Boolean.class)))
       {
-         mid = b.booleanValue();
+         mid = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.MID);
@@ -663,7 +666,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
       FGraphicNode p = getParent();
       List<FGNPlottable> out;
       if(p instanceof FGNGraph) out = ((FGNGraph)p).getPlottableNodes();
-      else out = new ArrayList<FGNPlottable>();
+      else out = new ArrayList<>();
       return(out);
    }
    
@@ -698,7 +701,6 @@ public class LegendNode extends FGraphicNode implements Cloneable
             }
          }
       }
-      if(maxSymSize < 0.0) maxSymSize = 0.0;
 
       return(maxSymSize);
    }
@@ -757,13 +759,6 @@ public class LegendNode extends FGraphicNode implements Cloneable
 
       double maxSymSize = getMaxSymbolSizeInMilliInches();
       double spacerMI = spacer.toMilliInches();
-      
-      // calculate nominal length (excluding symbols) of each legend entry. If legend's "len" attr is nonzero, use that. 
-      // Else, use 5x the max symbol size. If no symbols are rendered, use 0.5in as a fallback default.
-      double lenMI = length.toMilliInches();
-      if(lenMI == 0) lenMI = 5.0 * maxSymSize;
-      if(lenMI == 0) lenMI = 500;
-
       double labelOffsetMI = calcLabelOffsetFromLeftEndPoint();
       
       // now run through the entries again and accumulate the rectangle bounding all entries and their labels. We use
@@ -790,7 +785,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
             
             // rectangle bounding entry label
             String label = entry.getLabel();
-            if(label.length() == 0) label = "data " + Integer.toString(idxEntry);
+            if(label.isEmpty()) label = "data " + idxEntry;
             AttributedString as = fromStyledText(label, getFontFamily(), getFontSizeInPoints(), getFillColor(), 
                   getFontStyle(), true);
             pLabel.setLocation(labelOffsetMI, yEntry);
@@ -881,10 +876,6 @@ public class LegendNode extends FGraphicNode implements Cloneable
       // get the various properties we need to render the legend, in milli-inches
       double spacerMI = spacer.toMilliInches();
       double maxSymSize = getMaxSymbolSizeInMilliInches();
-      double lenMI = length.toMilliInches();
-      if(lenMI == 0) lenMI = 5.0 * maxSymSize;
-      if(lenMI == 0) lenMI = 500;
-
       double borderMI = borderWidth.toMilliInches();
       
       // location of legend's bottom left corner; rotation angle
@@ -930,22 +921,22 @@ public class LegendNode extends FGraphicNode implements Cloneable
          // render legend entries from top to bottom in the order that traces appear as children of the graph parent
          double yEntry = spacerMI*(nVisible-1);
          int nEntry = 1;
-         for(int i=0; i<plottables.size(); i++)
+         for(FGNPlottable plottable : plottables)
          {
             // skip over each data presentation node that has no associated legend entry(ies)
-            List<LegendEntry> entries = plottables.get(i).getLegendEntries();
+            List<LegendEntry> entries = plottable.getLegendEntries();
             if(entries == null) continue;
 
             for(LegendEntry entry : entries)
             {
                // paint the legend entry without label
                entry.render(g2dCopy, yEntry, this);
-                              
+
                // paint the corresponding label, which may or may not contain differentially styled text.
                pLabel.setLocation(labelOffsetMI, yEntry);
                String label = entry.getLabel();
-               if(label.length() == 0) label = "data " + nEntry;
-               AttributedString as = fromStyledText(label, getFontFamily(), getFontSizeInPoints(), getFillColor(), 
+               if(label.isEmpty()) label = "data " + nEntry;
+               AttributedString as = fromStyledText(label, getFontFamily(), getFontSizeInPoints(), getFillColor(),
                      getFontStyle(), true);
                labelPainter.setTextAndLocation(as, pLabel);
 
@@ -961,7 +952,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
       }
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    @Override protected void releaseRenderResourcesForSelf() { rBoundsSelf = null; }
@@ -987,10 +978,6 @@ public class LegendNode extends FGraphicNode implements Cloneable
       // get the various properties we need to render the legend, in milli-inches
       double spacerMI = spacer.toMilliInches();
       double maxSymSize = getMaxSymbolSizeInMilliInches();
-      double lenMI = length.toMilliInches();
-      if(lenMI == 0) lenMI = 5.0 * maxSymSize;
-      if(lenMI == 0) lenMI = 500;
-
       double borderMI = borderWidth.toMilliInches();
 
       // location of legend's bottom left corner; rotation angle
@@ -1015,6 +1002,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
          // render bounds. But the Java2D render bounds calc requires a Graphics2D (to get a font render context) and we
          // may be generating the PS document without a Graphics2D. So, to be sure, we create one from BufferedImage and
          // force a recalc of the render bounds here:
+         assert FCIcons.V4_BROKEN != null;
          Image img = FCIcons.V4_BROKEN.getImage();
          BufferedImage bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
          Graphics2D g2BI = bi.createGraphics();
@@ -1029,10 +1017,10 @@ public class LegendNode extends FGraphicNode implements Cloneable
       // rendered WRT the user space established by the last translateAndRotate().
       double yEntry = spacerMI*(nVisible - 1);
       int nEntry = 0;
-      for(int i=0; i<plottables.size(); i++)
+      for(FGNPlottable plottable : plottables)
       {
          // skip over each data element that has no visible legend entries
-         List<LegendEntry> entries = plottables.get(i).getLegendEntries();
+         List<LegendEntry> entries = plottable.getLegendEntries();
          if(entries == null) continue;
 
          for(LegendEntry entry : entries)
@@ -1044,10 +1032,10 @@ public class LegendNode extends FGraphicNode implements Cloneable
             if(getFillColor().getAlpha() > 0)
             {
                String label = entry.getLabel();
-               if(label.length() == 0) label = "data " + nEntry;
+               if(label.isEmpty()) label = "data " + nEntry;
                psDoc.renderText(label, labelOffsetMI, yEntry, TextAlign.LEADING, TextAlign.CENTERED);
             }
-            
+
             // move down to the next legend entry
             yEntry -= spacerMI;
             ++nEntry;
@@ -1064,7 +1052,7 @@ public class LegendNode extends FGraphicNode implements Cloneable
    //
 
    /** Override ensures that the rendering infrastructure for the clone is independent of the cloned legend node. */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       LegendNode copy = (LegendNode) super.clone();
       copy.rBoundsSelf = null;

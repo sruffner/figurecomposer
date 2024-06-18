@@ -866,9 +866,9 @@ public class Utilities
 	{
 		if( pts == null ) return( false );
 
-        for (Point2D pt : pts) {
-            if (!isWellDefined(pt)) return (false);
-        }
+      for(Point2D pt : pts)
+         if (!isWellDefined(pt)) return (false);
+
 		return( true );
 	}
 

@@ -5510,7 +5510,7 @@ public class MatlabUtilities
     *    set to {@link Scatter3DNode.DisplayMode#BARPLOT}, and the node's fill color is set accordingly. The property
     *    <i>FaceAlpha</i> applies only if <i>FaceColor</i> is an RGB color spec; it sets the alpha channel for that
     *    color. If<i>FaceColor="interp"</i>, then the scatter plots' display mode is set to {@link 
-    *    Scatter3DNode.DisplayMode#COLORBARBPLOT}, and <i>FaceAlpha</i> is ignored.</li>
+    *    Scatter3DNode.DisplayMode#COLORBARPLOT}, and <i>FaceAlpha</i> is ignored.</li>
     *    <li><i>XData, YData, ZData</i>. These contain the bar vertices. During processing of the HG object tree, these
     *    are analyzed to confirm the "surface" renders a set of 3D bars, and the {X,Y,Z} data points represented by the
     *    bars (one point per bar) are calculated. That set of points form the 3D scatter plot node's <i>xyzset</i>
@@ -5557,7 +5557,7 @@ public class MatlabUtilities
       Color fillC = null;
       Scatter3DNode.DisplayMode mode = Scatter3DNode.DisplayMode.BARPLOT;
       prop = hgSurface.getProperty("FaceColor");
-      if("interp".equals(prop)) mode = Scatter3DNode.DisplayMode.COLORBARBPLOT;
+      if("interp".equals(prop)) mode = Scatter3DNode.DisplayMode.COLORBARPLOT;
       else if("none".equals(prop)) fillC = TRANSPARENTBLACK;
       else 
       {

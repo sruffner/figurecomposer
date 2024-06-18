@@ -55,11 +55,11 @@ import com.srscicomp.common.util.Utilities;
 public class Graph3DNode extends FGNGraph implements Cloneable
 {
    /** Enumeration of the three axes for a 3D graph object. */
-   public enum Axis { X, Y, Z };
-   
+   public enum Axis { X, Y, Z }
+
    /** Enumeration of the three backplane sides for a 3D graph object. */
-   public enum Side { XY, XZ, YZ };
-   
+   public enum Side { XY, XZ, YZ }
+
    /**
     * Construct an empty 3D graph having a 2-in x 2-in x 2-in 3D coordinate system box, with the origin of that
     * coordinate system lying in the projection plane at (50%, 50%) in the graph's parent viewport. The backdrop
@@ -209,7 +209,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
       /** No backplanes or grid; axes drawn in traditional configuration, emanating from back corner of 3D box. */
       AXESBACK("axesBack");
       
-      private String tag;
+      private final String tag;
       
       BackDrop(String tag) { this.tag = tag; }
       
@@ -227,7 +227,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
    public BackDrop getBackDrop() { return(backDrop); }
    
    /**
-    * Set the 3D backdrop style for this graph. If a change is made, the method {@link #onNodeModified()} is invoked.
+    * Set the 3D backdrop style for this graph. If a change is made, the method {@link #onNodeModified} is invoked.
     * 
     * @param bd The new backdrop style. A null value is rejected.
     * @return False if argument was null; true otherwise.
@@ -272,9 +272,9 @@ public class Graph3DNode extends FGNGraph implements Cloneable
    
    /**
     * Set the depth of the 3D graph box (see {@link #getDepth()} for details). If a change is made, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
-    * @param m The new depth. The measure is constrained to satsify {@link FGraphicModel#getSizeConstraints()}. A null 
+    * @param m The new depth. The measure is constrained to satsify {@link FGraphicModel#getSizeConstraints}. A null
     * value is rejected.
     * @return True if successful; false if value was rejected.
     */
@@ -324,7 +324,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
    
    /**
     * Set the projection distance scale factor for this 3D graph node (see {@link #getProjectionDistanceScale()} for 
-    * details). If a change is made, {@link #onNodeModified()} is invoked.
+    * details). If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param s The new scale factor. Must lie in [{@link #MIN_PRJSCALE} .. {@link #MAX_PRJSCALE}].
     * @return True if successful; false if value was rejected.
@@ -335,15 +335,15 @@ public class Graph3DNode extends FGNGraph implements Cloneable
       
       if(s != distanceScale)
       {
-         if(doMultiNodeEdit(FGNProperty.PSCALE, new Integer(s))) return(true);
+         if(doMultiNodeEdit(FGNProperty.PSCALE, s)) return(true);
 
-         Integer old = new Integer(distanceScale);
+         Integer old = distanceScale;
          distanceScale = s;
          
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.PSCALE);
-            FGNRevEdit.post(this, FGNProperty.PSCALE, new Integer(distanceScale), old);
+            FGNRevEdit.post(this, FGNProperty.PSCALE, distanceScale, old);
          }
       }
       return(true);
@@ -359,7 +359,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
     * Get the elevation angle for the 3D graph box. This angle specifies a rotation about the X-axis of the 3D
     * coordinate system, which follows a rotation about the Z-axis as specified by the {@link #getRotate()} property.
     * Together the two rotations determine the orientation of the 3D graph box projected onto the "screen".
-    * 
+    * <p>
     * Get the orientation of this <code>FGraphicNode</code> with respect to its parent. Orientation is expressed as 
     * the angle of rotation between the positive horizontal axes of this node's viewport and its parent viewport. 
     * Positive angles correspond to CCW rotation.
@@ -370,7 +370,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
 
    /**
     * Set the elevation angle for the 3D graph box (see {@link #getElevate()} for details. If a change is made, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
     * @param e The elevation angle, in degrees. Must lie in [-60..60].
     * @return True if successful; false if argument is out-of-range.
@@ -381,15 +381,15 @@ public class Graph3DNode extends FGNGraph implements Cloneable
 
       if(e != elevate)
       {
-         if(doMultiNodeEdit(FGNProperty.ELEVATE, new Double(e))) return(true);
+         if(doMultiNodeEdit(FGNProperty.ELEVATE, e)) return(true);
 
-         Double old = new Double(elevate);
+         Double old = elevate;
          elevate = e;
          
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.ELEVATE);
-            FGNRevEdit.post(this, FGNProperty.ELEVATE, new Double(elevate), old);
+            FGNRevEdit.post(this, FGNProperty.ELEVATE, elevate, old);
          }
       }
       return(true);
@@ -397,13 +397,13 @@ public class Graph3DNode extends FGNGraph implements Cloneable
    
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case LAYOUT : ok = setBackDrop((BackDrop)propValue); break;
          case DEPTH : ok = setDepth((Measure)propValue); break;
-         case PSCALE: ok = setProjectionDistanceScale(((Integer)propValue).intValue()); break;
-         case ELEVATE: ok = setElevate(((Double)propValue).doubleValue()); break;
+         case PSCALE: ok = setProjectionDistanceScale((Integer) propValue); break;
+         case ELEVATE: ok = setElevate((Double) propValue); break;
          default: ok = super.setPropertyValue(p, propValue); break;
       }
       return(ok);
@@ -411,13 +411,13 @@ public class Graph3DNode extends FGNGraph implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case LAYOUT : value = getBackDrop(); break;
          case DEPTH : value = getDepth(); break;
-         case PSCALE: value = new Integer(getProjectionDistanceScale()); break;
-         case ELEVATE: value = new Double(getElevate()); break;
+         case PSCALE: value = getProjectionDistanceScale(); break;
+         case ELEVATE: value = getElevate(); break;
          default: value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -468,8 +468,6 @@ public class Graph3DNode extends FGNGraph implements Cloneable
    // 
    // Support for style sets
    //
-   
-   @Override public boolean supportsStyleSet()  { return(true); }
 
    /** Only the 3D backdrop style is exported in the 3D graph node's style set. */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
@@ -579,8 +577,8 @@ public class Graph3DNode extends FGNGraph implements Cloneable
    /**
     * Update the rotation and elevation of the 3D graph at the termination of an interactive mouse drag gesture that
     * re-orients the 3D graph directly on the GUI. The new rotation and elevation angles are computed as in {@link 
-    * #getReorientByDragShape()}, the 3D graph node's <i>rotate</i> and <i>elevate</i> properties are updated 
-    * accordingly, {@link #onNodeModified()} is invoked to update the graph's rendering, and a reversible edit 
+    * #getReorientByDragShape}, the 3D graph node's <i>rotate</i> and <i>elevate</i> properties are updated
+    * accordingly, {@link #onNodeModified} is invoked to update the graph's rendering, and a reversible edit
     * encapsulating the property changes is posted to the model's undo history. No action is taken if the new rotation
     * and elevation angles cannot be computed for some reason, or if neither value has changed.
     * 
@@ -601,8 +599,8 @@ public class Graph3DNode extends FGNGraph implements Cloneable
          
          if(rotDeg != getRotate() || elevDeg != getElevate())
          {
-            Double rotOld = new Double(getRotate());
-            Double elevOld = new Double(elevate);
+            Double rotOld = getRotate();
+            Double elevOld = elevate;
             
             setNotificationsEnabled(false);
             try { setRotate(rotDeg); } 
@@ -611,8 +609,8 @@ public class Graph3DNode extends FGNGraph implements Cloneable
             
             MultiRevEdit mre = new MultiRevEdit(fgm, "Reorient 3D graph: R=" + Utilities.toString(rotDeg,4,1) + 
                   "deg, E=" + Utilities.toString(elevDeg,4,1) + "deg");
-            mre.addPropertyChange(this, FGNProperty.ROTATE, new Double(rotDeg), rotOld);
-            mre.addPropertyChange(this, FGNProperty.ELEVATE, new Double(elevate), elevOld);
+            mre.addPropertyChange(this, FGNProperty.ROTATE, rotDeg, rotOld);
+            mre.addPropertyChange(this, FGNProperty.ELEVATE, elevate, elevOld);
             
             onNodeModified(null);
             fgm.postReversibleEdit(mre);
@@ -695,7 +693,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
    /**
     * Compute the drag resize shape while interactively resizing the 3D graph.
     * 
-    * <p>The resize anchor's identity determines which dimensions are affected -- see {@link #getResizeAnchor()} for
+    * <p>The resize anchor's identity determines which dimensions are affected -- see {@link #getResizeAnchor} for
     * details. The distance between the initial and current drag cursor locations determines the magnitude of the change
     * in the target dimension(s). If the current drag location is further from the graph's origin than the initial 
     * location, the resize shape indicates an increase in size; else a decrease, down to a minimum value of 1-in.
@@ -763,9 +761,9 @@ public class Graph3DNode extends FGNGraph implements Cloneable
       if(cueBuf != null)
       {
          cueBuf.setLength(0);
-         cueBuf.append("W=" + mw.toString());
-         cueBuf.append(", H=" + mh.toString());
-         cueBuf.append(", D=" + md.toString());
+         cueBuf.append("W=").append(mw.toString());
+         cueBuf.append(", H=").append(mh.toString());
+         cueBuf.append(", D=").append(md.toString());
       }
 
       return(outline);
@@ -879,10 +877,8 @@ public class Graph3DNode extends FGNGraph implements Cloneable
 
       // the local origin is at the bottom-left corner of that bounding rect. Translate to parent viewport.
       // translate origin so that it is in coord system of parent viewport
-      AffineTransform at = AffineTransform.getTranslateInstance(
-            rect.getX() + rBoundsSelf.getX(), rect.getY() + rBoundsSelf.getY());
-      
-      return(at);
+      return(AffineTransform.getTranslateInstance(
+            rect.getX() + rBoundsSelf.getX(), rect.getY() + rBoundsSelf.getY()));
    }
 
    /**
@@ -909,9 +905,6 @@ public class Graph3DNode extends FGNGraph implements Cloneable
       if(rBoundsSelf == null) update2DProjection();
       return(new FViewport2D(rBoundsSelf.getWidth(), rBoundsSelf.getHeight())); 
    }
-
-   /** There are no internal render resources. */
-   @Override protected void releaseRenderResourcesForSelf() {}
 
    /**
     * Returns the rectangle that would tightly bound the backdrop in the {@link BackDrop#BOX3D} style -- regardless
@@ -1123,7 +1116,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
     * @return A {@link Projector} object that projects 3D points in the graph's "native" coordinate system to the 2D
     * plane on which the 3D graph is rendered.
     */
-   Projector get2DProjection() { return((Projector) projector.clone()); }
+   Projector get2DProjection() { return(new Projector(projector)); }
    
    /** 
     * Is the specified backplane drawn in the 3D graph node's current backdrop? All 3 backplanes are drawn for the two
@@ -1146,7 +1139,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
     */
    Shape getBackPlaneShape(Side s)
    {
-      Shape shape = null;
+      Shape shape;
       if(s == Side.XZ) shape = projector.getXZBackplaneShape();
       else if(s == Side.YZ) shape = projector.getYZBackplaneShape();
       else shape = projector.getXYBackplaneShape();
@@ -1161,7 +1154,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
     */
    List<Point2D> getBackPlaneVertices(Side s)
    {
-      List<Point2D> out = null;
+      List<Point2D> out;
       if(s == Side.XZ) out = projector.getXZBackplaneVertices();
       else if(s == Side.YZ) out = projector.getYZBackplaneVertices();
       else out = projector.getXYBackplaneVertices();
@@ -1198,16 +1191,14 @@ public class Graph3DNode extends FGNGraph implements Cloneable
       if(pts==null || pts.isEmpty()) return(gp);
 
       boolean isMoveTo = true;
-      for(int i=0; i<pts.size(); i++)
+      for(Point2D p : pts)
       {
-         Point2D p = pts.get(i);
          if(Utilities.isWellDefined(p))
          {
             if(isMoveTo) gp.moveTo(p.getX(), p.getY());
             else gp.lineTo(p.getX(), p.getY());
             isMoveTo = false;
-         }
-         else
+         } else
             isMoveTo = true;
       }
       return(gp);
@@ -1234,7 +1225,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
       
       double[] ticks = getAxis(a).getMajorTicks(true);
       
-      List<Point2D> out = null;
+      List<Point2D> out;
       if(a == Axis.X) out = projector.getXGridLineVertices(ticks, backDrop==BackDrop.XYPLANE);
       else if(a == Axis.Y) out = projector.getYGridLineVertices(ticks, backDrop==BackDrop.XYPLANE);
       else out = projector.getZGridLineVertices(ticks);
@@ -1245,7 +1236,7 @@ public class Graph3DNode extends FGNGraph implements Cloneable
     * Override ensures that the cloned node's internal 3D-to-2D projector is completely independent of the projector
     * for this 3D graph node.
     */
-   @Override protected Object clone()
+   @Override protected Graph3DNode clone() throws CloneNotSupportedException
    {
       Graph3DNode copy = (Graph3DNode) super.clone();
       copy.projector = new Projector();

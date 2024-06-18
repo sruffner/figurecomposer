@@ -12,6 +12,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 import com.srscicomp.common.g2dviewer.RenderTask;
 import com.srscicomp.common.ui.BkgFill;
@@ -64,7 +65,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
    //
 
    /** The background fill for the image's bounding box: solid color (possibly transparent) or gradient. */
-   private BkgFill bkgFill = null;
+   private BkgFill bkgFill;
 
    /**
     * Get the current background fill for the image's bounding box.
@@ -74,8 +75,8 @@ public class ImageNode extends FGraphicNode implements Cloneable
    
    /**
     * Set the background fill for this image's bounding box. If a change is made, an "undo" operation is posted and
-    * {@link #onNodeModified()} is invoked.
-    * @param The new background fill descriptor. A null value is rejected.
+    * {@link #onNodeModified} is invoked.
+    * @param bf The new background fill descriptor. A null value is rejected.
     * @return False if argument was null; true otherwise.
     */
    public boolean setBackgroundFill(BkgFill bf)
@@ -109,7 +110,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
    public Measure getMargin() { return(margin); }
 
    /**
-    * Set the width of the inner margin. An "undo" operation is posted, and {@link #onNodeModified()} is invoked.
+    * Set the width of the inner margin. An "undo" operation is posted, and {@link #onNodeModified} is invoked.
     * 
     * @param m The new margin width. The measure is constrained to satisfy {@link #STROKEWCONSTRAINTS}. A null value is 
     * rejected.
@@ -182,7 +183,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
       }
       if(!valid) return(false);
       
-      boolean changed = (r==null) ? (crop != null) : !r.equals(crop);
+      boolean changed = !Objects.equals(r, crop);
       if(changed)
       {
          // we have to use an empty rectangle rather than null as the old value, or undo op will not be posted
@@ -269,7 +270,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
          
          double imgW = crop == null ? image.getWidth(null) : crop.width;
          double imgH = crop == null ? image.getHeight(null) : crop.height;
-         double scale = 1.0;
+         double scale;
          double dx = m;
          double dy = m;
          if(imgW/imgH >= w/h)
@@ -323,7 +324,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
       
       double imgW = crop == null ? image.getWidth(null) : crop.width;
       double imgH = crop == null ? image.getHeight(null) : crop.height;
-      double scale = 1.0;
+      double scale;
       double dx = m;
       double dy = m;
       if(imgW/imgH >= w/h)
@@ -392,7 +393,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
       
       double imgW = crop == null ? image.getWidth(null) : crop.width;
       double imgH = crop == null ? image.getHeight(null) : crop.height;
-      double scale = 1.0;
+      double scale;
       double dx = m;
       double dy = m;
       if(imgW/imgH >= w/h)
@@ -433,7 +434,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
    
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
       case BKGC : ok = setBackgroundFill((BkgFill) propValue); break;
@@ -454,7 +455,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
    {
       // NOTE: No support for multi-node editing of source image or crop rectangle. So this should never be called
       // for the CROP or IMG properties.
-      Object value = null;
+      Object value;
       switch(p)
       {
       case BKGC : value = getBackgroundFill(); break;
@@ -600,7 +601,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
       double h = needRender ? parentVP.fromMeasureToMilliInY(getHeight()) : 0;
       needRender = needRender && w > 0 && h > 0;
       
-      if(!needRender) return(task == null ? true : task.updateProgress());
+      if(!needRender) return(task == null || task.updateProgress());
       
       // render image node in a copy of the graphics context, so we do not alter the original
       Graphics2D g2dCopy = (Graphics2D) g2d.create();
@@ -631,17 +632,22 @@ public class ImageNode extends FGraphicNode implements Cloneable
          double m = getMargin().toMilliInches();
          w -= 2*m;
          h -= 2*m;
-         if(w <= 0 || h <= 0) return((task == null) ? true : task.updateProgress());
+         if(w <= 0 || h <= 0) return(task == null || task.updateProgress());
          
          // if we're rendering into a PDF graphics context while exporting the figure to PDF, we must use a different
          // approach for the export to succeed (has to do with iText PDF library implementation). This implementation 
          // appears to be less efficient than when we're rendering to the display, so we kept both...
          if(!PDFSupport.isPDFGraphics(g2dCopy))
          {
-            Image img = (image != null) ? image : FCIcons.V4_BROKEN.getImage();
+            Image img = image;
+            if(img == null)
+            {
+               assert FCIcons.V4_BROKEN != null;
+               img = FCIcons.V4_BROKEN.getImage();
+            }
             double imgW = crop == null ? img.getWidth(null) : crop.width;
             double imgH = crop == null ? img.getHeight(null) : crop.height;
-            double scale = 1.0;
+            double scale;
             double dx = m;
             double dy = m;
             if(imgW/imgH >= w/h)
@@ -667,9 +673,10 @@ public class ImageNode extends FGraphicNode implements Cloneable
          }
          else
          {
-            BufferedImage bi = null;
+            BufferedImage bi;
             if(image == null)
             {
+               assert FCIcons.V4_BROKEN != null;
                Image img = FCIcons.V4_BROKEN.getImage();
                bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
                Graphics2D g2BI = bi.createGraphics();
@@ -690,7 +697,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
             
             double imgW = bi.getWidth();
             double imgH = bi.getHeight();
-            double scale = 1.0;
+            double scale;
             double dx = m;
             double dy = m;
             if(imgW/imgH >= w/h)
@@ -717,7 +724,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
       }
       finally {if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    
@@ -755,6 +762,7 @@ public class ImageNode extends FGraphicNode implements Cloneable
       BufferedImage bi = (image != null) ? image : null;
       if(bi == null)
       {
+         assert FCIcons.V4_BROKEN != null;
          Image img = FCIcons.V4_BROKEN.getImage();
          bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
          Graphics2D g2BI = bi.createGraphics();
@@ -790,9 +798,8 @@ public class ImageNode extends FGraphicNode implements Cloneable
    // Object
    //
 
-   @Override protected Object clone()
+   @Override protected ImageNode clone() throws CloneNotSupportedException
    {
-      ImageNode copy = (ImageNode) super.clone();
-      return(copy);
+      return((ImageNode) super.clone());
    }
 }

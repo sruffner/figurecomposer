@@ -37,7 +37,7 @@ import com.srscicomp.common.util.Utilities;
  *  
  * @author sruffner
  */
-public class Projector implements Cloneable
+public class Projector
 {
    /**
     * Construct a 3D-to-2D projector with default parameters: 3D box with equal extents of 4000 "world" units in the 
@@ -61,7 +61,43 @@ public class Projector implements Cloneable
       for(int i=0; i<boxCorners.length; i++) boxCorners[i] = new Point2D.Double();
       recalc();
    }
-   
+
+   public Projector(Projector src)
+   {
+      super();
+      if(src == null) return;
+      backPlaneMinX = src.backPlaneMinX;
+      backPlaneMinY = src.backPlaneMinY;
+      backPlaneMinZ = src.backPlaneMinZ;
+      boxCorners = new Point2D[8];
+      System.arraycopy(src.boxCorners, 0, boxCorners, 0, boxCorners.length);
+      cosElev = src.cosElev;
+      cosRot = src.cosRot;
+      distScale = src.distScale;
+      distW = src.distW;
+      elevDeg = src.elevDeg;
+      rotDeg = src.rotDeg;
+      sinElev = src.sinElev;
+      sinRot = src.sinRot;
+      xExtW = src.xExtW;
+      xFactor = src.xFactor;
+      xLog = src.xLog;
+      xMax = src.xMax;
+      xMin = src.xMin;
+      xOriginW = src.xOriginW;
+      yExtW = src.yExtW;
+      yFactor = src.yFactor;
+      yLog = src.yLog;
+      yMax = src.yMax;
+      yMin = src.yMin;
+      yOriginW = src.yOriginW;
+      zExtW = src.zExtW;
+      zFactor = src.zFactor;
+      zLog = src.zLog;
+      zMax = src.xMax;
+      zMin = src.zMin;
+   }
+
    /** 
     * Scale factor S used to compute projection distance D from the maximum dimension of the 3D box representing the 
     * XYZ coordinate system: D = S*max(xExt,yExt,zExt). Range-restricted to [2..20]. 
@@ -1308,14 +1344,4 @@ public class Projector implements Cloneable
       
       p3.setLocation(x, y, z);
    }
-
-   @Override public Object clone() throws CloneNotSupportedException
-   {
-      Projector copy = (Projector) super.clone();
-      copy.boxCorners = new Point2D[8];
-      for(int i=0; i<8; i++) copy.boxCorners[i] = new Point2D.Double();
-      copy.recalc();
-      return(copy);
-   }
-   
 }

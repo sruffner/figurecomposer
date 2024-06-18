@@ -7,11 +7,10 @@ import com.srscicomp.common.util.Utilities;
 /**
  * <code>RadialPolylineSubsampler</code> implements a basic radial distance-based polyline sub-sampling algorithm that
  * preserves discontinuities in the original polyline. It is a utility class intended only for use by the various data 
- * point iterator objects (for example, {@link TraceNode.DataPointProducer}) that the data presentation nodes use to 
- * "produce" the list of data points to be rendered.
+ * point iterator objects that the data presentation nodes use to "produce" the list of data points to be rendered.
  * 
  * <p><i>Usage</i>. Construct the polyline sub-sampler, specifying the radial tolerance to be applied. Supply each 
- * point in the original polyline to the {@link #keep()} method and include the point in the sub-sampled result if that
+ * point in the original polyline to the {@link #keep} method and include the point in the sub-sampled result if that
  * method returns true. The algorithm keeps track of the last point included in the sub-sampled polyline; each 
  * subsequent point that is within tolerance of this last point is skipped.</p>
  * 
@@ -48,7 +47,7 @@ class RadialPolylineSubsampler
     */
    boolean keep(Point2D p)
    {
-      boolean keepPt = false;
+      boolean keepPt;
       boolean isBadPt = !Utilities.isWellDefined(p);
       if(isDiscontinuity)
       {
@@ -71,7 +70,7 @@ class RadialPolylineSubsampler
     * The last data point that was "kept". The algorithm skips over subsequent well-defined points that are within
     * tolerance of this point.
     */
-   Point2D pLast;
+   final Point2D pLast;
    /** Flag is set initially and each time an ill-defined point is encountered. */
    boolean isDiscontinuity;
    /** If test data point is within this squared distance of the last data point kept, then it is skipped. */

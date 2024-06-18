@@ -115,14 +115,14 @@ public class FunctionNode extends FGNPlottable implements Cloneable
       if(!Utilities.isWellDefined(x0)) return(false);
       if(this.x0 != x0)
       {
-         if(doMultiNodeEdit(FGNProperty.X0, new Double(x0))) return(true);
+         if(doMultiNodeEdit(FGNProperty.X0, x0)) return(true);
          
-         Double oldX0 = new Double(this.x0);
+         Double oldX0 = this.x0;
          this.x0 = x0;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.X0);
-            FGNRevEdit.post(this, FGNProperty.X0, new Double(this.x0), oldX0);
+            FGNRevEdit.post(this, FGNProperty.X0, this.x0, oldX0);
          }
       }
       return(true);
@@ -153,14 +153,14 @@ public class FunctionNode extends FGNPlottable implements Cloneable
       if(!Utilities.isWellDefined(x1)) return(false);
       if(this.x1 != x1)
       {
-         if(doMultiNodeEdit(FGNProperty.X1, new Double(x1))) return(true);
+         if(doMultiNodeEdit(FGNProperty.X1, x1)) return(true);
          
-         Double oldX1 = new Double(this.x1);
+         Double oldX1 = this.x1;
          this.x1 = x1;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.X1);
-            FGNRevEdit.post(this, FGNProperty.X1, new Double(this.x1), oldX1);
+            FGNRevEdit.post(this, FGNProperty.X1, this.x1, oldX1);
          }
       }
       return(true);
@@ -194,14 +194,14 @@ public class FunctionNode extends FGNPlottable implements Cloneable
       if(!Utilities.isWellDefined(dx)) return(false);
       if(this.dx != dx)
       {
-         if(doMultiNodeEdit(FGNProperty.DX, new Double(dx))) return(true);
+         if(doMultiNodeEdit(FGNProperty.DX, dx)) return(true);
          
-         Double oldDX = new Double(this.dx);
+         Double oldDX = this.dx;
          this.dx = dx;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.DX);
-            FGNRevEdit.post(this, FGNProperty.DX, new Double(this.dx), oldDX);
+            FGNRevEdit.post(this, FGNProperty.DX, this.dx, oldDX);
          }
       }
       return(true);
@@ -209,7 +209,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case X0: ok = setX0((Double)propValue); break;
@@ -222,12 +222,12 @@ public class FunctionNode extends FGNPlottable implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case X0: value = new Double(getX0()); break;
-         case X1: value = new Double(getX1()); break;
-         case DX: value = new Double(getDX()); break;
+         case X0: value = getX0(); break;
+         case X1: value = getX1(); break;
+         case DX: value = getDX(); break;
          default: value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -243,7 +243,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
    /** The only node-specific property exported in a function node's style set is the include-in-legend flag. */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
    }
    
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -390,7 +390,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
       // time. We want the PS output to be the same as what is rendered onscreen.
       
       PointProducer prod = new PointProducer();
-      ArrayList<Point2D> pts = new ArrayList<Point2D>();
+      ArrayList<Point2D> pts = new ArrayList<>();
       pts.ensureCapacity(getDataSize());
       while(prod.hasNext())
       {
@@ -517,8 +517,6 @@ public class FunctionNode extends FGNPlottable implements Cloneable
     * of a well-defined point in the function. However, since the function could be evaluated at many points, the method
     * will only check up to 50 different points. If a "hit" is detected, then the method returns a reference to the node
     * itself -- a function node has no renderable descendants to search!
-    * 
-    * @see org.hhmi.phyplot.FGraphicNode#hitTest(Point2D)
     */
    @Override
    protected FGraphicNode hitTest(Point2D p)
@@ -591,7 +589,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
 
    @Override protected Rectangle2D getRenderBoundsForSelf(Graphics2D g2d, boolean forceRecalc)
    {
-      if(forceRecalc || rBoundsSelf == null || painters.size() == 0)
+      if(forceRecalc || rBoundsSelf == null || painters.isEmpty())
       {
          updatePainters();
          rBoundsSelf = new Rectangle2D.Double();
@@ -627,7 +625,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
    {
       if(needsRendering(task))
       {
-         if(painters.size() == 0) 
+         if(painters.isEmpty())
             updatePainters();
          
          // when exporting to PDF, must handle font substitution in case chosen font does not handle the single 
@@ -657,7 +655,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
     * The list of <code>Painter</code>s which are responsible for rendering this <code>DataTraceElement</code> in its 
     * current state.
     */
-   private List<Painter> painters = new ArrayList<Painter>();
+   private List<Painter> painters = new ArrayList<>();
 
    /**
     * Cached rectangle bounding only the marks made by this <code>FunctionNode</code>. An empty rectangle indicates 
@@ -686,7 +684,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
     */
    private void updatePainters()
    {
-      if(painters.size() == 0)
+      if(painters.isEmpty())
       {
          painters.add( new PolylinePainter(this, new PointProducer()) );
 
@@ -742,12 +740,11 @@ public class FunctionNode extends FGNPlottable implements Cloneable
     * 
     * @see Object#clone()
     */
-   @Override
-   protected Object clone()
+   @Override protected FunctionNode clone() throws CloneNotSupportedException
    {
       FunctionNode copy = (FunctionNode) super.clone();
       copy.parser = new FunctionParser(this.parser.getDefinition());
-      copy.painters = new ArrayList<Painter>();
+      copy.painters = new ArrayList<>();
       copy.rBoundsSelf = null;
       return(copy);
    }
@@ -851,7 +848,7 @@ public class FunctionNode extends FGNPlottable implements Cloneable
        * The current data point. This is reused to deliver each point. IT IS ASSUMED that the consumer will NOT store
        * a reference to this point, but will make a copy if needed.
        */
-      Point2D pCurrent;
+      final Point2D pCurrent;
       
       /** Non-null if the polyline point sequence is being sub-sampled (when there are too many function samples). */
       RadialPolylineSubsampler subSampler = null;

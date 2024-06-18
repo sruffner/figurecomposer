@@ -43,7 +43,7 @@ import com.srscicomp.common.util.Utilities;
  * 
  * <p>As of v5.4.0 (schema version 24), <b>ShapeNode</b>'s automatic label may contain "styled text", in which text 
  * color, font style, underline state, superscript, and subscript can vary on a per-character basis. See {@link 
- * FGraphicNode#toStyledText()}.</p>
+ * FGraphicNode#toStyledText}.</p>
  * 
  * @author 	sruffner
  */
@@ -86,7 +86,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
    public Marker getType() { return(type); }
 
    /**
-    * Set the shape type. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the shape type. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param type The new shape type. A null value is rejected.
     * @return True if successful; false if value was rejected.
@@ -111,7 +111,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
    }
 
    /** The shape's background fill: solid color (possibly transparent) or a gradient. */
-   private BkgFill bkgFill = null;
+   private BkgFill bkgFill;
 
    /**
     * Get the current background fill for this shape.
@@ -121,8 +121,8 @@ public class ShapeNode extends FGraphicNode implements Cloneable
    
    /**
     * Set the background fill for this shape. If a change is made, an "undo" operation is posted and {@link 
-    * #onNodeModified()} is invoked.
-    * @param The new background fill descriptor. A null value is rejected.
+    * #onNodeModified} is invoked.
+    * @param bf The new background fill descriptor. A null value is rejected.
     * @return False if argument was null; true otherwise.
     */
    public boolean setBackgroundFill(BkgFill bf)
@@ -145,7 +145,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
    
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case TYPE : ok = setType((Marker)propValue); break;
@@ -157,7 +157,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case TYPE : value = getType(); break;
@@ -326,7 +326,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
     * Resizing a shape node involves changing its width, height, or both -- depending on the resize anchor being used.
     * This method calculates the new width and height based on the anchor identity, and the distance between the start
     * and end of the drag. It prevents either dimension from being reduced to less than 10% of its current value. For
-    * more details, see {@link #getDragResizeShape()}.
+    * more details, see {@link #getDragResizeShape}.
     */
    @Override public void executeResize(ResizeAnchor anchor, Point2D p0, Point2D p1)
    {
@@ -479,7 +479,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
       {
          painter = new ShapePainter();
          painter.setStyle(this);
-         painterLoc = new ArrayList<Point2D>(1);
+         painterLoc = new ArrayList<>(1);
          painterLoc.add(new Point2D.Double());
          painter.setLocationProducer(painterLoc);
       }
@@ -524,9 +524,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
       FViewport2D parentVP = getParentViewport();
       if(parentVP == null) return(false);
       Point2D centerPt = parentVP.toMilliInches(getX(), getY());
-      if(!Utilities.isWellDefined(centerPt)) return(false);
-
-      return(true);
+      return Utilities.isWellDefined(centerPt);
    }
 
    /**
@@ -573,7 +571,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
       }
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    
@@ -614,7 +612,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
       // if there's a label, render it centered in H & V at shape's center. We do this with renderText() to support
       // attributed text in the label.
       String label = getTitle().trim();
-      if((label.length() > 0) && (getFillColor().getAlpha() > 0))
+      if((!label.isEmpty()) && (getFillColor().getAlpha() > 0))
           psDoc.renderText(label, wMI/2.0, hMI/2.0, TextAlign.CENTERED, TextAlign.CENTERED);
       
       for(int i=0; i<getChildCount(); i++) 
@@ -628,7 +626,7 @@ public class ShapeNode extends FGraphicNode implements Cloneable
    //
    
    /** Override ensures that rendering infrastructure for the clone is independent of this shape node. */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       ShapeNode copy = (ShapeNode) super.clone();
       copy.painter = null;

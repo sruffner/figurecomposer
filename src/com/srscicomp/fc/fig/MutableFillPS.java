@@ -48,5 +48,5 @@ class MutableFillPS implements PainterStyle
    private Color fillC;
    
    /** The graphic node that sources all style properties except the fill color. */
-   private FGraphicNode srcNode;
+   private final FGraphicNode srcNode;
 }

@@ -117,7 +117,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
    {
       /** 
        * Marker symbol drawn at each well-defined point (X,Y). Size and fill color the same for all symbols. Any
-       * Z-coordinate data in the data source is ignored in this mode. If the component {@link ScatterLineStyle} node 
+       * Z-coordinate data in the data source is ignored in this mode. If the component {@link ScatterLineStyleNode}
        * defines a non-empty stroke, a closed polyline connects all the points in order, with the last connecting back 
        * to the first. The resulting region is filled with the component node's fill color.
        */
@@ -136,10 +136,10 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       
       @Override public String toString() { return(niceName); }
       
-      private DisplayMode(String s) { niceName = s; }
+      DisplayMode(String s) { niceName = s; }
       
       /** The display mode name as it should appear in GUI and in FypML markup. */
-      private String niceName;
+      private final String niceName;
    }
 
    /** The current data display mode. */
@@ -161,7 +161,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
    public DisplayMode getMode() { return(mode); }
 
    /**
-    * Set the data display mode for this scatter plot node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the data display mode for this scatter plot node. If a change is made, {@link #onNodeModified} is invoked.
     * See {@link #getMode()} for a discussion of the relationship between the data source and the display mode.
     * 
     * @param mode The new display mode. Null is rejected.
@@ -198,7 +198,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
 
    /**
     * Set the type of marker symbol drawn at each well-defined point in the scatter plot. If a change is made, {@link  
-    * #onNodeModified()} is invoked. <i>A closed symbol is recommended if the display mode is such that the symbol's
+    * #onNodeModified} is invoked. <i>A closed symbol is recommended if the display mode is such that the symbol's
     * fill color reflects the Z-coordinate value of the point (X,Y,Z); non-closed symbols are not filled.</i>
     * 
     * @param symbol The desired marker symbol shape, specified in a unit "design box". A null value is rejected.
@@ -245,9 +245,9 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
    public Measure getMaxSymbolSize() { return(size); }
 
    /**
-    * Set the maximum marker symbol size for this scatter plot. If a change is made, {@link #onNodeModified()} is 
-    * invoked. See {@link #getSize()} for a discussion of how this property affects the plot rendering in different 
-    * display modes.
+    * Set the maximum marker symbol size for this scatter plot. If a change is made, {@link #onNodeModified} is
+    * invoked. See {@link #getMaxSymbolSize} for a discussion of how this property affects the plot rendering in
+    * different display modes.
     * 
     * @param m The new size. It is constrained to satisfy {@link #MAXSYMSIZECONSTRAINTS}. A null value is rejected.
     * @return True if successful; false if value was rejected.
@@ -277,7 +277,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case MODE : ok = setMode((DisplayMode)propValue); break;
@@ -290,7 +290,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case MODE : value = getMode(); break;
@@ -317,7 +317,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       styleSet.putStyle(FGNProperty.MODE, getMode());
       styleSet.putStyle(FGNProperty.TYPE, getSymbol());
       styleSet.putStyle(FGNProperty.SIZE, getMaxSymbolSize());
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -431,7 +431,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
    @Override public List<LegendEntry> getLegendEntries()
    {
       if(!getShowInLegend()) return(null);
-      List<LegendEntry> out = new ArrayList<LegendEntry>();
+      List<LegendEntry> out = new ArrayList<>();
       out.add(new ScatterPlotLegendEntry(this));
       return(out);
    }
@@ -492,12 +492,12 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          if(mode == DisplayMode.TRENDLINE)
          {
             if(!shapePainter.render(g2d, task)) return(false);
-            if(!linePainter.render(g2d, task)) return(false);
+            return linePainter.render(g2d, task);
          }
          else
          {
             if(!linePainter.render(g2d, task)) return(false);
-            if(!shapePainter.render(g2d, task)) return(false);
+            return shapePainter.render(g2d, task);
          }
       }
       return(true);
@@ -578,7 +578,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       // if not in "trendline" mode and the polyline is drawn, stroke and fill the region bounded by it...
       // NOTE that we populate the entire point list and render the polygon fill in one go -- which may not work
       // if there are a great many points!
-      List<Point2D> ptList = new ArrayList<Point2D>();
+      List<Point2D> ptList = new ArrayList<>();
       if((mode != DisplayMode.TRENDLINE) && lineStyle.isStroked())
       {
          OutlineProducer producer = new OutlineProducer();
@@ -600,9 +600,9 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       // generate the list of locations at which symbols are rendered and, depending on the display mode, the
       // size and/or fill color for each symbol.
       ShapeProducer producer = new ShapeProducer();
-      List<Double> symbolSizes = new ArrayList<Double>();
-      if(producer.sizeConstant) symbolSizes.add(new Double(producer.maxSymSizeMI));
-      List<Color> fillColors = producer.fillConstant ? null : new ArrayList<Color>();
+      List<Double> symbolSizes = new ArrayList<>();
+      if(producer.sizeConstant) symbolSizes.add(producer.maxSymSizeMI);
+      List<Color> fillColors = producer.fillConstant ? null : new ArrayList<>();
       
       // if there are many thousands of points in the scatter plot, the PS document generated could exhaust the virtual
       // memory of the Postscript interpreter. Since the scatter points are not connected in any way, we render at 
@@ -614,7 +614,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          Point2D p = new Point2D.Double();
          p.setLocation(producer.getLocation());
          ptList.add(p);
-         if(!producer.sizeConstant) symbolSizes.add(new Double(producer.currSymSzMI));
+         if(!producer.sizeConstant) symbolSizes.add(producer.currSymSzMI);
          if(!producer.fillConstant) fillColors.add(new Color(producer.getFillColor().getRGB()));
          
          if(ptList.size() == 20000)
@@ -627,7 +627,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       }
 
       // render the last chunk of <20K points
-      if(ptList.size() > 0) psDoc.renderMultipleAdornments(ptList, symbolSizes, fillColors, getSymbol(), true);
+      if(!ptList.isEmpty()) psDoc.renderMultipleAdornments(ptList, symbolSizes, fillColors, getSymbol(), true);
       
       // render regression line segment, if applicable
       if(mode == DisplayMode.TRENDLINE && lineStyle.isStroked())
@@ -641,7 +641,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
             Point2D p1 = lineProducer.next();
             psDoc.renderLine(p0, p1);
          }
-         catch(NoSuchElementException e) {}
+         catch(NoSuchElementException ignored) {}
          
          psDoc.endElement();
       }
@@ -656,7 +656,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of the scatter plot node that
     * was cloned. The clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected ScatterPlotNode clone() throws CloneNotSupportedException
    {
       ScatterPlotNode copy = (ScatterPlotNode) super.clone();
       copy.rBoundsSelf = null;
@@ -735,7 +735,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
 
       /** 
        * Construct a copy of the specified shape producer.
-       * @param The shape producer to copy.
+       * @param src The shape producer to copy.
        */
       private ShapeProducer(ShapeProducer src)
       {
@@ -830,7 +830,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       {
          if(fillConstant) return(fillC);
          
-         double d = 0;
+         double d;
          if(isLogCMap)
             d = Math.log(z-zRange[0]+1) * cmapLUT.length / Math.log(zRange[1]-zRange[0]+1);
          else
@@ -890,22 +890,22 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       final boolean isLogCMap;
 
       /** Number of data points processed thus far. */
-      int nPtsSoFar = 0;
+      int nPtsSoFar;
       /** 
        * The current shape location. This is reused to deliver each point. IT IS ASSUMED that the consumer will NOT 
        * store a reference to this point, but will make a copy if needed.
        */
-      Point2D pCurrent = null;
+      final Point2D pCurrent;
       /** 
        * The current shape to draw. If symbol size is fixed, this is determined at construction time and never
        * changes. Otherwise, it is calculated for each data point (X,Y,Z) in the source data set.
        */
-      GeneralPath shapePrimitive = null;
+      final GeneralPath shapePrimitive;
       /** 
        * The fill color for the current shape. If fill color is fixed, this is set at construction time and never
        * changes. Otherwise, it is calculated for each data point (X,Y,Z) in the source data set.
        */
-      Color fillC = null;
+      Color fillC;
       /** 
        * The size of the (square) bounding box for the current symbol, in milli-inches. If all are rendered at the 
        * same size, this is the same value, {@link #maxSymSizeMI}, for all data points processed.
@@ -936,7 +936,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          FGNGraph g = getParentGraph();
          boolean ok = (getMode() == DisplayMode.TRENDLINE) && (g!=null) && (!g.isPolar()) && (!g.is3D()) &&
                (parentVP != null);
-         endPts = new ArrayList<Point2D>();
+         endPts = new ArrayList<>();
          if(ok)
          {
             FGNGraph.CoordSys sys = g.getCoordSys();
@@ -993,7 +993,6 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          {
             if(pFirst != null) pCurrent.setLocation(pFirst.getX(), pFirst.getY());
             else pCurrent.setLocation(Double.NaN, Double.NaN);
-            ++nPtsSoFar;
          }
          else
          {
@@ -1001,8 +1000,8 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
             graphVP.userUnitsToThousandthInches(pCurrent);
             if(Utilities.isWellDefined(pCurrent) && (pFirst == null))
                pFirst = new Point2D.Double(pCurrent.getX(), pCurrent.getY());
-            ++nPtsSoFar;
          }
+         ++nPtsSoFar;
          return(pCurrent);
       }
       
@@ -1014,13 +1013,13 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       final boolean isOutlined;
       
       /** Number of data points processed thus far. */
-      int nPtsSoFar = 0;
+      int nPtsSoFar;
       /** The first well-defined scatter plot point. */
       Point2D pFirst = null;
       /** 
        * The current well-defined scatter plot point. This is reused to deliver each point. IT IS ASSUMED that the 
        * consumer will NOT store a reference to this point, but will make a copy if needed.
        */
-      Point2D pCurrent = null;
+      final Point2D pCurrent;
    }
 }

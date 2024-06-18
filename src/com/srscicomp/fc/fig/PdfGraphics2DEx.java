@@ -117,7 +117,7 @@ public class PdfGraphics2DEx extends Graphics2D {
 
     protected Area clip;
 
-    protected RenderingHints rhints = new RenderingHints(null);
+    protected final RenderingHints rhints = new RenderingHints(null);
 
     protected Stroke stroke;
     protected Stroke originalStroke;
@@ -125,7 +125,7 @@ public class PdfGraphics2DEx extends Graphics2D {
     protected PdfContentByte cb;
 
     /** Storage for BaseFont objects created. */
-    protected HashMap<String, BaseFont> baseFonts;
+    protected final HashMap<String, BaseFont> baseFonts = new HashMap<>();
 
     protected boolean disposeCalled = false;
 
@@ -157,8 +157,8 @@ public class PdfGraphics2DEx extends Graphics2D {
     /** @since 5.0.3 */
     protected boolean strikethrough;
 
-    protected PdfGState fillGState[];
-    protected PdfGState strokeGState[];
+    protected PdfGState[] fillGState;
+    protected PdfGState[] strokeGState;
     protected int currentFillGState = 255;
     protected int currentStrokeGState = 255;
 
@@ -212,7 +212,6 @@ public class PdfGraphics2DEx extends Graphics2D {
         this.convertImagesToJPEG = convertImagesToJPEG;
         this.jpegQuality = quality;
         this.transform = new AffineTransform();
-        this.baseFonts = new HashMap<String, BaseFont>();
         this.fontMapper = (fontMapper == null) ? new DefaultFontMapper() : fontMapper;
 
         paint = Color.black;
@@ -263,7 +262,7 @@ public class PdfGraphics2DEx extends Graphics2D {
      */
     @Override
     public void drawRenderedImage(RenderedImage img, AffineTransform xform) {
-        BufferedImage image = null;
+        BufferedImage image;
         if (img instanceof BufferedImage) {
             image = (BufferedImage)img;
         } else {
@@ -272,7 +271,7 @@ public class PdfGraphics2DEx extends Graphics2D {
             int height = img.getHeight();
             WritableRaster raster = cm.createCompatibleWritableRaster(width, height);
             boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-            Hashtable<String, Object> properties = new Hashtable<String, Object>();
+            Hashtable<String, Object> properties = new Hashtable<>();
             String[] keys = img.getPropertyNames();
             if (keys!=null) {
                 for (String key : keys) {
@@ -314,7 +313,7 @@ public class PdfGraphics2DEx extends Graphics2D {
     /**
      * This routine goes through the attributes and sets the font
      * before calling the actual string drawing routine
-     * @param iter
+     * @param iter Attributed character iterator.
      */
     @SuppressWarnings("unchecked")
     protected void doAttributes(AttributedCharacterIterator iter) {
@@ -339,11 +338,11 @@ public class PdfGraphics2DEx extends Graphics2D {
             else if(textattribute.equals(TextAttribute.SIZE)) {
                 Object obj = iter.getAttributes().get(textattribute);
                 if(obj instanceof Integer) {
-                    int i = ((Integer)obj).intValue();
+                    int i = (Integer) obj;
                     setFont(getFont().deriveFont(getFont().getStyle(), i));
                 }
                 else if(obj instanceof Float) {
-                    float f = ((Float)obj).floatValue();
+                    float f = (Float) obj;
                     setFont(getFont().deriveFont(getFont().getStyle(), f));
                 }
             }
@@ -383,7 +382,7 @@ public class PdfGraphics2DEx extends Graphics2D {
      */
     @Override public void drawString(String s, float x, float y) 
     {
-       if(s.length() == 0)
+       if(s.isEmpty())
           return;
        setFillPaint();
         
@@ -415,79 +414,13 @@ public class PdfGraphics2DEx extends Graphics2D {
           inverse.getMatrix(mx);
           cb.beginText();
           cb.setFontAndSize(baseFont, fontSize);
-            
-            /* sar(16 nov 2022) - DISABLED SIMULATION OF ITALIC FONT.
-            // Check if we need to simulate an italic font.
-            // When there are different fonts for italic, bold, italic bold
-            // the font.getName() will be different from the font.getFontName()
-            // value. When they are the same value then we are normally dealing
-            // with a single font that has been made into an italic or bold
-            // font.
-            if (font.isItalic() && font.getFontName().equals(font.getName())) {
-                float angle = baseFont.getFontDescriptor(BaseFont.ITALICANGLE, 1000);
-                float angle2 = font.getItalicAngle();
-                // We don't have an italic version of this font so we need
-                // to set the font angle ourselves to produce an italic font.
-                if (angle2 == 0) {
-                    // The JavaVM didn't have an angle setting for making
-                    // the font an italic font so use a default of
-                    // italic angle of 15 degrees.
-                    angle2 = 15.0f;
-                } else {
-                    // This sign of the angle for Java and PDF seams
-                    // seams to be reversed.
-                    angle2 = -angle2;
-                }
-                if (angle == 0) {
-                    mx[2] = angle2 / 100.0f;
-                }
-            }
-            */
+
           cb.setTextMatrix((float)mx[0], (float)mx[1], (float)mx[2], (float)mx[3], (float)mx[4], (float)mx[5]);
           Float fontTextAttributeWidth = (Float)font.getAttributes().get(TextAttribute.WIDTH);
           fontTextAttributeWidth = 
                 (fontTextAttributeWidth == null) ? TextAttribute.WIDTH_REGULAR : fontTextAttributeWidth;
           if(!TextAttribute.WIDTH_REGULAR.equals(fontTextAttributeWidth))
-             cb.setHorizontalScaling(100.0f / fontTextAttributeWidth.floatValue());
-
-            /* sar(16 nov 2022) - DISABLE SIMULATION OF BOLD FONT. Results are particularly bad in some cases!
-            // Check if we need to simulate a bold font.
-            // Do nothing if the BaseFont is already bold. This test is not foolproof but it will work most of the times.
-            if (baseFont.getPostscriptFontName().toLowerCase().indexOf("bold") < 0) {
-                // Get the weight of the font so we can detect fonts with a weight
-                // that makes them bold, but the Font.isBold() value is false.
-                Float weight = (Float) font.getAttributes().get(TextAttribute.WEIGHT);
-                if (weight == null) {
-                    weight = font.isBold() ? TextAttribute.WEIGHT_BOLD
-                                             : TextAttribute.WEIGHT_REGULAR;
-                }
-                if ((font.isBold() || weight.floatValue() >= TextAttribute.WEIGHT_SEMIBOLD.floatValue())
-                    && font.getFontName().equals(font.getName())) {
-                    // Simulate a bold font.
-                    float strokeWidth = font.getSize2D() * (weight.floatValue() - TextAttribute.WEIGHT_REGULAR.floatValue()) / 30f;
-                    if (strokeWidth != 1) {
-                        if(realPaint instanceof Color){
-                            cb.setTextRenderingMode(PdfContentByte.TEXT_RENDER_MODE_FILL_STROKE);
-                            cb.setLineWidth(strokeWidth);
-                            Color color = (Color)realPaint;
-                            int alpha = color.getAlpha();
-                            if (alpha != currentStrokeGState) {
-                                currentStrokeGState = alpha;
-                                PdfGState gs = strokeGState[alpha];
-                                if (gs == null) {
-                                    gs = new PdfGState();
-                                    gs.setStrokeOpacity(alpha / 255f);
-                                    strokeGState[alpha] = gs;
-                                }
-                                cb.setGState(gs);
-                            }
-                            cb.setColorStroke(new BaseColor(color.getRGB()));
-                            restoreTextRenderingMode = true;
-                        }
-                    }
-                }
-            }
-            */
+             cb.setHorizontalScaling(100.0f / fontTextAttributeWidth);
 
           double width = 0;
           if(font.getSize2D() > 0)
@@ -524,10 +457,6 @@ public class PdfGraphics2DEx extends Graphics2D {
           }
           if(!TextAttribute.WIDTH_REGULAR.equals(fontTextAttributeWidth))
              cb.setHorizontalScaling(100);
-
-          // Restore the original TextRenderingMode if needed.
-          if(restoreTextRenderingMode)
-             cb.setTextRenderingMode(PdfContentByte.TEXT_RENDER_MODE_FILL);
 
           cb.endText();
           setTransform(at);
@@ -580,7 +509,7 @@ public class PdfGraphics2DEx extends Graphics2D {
     {
        boolean isSub = false;
        boolean isSuper = false;
-       StringBuffer stringbuffer = new StringBuffer(iter.getEndIndex());
+       StringBuilder stringbuffer = new StringBuilder(iter.getEndIndex());
        for(char c = iter.first(); c != '\uFFFF'; c = iter.next())
        {
           if(iter.getIndex() == iter.getRunStart())
@@ -751,7 +680,7 @@ public class PdfGraphics2DEx extends Graphics2D {
             return stroke;
         BasicStroke st = (BasicStroke)stroke;
         float scale = (float)Math.sqrt(Math.abs(transform.getDeterminant()));
-        float dash[] = st.getDashArray();
+        float[] dash = st.getDashArray();
         if (dash != null) {
             for (int k = 0; k < dash.length; ++k)
                 dash[k] *= scale;
@@ -803,31 +732,24 @@ public class PdfGraphics2DEx extends Graphics2D {
                 if (nStroke.getDashPhase() != oStroke.getDashPhase()) {
                     makeDash = true;
                 }
-                else if (!java.util.Arrays.equals(nStroke.getDashArray(), oStroke.getDashArray())) {
-                    makeDash = true;
-                }
-                else
-                    makeDash = false;
+                else makeDash = !java.util.Arrays.equals(nStroke.getDashArray(), oStroke.getDashArray());
             }
-            else if (oStroke.getDashArray() != null) {
-                makeDash = true;
-            }
-            else
-                makeDash = false;
+            else makeDash = oStroke.getDashArray() != null;
         }
         else {
             makeDash = true;
         }
         if (makeDash) {
-            float dash[] = nStroke.getDashArray();
+            float[] dash = nStroke.getDashArray();
             if (dash == null)
                 cb.setLiteral("[]0 d\n");
-            else {
+            else
+            {
                 cb.setLiteral('[');
-                int lim = dash.length;
-                for (int k = 0; k < lim; ++k) {
-                    cb.setLiteral(dash[k]);
-                    cb.setLiteral(' ');
+                for(float v : dash)
+                {
+                   cb.setLiteral(v);
+                   cb.setLiteral(' ');
                 }
                 cb.setLiteral(']');
                 cb.setLiteral(nStroke.getDashPhase());
@@ -848,8 +770,8 @@ public class PdfGraphics2DEx extends Graphics2D {
 
     /**
      * Sets a rendering hint
-     * @param arg0
-     * @param arg1
+     * @param arg0 Rendering hint key.
+     * @param arg1 Rendering hint value.
      */
     @Override
     public void setRenderingHint(Key arg0, Object arg1) {
@@ -906,7 +828,7 @@ public class PdfGraphics2DEx extends Graphics2D {
      */
     @Override
     public void translate(int x, int y) {
-        translate((double)x, (double)y);
+        translate(x, (double)y);
     }
 
     /**
@@ -1040,7 +962,7 @@ public class PdfGraphics2DEx extends Graphics2D {
         PdfGraphics2DEx g2 = new PdfGraphics2DEx();
         g2.rhints.putAll( this.rhints );
         g2.transform = new AffineTransform(this.transform);
-        g2.baseFonts = this.baseFonts;
+        g2.baseFonts.putAll(this.baseFonts);
         g2.fontMapper = this.fontMapper;
         g2.paint = this.paint;
         g2.fillGState = this.fillGState;
@@ -1069,7 +991,7 @@ public class PdfGraphics2DEx extends Graphics2D {
             g2.followPath(g2.clip, CLIP);
         g2.kid = true;
         if (this.kids == null)
-            this.kids = new ArrayList<Kid>();
+            this.kids = new ArrayList<>();
         this.kids.add(new Kid(cb.getInternalBuffer().size(), g2));
         return g2;
     }
@@ -1119,10 +1041,7 @@ public class PdfGraphics2DEx extends Graphics2D {
         return font;
     }
 
-    /**
-     * @see Graphics#setFont(Font)
-     */
-    /**
+   /**
      * Sets the current font.
      */
     @Override
@@ -1466,7 +1385,7 @@ public class PdfGraphics2DEx extends Graphics2D {
 
     private void internalDispose(ByteBuffer buf) {
         int last = 0;
-        int pos = 0;
+        int pos;
         ByteBuffer buf2 = cb.getInternalBuffer();
         if (kids != null) {
             for (Kid kid: kids) {
@@ -1625,7 +1544,7 @@ public class PdfGraphics2DEx extends Graphics2D {
         }
 
         try {
-            com.itextpdf.text.Image image = null;
+            com.itextpdf.text.Image image;
             if(!convertImagesToJPEG){
                 image = com.itextpdf.text.Image.getInstance(img, bgColor);
             }
@@ -1647,7 +1566,6 @@ public class PdfGraphics2DEx extends Graphics2D {
                 ios.close();
 
                 scaled.flush();
-                scaled = null;
                 image = com.itextpdf.text.Image.getInstance(baos.toByteArray());
 
             }
@@ -1664,7 +1582,7 @@ public class PdfGraphics2DEx extends Graphics2D {
                 cb.setAction(action, (float)mx[4], (float)mx[5], (float)(mx[0]+mx[4]), (float)(mx[3]+mx[5]));
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException(ex);
+            return false;
         }
         if (currentFillGState >= 0 && currentFillGState != 255) {
             PdfGState gs = fillGState[currentFillGState];
@@ -1767,12 +1685,11 @@ public class PdfGraphics2DEx extends Graphics2D {
         }
         else {
             try {
-                BufferedImage img = null;
                 int type = BufferedImage.TYPE_4BYTE_ABGR;
                 if (paint.getTransparency() == Transparency.OPAQUE) {
                     type = BufferedImage.TYPE_3BYTE_BGR;
                 }
-                img = new BufferedImage((int)width, (int)height, type);
+                BufferedImage img = new BufferedImage((int)width, (int)height, type);
                 Graphics2D g = (Graphics2D)img.getGraphics();
                 g.transform(transform);
                 AffineTransform inv = transform.createInverse();
@@ -1787,7 +1704,6 @@ public class PdfGraphics2DEx extends Graphics2D {
                     g.drawImage(img,tx,null);
                 }
                 g.dispose();
-                g = null;
                 com.itextpdf.text.Image image = com.itextpdf.text.Image.getInstance(img, null);
                 PdfPatternPainter pattern = cb.createPattern(width, height);
                 image.setAbsolutePosition(0,0);

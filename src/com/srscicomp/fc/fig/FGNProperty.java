@@ -35,7 +35,7 @@ public enum FGNProperty
    PROJSZ("projected dot size"), PROJC("projected dot color"), BOXC("box background color"), GRIDONTOP("grid on top"),
    PDIVS("polar grid divisions"), ANGLE("reference angle");
    
-   private String niceName;
+   private final String niceName;
    
    FGNProperty(String s) { niceName = s; }
    

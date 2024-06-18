@@ -147,7 +147,7 @@ public class ErrorBarNode extends FGraphicNode implements Cloneable
    }
 
    /**
-    * Same as {@link #setEndCapSize(Measure)}, except no undo operation is posted and {@link #onNodeModified()} is not
+    * Same as {@link #setEndCapSize(Measure)}, except no undo operation is posted and {@link #onNodeModified} is not
     * invoked.
     * @param m The new size. The measure is constrained to satisfy {@link #EBARCAPSIZECONSTRAINTS}. Null is rejected.
     * @return True if successful; false if value was rejected.
@@ -188,27 +188,26 @@ public class ErrorBarNode extends FGraphicNode implements Cloneable
    {
       if(hide != b)
       {
-         if(doMultiNodeEdit(FGNProperty.HIDE, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.HIDE, b)) return;
          
-         Boolean old = new Boolean(hide);
+         Boolean old = hide;
          hide = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = (hide ? "Hide " : "Show ") + "error bars/band for trace";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hide), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hide, old, desc);
          }
       }
    }
 
    @Override protected void rescaleSelf(double scale, MultiRevEdit undoer)
    {
-      Measure.Constraints c = EBARCAPSIZECONSTRAINTS;
       double d = endCapSize.getValue();
       if(d > 0)
       {
          Measure old = endCapSize;
-         endCapSize = c.constrain(new Measure(d*scale, endCapSize.getUnits()));
+         endCapSize = EBARCAPSIZECONSTRAINTS.constrain(new Measure(d*scale, endCapSize.getUnits()));
          undoer.addPropertyChange(this, FGNProperty.CAPSIZE, endCapSize, old);
       }
    }
@@ -237,7 +236,7 @@ public class ErrorBarNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case CAP : ok = setEndCap((Marker) propValue); break;
@@ -250,12 +249,12 @@ public class ErrorBarNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case CAP : value = getEndCap(); break;
          case CAPSIZE : value = getEndCapSize(); break;
-         case HIDE: value = new Boolean(getHide()); break;
+         case HIDE: value = getHide(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -280,7 +279,7 @@ public class ErrorBarNode extends FGraphicNode implements Cloneable
    {
       styleSet.putStyle(FGNProperty.CAP, getEndCap());
       styleSet.putStyle(FGNProperty.CAPSIZE, getEndCapSize());
-      styleSet.putStyle(FGNProperty.HIDE, new Boolean(getHide()));
+      styleSet.putStyle(FGNProperty.HIDE, getHide());
    }
 
    /** Accounts for the error bar node-specific styles: end-cap type and size, and the "hide error bars" flag. */
@@ -308,7 +307,7 @@ public class ErrorBarNode extends FGraphicNode implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.HIDE, getNodeType(), Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.HIDE, getNodeType(), Boolean.class)))
       {
-         hide = b.booleanValue();
+         hide = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.HIDE);
@@ -332,4 +331,9 @@ public class ErrorBarNode extends FGraphicNode implements Cloneable
    public boolean render(Graphics2D g2d, RenderTask task) { return(true); }
    
    public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException { /* NOOP */ }
+
+   @Override public ErrorBarNode clone() throws CloneNotSupportedException
+   {
+      return (ErrorBarNode) super.clone();
+   }
 }

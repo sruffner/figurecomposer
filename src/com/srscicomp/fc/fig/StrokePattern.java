@@ -42,10 +42,9 @@ public class StrokePattern implements Cloneable
     * @return <code>True</code> iff <code>s</code> is the synonym of a member of <code>COMMONPATTERNS</code>.
     * @see StrokePattern#COMMONPATTERNS
     */
-   public final static boolean isCommonPatternSynonym(String s)
+   public static boolean isCommonPatternSynonym(String s)
    {
-      for(int i=0; i<COMMONPATTERNS.length; i++)
-         if(COMMONPATTERNS[i].synonym.equals(s)) return(true);
+      for(StrokePattern commonpattern : COMMONPATTERNS) if(commonpattern.synonym.equals(s)) return (true);
 
       return(false);
    }
@@ -57,10 +56,10 @@ public class StrokePattern implements Cloneable
     * @return A member of <code>COMMONPATTERNS</code> that matches the argument, or <code>null</code> if no match.
     * @see StrokePattern#COMMONPATTERNS
     */
-   public final static StrokePattern getMatchingCommonPattern(StrokePattern p)
+   public static StrokePattern getMatchingCommonPattern(StrokePattern p)
    {
-      for(int i=0; i<COMMONPATTERNS.length; i++)
-         if(StrokePattern.equal(COMMONPATTERNS[i], p)) return(COMMONPATTERNS[i]);
+      for(StrokePattern commonpattern : COMMONPATTERNS) if(StrokePattern.equal(commonpattern, p))
+         return commonpattern;
 
       return(null);
    }
@@ -80,8 +79,8 @@ public class StrokePattern implements Cloneable
     * There's one exception: all <code>StrokePattern</code>s with a pattern length of 1 are considered equal, since they 
     * all represent a solid stroke.
     * 
-    * @param m1 The first stroke pattern.
-    * @param m2 The second stroke pattern.
+    * @param p1 The first stroke pattern.
+    * @param p2 The second stroke pattern.
     * @return <code>True</code> iff the stroke patterns are considered equal, as described.
     */
    public static boolean equal(StrokePattern p1, StrokePattern p2)
@@ -103,7 +102,7 @@ public class StrokePattern implements Cloneable
    /**
     * The alternating dash-gap sequence defining this stroke pattern.
     */
-   private int[] dashGapArray;
+   private final int[] dashGapArray;
 
    /**
     * A human-readable name for the stroking pattern. This is used only by the static instances that define some of the 
@@ -137,7 +136,7 @@ public class StrokePattern implements Cloneable
          for(int i=0; i<dashGapArray.length; i++)
          {
             int j = segments[i];
-            dashGapArray[i] = (j < MINDASHLEN) ? MINDASHLEN : ((j > MAXDASHLEN) ? MAXDASHLEN : j);
+            dashGapArray[i] = Utilities.rangeRestrict(MINDASHLEN, MAXDASHLEN, j);
          }
       }
    }
@@ -161,7 +160,7 @@ public class StrokePattern implements Cloneable
     */
    public int[] getDashGapArray()
    {
-      return( (int[]) dashGapArray.clone() );
+      return dashGapArray.clone();
    }
 
    /**
@@ -210,10 +209,10 @@ public class StrokePattern implements Cloneable
     */
    public static StrokePattern fromString(String defn)
    {
-      if(defn == null || defn.length() == 0) return(null);
-      for(int i=0; i<COMMONPATTERNS.length; i++)
-         if(defn.equals(COMMONPATTERNS[i].synonym)) 
-            return(COMMONPATTERNS[i]);
+      if(defn == null || defn.isEmpty()) return(null);
+      for(StrokePattern commonpattern : COMMONPATTERNS)
+         if(defn.equals(commonpattern.synonym))
+            return commonpattern;
 
       StringTokenizer tokenizer = new StringTokenizer(defn);
       int n = tokenizer.countTokens();
@@ -234,5 +233,10 @@ public class StrokePattern implements Cloneable
             return(COMMONPATTERNS[i]);
       
       return(patn);
+   }
+
+   @Override public StrokePattern clone() throws CloneNotSupportedException
+   {
+      return (StrokePattern) super.clone();
    }
 }

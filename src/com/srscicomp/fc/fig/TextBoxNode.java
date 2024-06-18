@@ -36,7 +36,7 @@ import com.srscicomp.common.util.Utilities;
  * 
  * <p>As of v5.4.0 (schema version 24), <b>TextBoxNode</b> supports "styled text" content, in which text color, font
  * style, underline state, superscript, and subscript can vary on a per-character basis. See {@link 
- * FGraphicNode#toStyledText()}.</p>
+ * FGraphicNode#toStyledText}.</p>
  * 
  * @author sruffner
  */
@@ -72,7 +72,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
    //
 
    /** The background fill for the text block's bounding box: solid color (possibly transparent) or gradient. */
-   private BkgFill bkgFill = null;
+   private BkgFill bkgFill;
 
    /**
     * Get the current background fill for the text block's bounding box.
@@ -82,8 +82,8 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
    
    /**
     * Set the background fill for this text block's bounding box. If a change is made, an "undo" operation is posted and
-    * {@link #onNodeModified()} is invoked.
-    * @param The new background fill descriptor. A null value is rejected.
+    * {@link #onNodeModified} is invoked.
+    * @param bf The new background fill descriptor. A null value is rejected.
     * @return False if argument was null; true otherwise.
     */
    public boolean setBackgroundFill(BkgFill bf)
@@ -115,7 +115,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
    public Measure getMargin() { return(margin); }
 
    /**
-    * Set the margin width. An "undo" operation is posted, and {@link #onNodeModified()} is invoked.
+    * Set the margin width. An "undo" operation is posted, and {@link #onNodeModified} is invoked.
     * 
     * @param m The new margin width. It is constrained to satisfy {@link #STROKEWCONSTRAINTS}. Null is rejected.
     * @return True if successful; false if value was rejected.
@@ -158,7 +158,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the horizontal alignment of the text block with respect to its bounding box. If a change is made, an "undo" 
-    * operation is posted, and {@link #onNodeModified()} is invoked.
+    * operation is posted, and {@link #onNodeModified} is invoked.
     * @param align The new horizontal alignment.
     */
    public void setHorizontalAlignment(TextAlign align)
@@ -197,7 +197,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the vertical alignment of the text block with respect to its bounding box. If a change is made, an "undo" 
-    * operation is posted, and {@link #onNodeModified()} is invoked.
+    * operation is posted, and {@link #onNodeModified} is invoked.
     * @param align The new vertical alignment.
     */
    public void setVerticalAlignment(TextAlign align)
@@ -229,7 +229,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the clip flag for this text box node. If the flag's value is changed, an "undo" operation is posted and {@link
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
     * @param clip True to enable clipping, false to disable.
     */
@@ -237,20 +237,20 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
    {
       if(this.clip != clip)
       {
-         if(doMultiNodeEdit(FGNProperty.CLIP, new Boolean(clip))) return;
+         if(doMultiNodeEdit(FGNProperty.CLIP, clip)) return;
 
-         Boolean old = new Boolean(this.clip);
+         Boolean old = this.clip;
          this.clip = clip;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.CLIP);
-            FGNRevEdit.post(this, FGNProperty.CLIP, new Boolean(this.clip), old);
+            FGNRevEdit.post(this, FGNProperty.CLIP, this.clip, old);
          }
       }
    }
 
-   /** The text block's line height as a fraction of its font size. Defaults to 1.2; range-restricted to [0.8, 3.0]. */
-   private double lineHeight = 1.2;
+   /** The text block's line height as a fraction of its font size. Range-restricted to [0.8, 3.0]. */
+   private double lineHeight;
 
    /**
     * Get the text block line height, ie, the baseline to baseline spacing between consecutive lines of text.
@@ -272,15 +272,15 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
       lh = Utilities.rangeRestrict(0.8, 3.0, lh);
       if(lineHeight != lh)
       {
-         if(doMultiNodeEdit(FGNProperty.LINEHT, new Double(lh))) return(true);
+         if(doMultiNodeEdit(FGNProperty.LINEHT, lh)) return(true);
          
-         Double old = new Double(lineHeight);
+         Double old = lineHeight;
          lineHeight = lh;
          
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LINEHT);
-            FGNRevEdit.post(this, FGNProperty.LINEHT, new Double(lineHeight), old);
+            FGNRevEdit.post(this, FGNProperty.LINEHT, lineHeight, old);
         }
       }
       return(true);
@@ -289,7 +289,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
       case BKGC : ok = setBackgroundFill((BkgFill) propValue); break;
@@ -305,15 +305,15 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
       case BKGC : value = getBackgroundFill(); break;
       case GAP : value = getMargin(); break;
       case HALIGN : value = getHorizontalAlignment(); break;
       case VALIGN : value = getVerticalAlignment(); break;
-      case CLIP : value = new Boolean(getClip()); break;
-      case LINEHT : value = new Double(getLineHeight()); break;
+      case CLIP : value = getClip(); break;
+      case LINEHT : value = getLineHeight(); break;
       default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -335,8 +335,8 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
       styleSet.putStyle(FGNProperty.GAP, getMargin());
       styleSet.putStyle(FGNProperty.HALIGN, getHorizontalAlignment());
       styleSet.putStyle(FGNProperty.VALIGN, getVerticalAlignment());
-      styleSet.putStyle(FGNProperty.CLIP, new Boolean(getClip()));
-      styleSet.putStyle(FGNProperty.LINEHT, new Double(getLineHeight()));
+      styleSet.putStyle(FGNProperty.CLIP, getClip());
+      styleSet.putStyle(FGNProperty.LINEHT, getLineHeight());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -381,7 +381,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.CLIP, null, Boolean.class);
       if(b != null && !b.equals(restore.getStyle(FGNProperty.CLIP)))
       {
-         clip = b.booleanValue();
+         clip = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.CLIP); 
@@ -389,7 +389,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
       Double lineHt = (Double) applied.getCheckedStyle(FGNProperty.LINEHT, null, Double.class);
       if(lineHt != null && !lineHt.equals(restore.getStyle(FGNProperty.LINEHT)))
       {
-         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt.doubleValue());
+         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt);
          changed = true;
       }
       else restore.removeStyle(FGNProperty.LINEHT); 
@@ -487,7 +487,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
       
       textBoxPainter.setText(getAttributedTitle(true));
       textBoxPainter.setBoundingBox(r==null ? null : new Point2D.Double(), 
-            r.getWidth(), r.getHeight(), margin.toMilliInches());;
+            r == null ? 0 : r.getWidth(), r == null ? 0 : r.getHeight(), margin.toMilliInches());
       textBoxPainter.setAlignment(hAlign, vAlign);
       textBoxPainter.setBackgroundFill(bkgFill);
       textBoxPainter.setClipped(clip);
@@ -528,7 +528,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
       Rectangle2D r = (parentVP==null) ? null : parentVP.toMilliInches(getX(), getY(), getWidth(), getHeight());
 
       boolean needRender = r != null && needsRendering(task) && r.getWidth() > 0 && r.getHeight() > 0;      
-      if(!needRender) return(task == null ? true : task.updateProgress());
+      if(!needRender) return(task == null || task.updateProgress());
 
       // render text box node in a copy of the graphics context, so we do not alter the original
       Graphics2D g2dCopy = (Graphics2D) g2d.create();
@@ -541,7 +541,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
       }
       finally {if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    
@@ -556,7 +556,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
    {
       String s = getTitle();
       if(s.length() > 10) s = s.substring(0,10) + "...";
-      s = s.replaceAll("(?:\\n|\\r|\\t)", "");
+      s = s.replaceAll("[\\n\\r\\t]", "");
       return(getNodeType().toString() + ": " + s);
    }
 
@@ -607,7 +607,7 @@ public class TextBoxNode extends FGraphicNode implements Cloneable
    //
 
    /** Ensures that the rendering infrastructure for the clone is independent of the text box node cloned. */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       TextBoxNode copy = (TextBoxNode) super.clone();
       copy.textBoxPainter = null;

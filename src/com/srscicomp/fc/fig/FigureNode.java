@@ -116,7 +116,7 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
    }
 
    /** The background fill for the figure's bounding box: solid color or gradient; almost always transparent. */
-   private BkgFill bkgFill = null;
+   private BkgFill bkgFill;
 
    /**
     * Get the current background fill for the figure's bounding box. Typically, the background is fully transparent,
@@ -127,8 +127,8 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
    
    /**
     * Set the background fill for this figure's bounding box. If a change is made, an "undo" operation is posted and
-    * {@link #onNodeModified()} is invoked.
-    * @param The new background fill descriptor. A null value is rejected.
+    * {@link #onNodeModified} is invoked.
+    * @param bf The new background fill descriptor. A null value is rejected.
     * @return False if argument was null; true otherwise.
     */
    public boolean setBackgroundFill(BkgFill bf)
@@ -153,9 +153,9 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
    public String getNote() { return(note); }
    
    /**
-   * Update the figure's note. If a change is made, the method {@link #onNodeModified() is invoked; a render cycle will
+   * Update the figure's note. If a change is made, the method {@link #onNodeModified} is invoked; a render cycle will
    * not be triggered since the note is never rendered.
-   * 
+   * <p>
    * @param s The new note. Null is treated as an empty string. Carriage returns are silently stripped from the string; 
    * while they are part of the supported character set, they're not allowed in the note. However, line-feed characters 
    * are allowed in order to break the note onto multiple text lines. Furthermore, tabs are permitted.
@@ -197,13 +197,13 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
    {
       if(hideTitle != b)
       {
-         Boolean old = new Boolean(hideTitle);
+         Boolean old = hideTitle;
          hideTitle = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = (hideTitle ? "Hide" : "Show") + " figure's title";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hideTitle), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hideTitle, old, desc);
          }
       }
    }
@@ -229,7 +229,7 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
    /**
     * Set the horizontal alignment of the figure's title with respect to its bounding box.
     * @param align The new horizontal alignment.
-    * @see {@link #getTitleHorizontalAlignment()}
+    * @see #getTitleHorizontalAlignment
     */
    public void setTitleHorizontalAlignment(TextAlign align)
    {
@@ -263,7 +263,7 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
    /**
     * Set the vertical alignment of the figure's title with respect to its bounding box.
     * @param align The new vertical alignment.
-    * @see {@link #getTitleVerticalAlignment()}
+    * @see #getTitleVerticalAlignment
     */
    public void setTitleVerticalAlignment(TextAlign align)
    {
@@ -320,12 +320,11 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
 
    @Override protected void rescaleSelf(double scale, MultiRevEdit undoer)
    {
-      Measure.Constraints c = STROKEWCONSTRAINTS;
       double d = borderWidth.getValue();
       if(d > 0)
       {
          Measure old = borderWidth;
-         borderWidth = c.constrain(new Measure(d*scale, borderWidth.getUnits()));
+         borderWidth = STROKEWCONSTRAINTS.constrain(new Measure(d*scale, borderWidth.getUnits()));
          oldBorderWidth = borderWidth;
          
          undoer.addPropertyChange(this, FGNProperty.BORDER, borderWidth, old);
@@ -338,7 +337,7 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
    
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
       case BORDER : ok = setBorderWidth((Measure) propValue); break;
@@ -354,13 +353,13 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case BORDER : value = getBorderWidth(); break;
          case BKGC: value = getBackgroundFill(); break;
          case NOTE: value = getNote(); break;
-         case HIDE: value = new Boolean(isTitleHidden()); break;
+         case HIDE: value = isTitleHidden(); break;
          case HALIGN: value = getTitleHorizontalAlignment(); break;
          case VALIGN: value = getTitleVerticalAlignment(); break;
          default: value = super.getPropertyValue(p); break;
@@ -450,7 +449,7 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
       case HCENTER : locus = getWidthMI()/2.0; break;
       case VCENTER : locus = getHeightMI()/2.0; break;
       }
-      return(new Double(locus));
+      return(locus);
    }
 
    /** No-op. A figure node is never adjusted during an alignment operation; the other nodes are aligned WRT it. */
@@ -625,5 +624,10 @@ public class FigureNode extends FRootGraphicNode implements Cloneable
       
       // end the page
       psDoc.endPage();
+   }
+
+   @Override public FigureNode clone() throws CloneNotSupportedException
+   {
+      return (FigureNode) super.clone();
    }
 }

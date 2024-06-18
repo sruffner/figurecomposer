@@ -141,7 +141,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
     * method <code>onNodeModified()</code> is invoked. The interval cannot be set here if this is the major tick set of
     * an auto-scaled axis; in this case, the tick interval and format are set whenever the axis is auto-scaled.
     * 
-    * @param The new tick mark interval. Rejected if infinite, NaN. Also rejected if this is the major tick set of an
+    * @param d The new tick mark interval. Rejected if infinite, NaN. Also rejected if this is the major tick set of an
     * auto-scaled axis. 
     * @return True if successful; false otherwise.
     */
@@ -150,14 +150,14 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       if(isAutoAdjusted() || !Utilities.isWellDefined(d)) return(false);
       if(interval != d)
       {
-         if(doMultiNodeEdit(FGNProperty.INTV, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.INTV, d)) return(true);
          
-         Double old = new Double(interval);
+         Double old = interval;
          interval = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.INTV);
-            FGNRevEdit.post(this, FGNProperty.INTV, new Double(interval), old, "Change tick set interval");
+            FGNRevEdit.post(this, FGNProperty.INTV, interval, old, "Change tick set interval");
          }
       }
       return(true);
@@ -179,7 +179,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
    public double getStart()
    {
       FGNGraphAxis axis = getParentAxis();
-      if(isAutoAdjusted() || (trackingParentAxis && axis != null))
+      if(axis != null && (isAutoAdjusted() || trackingParentAxis))
          start = axis.getStart();
       return(start);
    }
@@ -189,7 +189,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
     * a change was made, the method <code>onNodeModified()</code> is invoked. The property cannot be changed if this 
     * tick set node is currently tracking its parent axis, or if it is the major tick set of an auto-scaled axis.
     * 
-    * @param New value for the start of tick set range. Rejected if infinite, NaN. Also rejected if node is currently 
+    * @param d New value for the start of tick set range. Rejected if infinite, NaN. Also rejected if node is currently
     * tracking the parent axis range, or if it is the major tick set of an auto-scaled axis. 
     * @return True if successful; false otherwise.
     */
@@ -198,14 +198,14 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       if(isAutoAdjusted() || trackingParentAxis || !Utilities.isWellDefined(d)) return(false);
       if(start != d)
       {
-         if(doMultiNodeEdit(FGNProperty.START, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.START, d)) return(true);
          
-         Double old = new Double(start);
+         Double old = start;
          start = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.START);
-            FGNRevEdit.post(this, FGNProperty.START, new Double(start), old, "Change start of tick set range");
+            FGNRevEdit.post(this, FGNProperty.START, start, old, "Change start of tick set range");
          }
       }
       return(true);
@@ -227,7 +227,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
    public double getEnd()
    {
       FGNGraphAxis axis = getParentAxis();
-      if(isAutoAdjusted() || (trackingParentAxis && axis != null))
+      if(axis != null && (isAutoAdjusted() || trackingParentAxis))
          end = axis.getEnd();
       return(end);
    }
@@ -237,7 +237,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
     * a change was made, the method <code>onNodeModified()</code> is invoked. The property cannot be changed if this 
     * tick set node is currently tracking its parent axis, or if it is the major tick set of an auto-scaled axis.
     * 
-    * @param New value for the end of tick set range. Rejected if infinite, NaN. Also rejected if node is currently 
+    * @param d New value for the end of tick set range. Rejected if infinite, NaN. Also rejected if node is currently
     * tracking the parent axis range, or if it is the major tick set of an auto-scaled axis. 
     * @return True if successful; false otherwise.
     */
@@ -246,14 +246,14 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       if(isAutoAdjusted() || trackingParentAxis || !Utilities.isWellDefined(d)) return(false);
       if(end != d)
       {
-         if(doMultiNodeEdit(FGNProperty.END, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.END, d)) return(true);
          
-         Double old = new Double(end);
+         Double old = end;
          end = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.END);
-            FGNRevEdit.post(this, FGNProperty.END, new Double(end), old, "Change end of tick set range");
+            FGNRevEdit.post(this, FGNProperty.END, end, old, "Change end of tick set range");
          }
       }
       return(true);
@@ -437,7 +437,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
    public Measure getTickLength() { return(tickLength); }
 
    /**
-    * Set the length of any tick marks rendered by this tick set. If a change is made, {@link #onNodeModified()} is 
+    * Set the length of any tick marks rendered by this tick set. If a change is made, {@link #onNodeModified} is
     * invoked.
     * 
     * @param m The new tick length. It is constrained to satisfy {@link #TICKLENCONSTRAINTS}. A null value is rejected.
@@ -476,7 +476,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
    public Measure getTickGap() { return(tickGap); }
 
    /**
-    * Set the tick-label gap for this tick set. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the tick-label gap for this tick set. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new tick-label gap. It is constrained to satisfy {@link #TICKLENCONSTRAINTS}. Null is rejected.
     * @return True if successful; false if value was rejected.
@@ -520,9 +520,9 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       /** Tick mark labels are draws as floating-pt numbers, with at most three digits after the decimal pt. */
       F3("1.125");
 
-      private LabelFormat(String guiLabel) { this.guiLabel = guiLabel; }
+      LabelFormat(String guiLabel) { this.guiLabel = guiLabel; }
       
-      private String guiLabel;
+      private final String guiLabel;
       
       @Override public String toString() { return(super.toString().toLowerCase()); }
       
@@ -731,7 +731,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case GAP: ok = setTickGap((Measure) propValue); break;
@@ -750,15 +750,15 @@ public class TickSetNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case GAP: value = getTickGap(); break;
          case LEN: value = getTickLength(); break;
          case PERLOGINTV: value = getDecadeTicks(); break;
-         case END: value = new Double(getEnd()); break;
-         case INTV: value = new Double(getInterval()); break;
-         case START: value = new Double(getStart()); break;
+         case END: value = getEnd(); break;
+         case INTV: value = getInterval(); break;
+         case START: value = getStart(); break;
          case FMT: value = getTickLabelFormat(); break;
          case DIR: value = getTickOrientation(); break;
          case CUSTOMTCKLBL: value = getCustomTickLabels(); break;
@@ -1034,7 +1034,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       FGNGraphAxis axis = getParentAxis();
       if(axis == null) return(NOTICKS);
 
-      List<Double> ticks = new ArrayList<Double>();
+      List<Double> ticks = new ArrayList<>();
       double[] range = getValidRange();
       double intv = getValidTickInterval();
       boolean isLog = axis.isLogarithmic();
@@ -1048,7 +1048,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
          double d = range[0];
          while( d <= range[1]+0.001*intv && ticks.size() < MAX_TICKS)
          {
-            ticks.add( new Double(d) );
+            ticks.add(d);
             d += intv;
          }
       }
@@ -1068,7 +1068,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
                int j = perLogIntv[i];
                double tick = epochStart * ((j==1) ? 1 : intv*0.1*((double)j));
                if( range[0] <= tick && tick <= range[1] )
-                  ticks.add( new Double(tick) );
+                  ticks.add(tick);
             }
             epochStart *= intv;
          }
@@ -1083,7 +1083,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
          // populate tick set (it will be empty if 2^m > E)
          while( octave <= range[1] && ticks.size() <= MAX_TICKS )
          {
-            ticks.add( new Double(octave) );
+            ticks.add(octave);
             octave *= intv;
          }
       }
@@ -1091,7 +1091,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       // return set of ticks as an array
       double[] result = new double[ticks.size()];
       for( int i=0; i<ticks.size(); i++ )
-         result[i] = ((Double) ticks.get(i)).doubleValue();
+         result[i] = ticks.get(i);
       return( result );
    }
 
@@ -1263,7 +1263,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
          labelPainter.render(g2d, null);
       }
   
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    //
@@ -1321,11 +1321,11 @@ public class TickSetNode extends FGraphicNode implements Cloneable
    {
       // the location/string providers and the painters themselves are lazily created
       if(tickPolyline == null)
-         tickPolyline = new ArrayList<Point2D>();
+         tickPolyline = new ArrayList<>();
       if(labelLocs == null)
-         labelLocs = new ArrayList<Point2D>();
+         labelLocs = new ArrayList<>();
       if(labels == null)
-         labels = new ArrayList<String>();
+         labels = new ArrayList<>();
       if(tickPainter == null)
          tickPainter = new PolylinePainter(this, tickPolyline);
       if(labelPainter == null)
@@ -1386,7 +1386,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       {
          // calculate offset to the aligning edge (top, bottom, left, or right) of the tick labels.  This offset 
          // accounts for the tick gap plus that portion of tick mark on same side of axis line as the label.
-         double offset = 0;
+         double offset;
          if( isAboveOrLeft )
          {
             offset = tickGapMI;
@@ -1494,13 +1494,14 @@ public class TickSetNode extends FGraphicNode implements Cloneable
    private String formatTickLabel(int pos, double value)
    {
       LabelFormat fmt = getTickLabelFormat();
-      if(fmt == LabelFormat.NONE) return( "" );
+      FGNGraphAxis parent = getParentAxis();
+      if(parent == null || fmt == LabelFormat.NONE) return( "" );
       
       if(customTickLabels.length > 0) return(customTickLabels[pos % customTickLabels.length]);
       
       if(value == 0) return("0");
       
-      double scaledVal = value / Math.pow(10, getParentAxis().getPowerScale());
+      double scaledVal = value / Math.pow(10, parent.getPowerScale());
       double absV = Math.abs(scaledVal);
       int nDigits = 0;
       if(fmt == LabelFormat.F1) nDigits = 1; 
@@ -1509,8 +1510,8 @@ public class TickSetNode extends FGraphicNode implements Cloneable
 
       // on a linear axis, if the tick value is non-zero but much closer to zero than the tick interval size, then 
       // treat it as exactly zero. This might happen due to the floating-math used to compute tick mark values.
-      double scaledIntv = interval / Math.pow(10, getParentAxis().getPowerScale());
-      if((!getParentAxis().isLogarithmic()) && (Math.abs(scaledIntv)/absV > Math.pow(10, nDigits)))
+      double scaledIntv = interval / Math.pow(10, parent.getPowerScale());
+      if((!parent.isLogarithmic()) && (Math.abs(scaledIntv)/absV > Math.pow(10, nDigits)))
          return("0");
 
       // use scientific notation for values smaller than 0.001 and greater than or equal to 1e6.
@@ -1528,46 +1529,6 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       double scale = Math.pow(10, nDigits);
       long truncValue = Math.round(scaledVal * Math.pow(10, nDigits));
       return(Utilities.toString(((double)truncValue)/scale, 7, nDigits));
-
-      /*
-      // if axis is NOT logarithmic and the absolute value is less than 0.001, then value reads as "0" in all numeric
-      // label formats
-      double absV = Math.abs(value);
-      if(absV < 0.001 && !getParentAxis().isLogarithmic()) return("0");
-      
-      int nDigits = 0;
-      if(fmt == LabelFormat.F1) nDigits = 1; 
-      else if(fmt == LabelFormat.F2) nDigits = 2;
-      else if(fmt == LabelFormat.F3) nDigits = 3;
- 
-      // big numbers
-      if(absV >= 1.0e6)
-      {
-         int exp = (int) Math.floor(Math.log10(absV));
-         value /= Math.pow(10, exp);
-         
-         double scale = Math.pow(10, nDigits);
-         long truncValue = Math.round(value * Math.pow(10, nDigits));
-         String strVal = Utilities.toString(((double)truncValue)/scale, 7, nDigits);
-         return(strVal + "e" + exp);
-      }
-      
-      // everything else
-      int exp = 0;
-      double thresh = Math.pow(10, -nDigits);
-      if(absV >= 0.001 && nDigits < 3)
-      {
-         while(absV < thresh) { ++nDigits; thresh = Math.pow(10, -nDigits); }
-      }
-      
-      if(absV < thresh) exp = -((int) Math.floor(Math.log10(absV)));
-
-      double scale = Math.pow(10, nDigits);
-      long truncValue = Math.round(value * Math.pow(10, nDigits+exp));
-
-      String strVal = Utilities.toString(((double)truncValue)/scale, 7, nDigits);
-      return(exp == 0 ? strVal : (strVal + "e-" + exp));
-      */
    }
 
    
@@ -1580,11 +1541,12 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       // get x-coordinates of valid tick marks, in user units.  If there are none, there's nothing to render.  We also 
       // have nothing to render if the node properties are such that the tick marks are not stroked and the tick mark
       // labels are not drawn.
+      FGNGraphAxis parent = getParentAxis();
       double[] xTickUser = getTickSet();
       double tickLenMI = tickLength.toMilliInches();
       boolean doTickMarks = tickLenMI > 0 && isStroked();
       boolean doTickLabels = (tickLabelFormat != LabelFormat.NONE) && (getFillColor().getAlpha() > 0);
-      if((xTickUser.length == 0) || !(doTickMarks || doTickLabels)) 
+      if((parent == null) || (xTickUser.length == 0) || !(doTickMarks || doTickLabels))
          return;
 
       // start the element -- this will update the graphics state IAW this element's stroke/fill colors, etc
@@ -1592,7 +1554,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
 
       // the ticks are drawn WRT the parent axis viewport. The axis line and ticks are drawn between (0,L) and (L,L) 
       // in that viewport, NOT (0,0) and (L,0)!
-      double axisLenMI = getParentAxis().getLengthInMilliInches();
+      double axisLenMI = parent.getLengthInMilliInches();
 
       // convert x-coordinates to thousandth-in WRT the parent axis viewport
       double[] xTickMils = convertTickLocationsToThousandthInches( xTickUser );
@@ -1600,8 +1562,8 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       // get other information we need to render tick marks
       int tickDir = getTickDirection();
       double tickGapMI = tickGap.toMilliInches();
-      boolean isHoriz = getParentAxis().isHorizontal();
-      boolean isAboveOrLeft = getParentAxis().isAboveLeft();
+      boolean isHoriz = parent.isHorizontal();
+      boolean isAboveOrLeft = parent.isAboveLeft();
 
       // render tick marks as "lineup", "linedown", or "linethru" adorments.  Given the way in which the first two 
       // are drawn, we have to double their length to get things right.
@@ -1624,7 +1586,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
       {
          // calculate offset to the aligning edge (top, bottom, left, or right) of the tick labels.  This offset 
          // accounts for the tick gap plus that portion of tick mark on same side of axis line as the label.
-         double offset = 0;
+         double offset;
          if(!isAboveOrLeft)
          {
             offset = -tickGapMI;
@@ -1681,7 +1643,7 @@ public class TickSetNode extends FGraphicNode implements Cloneable
     * This override ensures that the rendering infrastructure for the <code>TickSetNode</code> clone is independent of
     * the element cloned.
     */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       TickSetNode copy = (TickSetNode) super.clone();
       copy.tickPainter = null;

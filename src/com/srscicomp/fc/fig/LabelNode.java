@@ -18,7 +18,7 @@ import com.srscicomp.common.util.Utilities;
  * 
  * <p>As of v5.4.0 (schema version 24), <b>LabelNode</b> supports a "styled text" label, in which text color, font
  * style, underline state, superscript, and subscript can vary on a per-character basis. See {@link 
- * FGraphicNode#toStyledText()}.</p>
+ * FGraphicNode#toStyledText}.</p>
  * 
  * @author sruffner
  */
@@ -112,7 +112,7 @@ public class LabelNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case HALIGN : setHorizontalAlignment((TextAlign)propValue); ok = true; break;
@@ -124,7 +124,7 @@ public class LabelNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case HALIGN : value = getHorizontalAlignment(); break;
@@ -228,7 +228,7 @@ public class LabelNode extends FGraphicNode implements Cloneable
       case HCENTER : locus = r.getCenterX(); break;
       case VCENTER : locus = r.getCenterY(); break;
       }
-      return(new Double(locus));
+      return(locus);
    }
 
    @Override boolean align(FGNAlign alignType, double locus, MultiRevEdit undoer)
@@ -442,7 +442,7 @@ public class LabelNode extends FGraphicNode implements Cloneable
          finally {if(g2dCopy != null) g2dCopy.dispose(); }
       }
       
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    
@@ -466,7 +466,7 @@ public class LabelNode extends FGraphicNode implements Cloneable
       
       // no text is rendered if the text/fill color is transparent. Postscript does not support transparency.
       String s = getTitle();
-      if(parentVP == null || getFillColor().getAlpha() == 0 || s.length() == 0) return;
+      if(parentVP == null || getFillColor().getAlpha() == 0 || s.isEmpty()) return;
       
       psDoc.startElement(this);
       psDoc.translateAndRotate(parentVP.toMilliInches(getX(), getY()), getRotate());
@@ -484,7 +484,7 @@ public class LabelNode extends FGraphicNode implements Cloneable
     * the element cloned.
     */
    @Override
-   protected Object clone()
+   protected Object clone() throws CloneNotSupportedException
    {
       LabelNode copy = (LabelNode) super.clone();
       copy.textPainter = null;

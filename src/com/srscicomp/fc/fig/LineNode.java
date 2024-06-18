@@ -69,9 +69,9 @@ public class LineNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the x-coordinate of this line's second endpoint WRT its parent viewport. If a change occurs, {@link 
-    * #onNodeModified()} is invoked. Use {@link #setX()} to set the x-coordinate for the first endpoint.
+    * #onNodeModified} is invoked. Use {@link #setX} to set the x-coordinate for the first endpoint.
     * 
-    * @param m The new x-coordinate. It is constrained to satisfy {@link FGraphicModel#getLocationConstraints()}. A null
+    * @param m The new x-coordinate. It is constrained to satisfy {@link FGraphicModel#getLocationConstraints}. A null
     * value is rejected.
     * @return True if successful; false if value was rejected.
     */
@@ -108,9 +108,9 @@ public class LineNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the y-coordinate of this line's second endpoint WRT its parent viewport. If a change occurs, {@link 
-    * #onNodeModified()} is invoked. Use {@link #setY()} to set the y-coordinate for the first endpoint.
+    * #onNodeModified} is invoked. Use {@link #setY} to set the y-coordinate for the first endpoint.
     * 
-    * @param m The new y-coordinate. It is constrained to satisfy {@link FGraphicModel#getLocationConstraints()}. A null
+    * @param m The new y-coordinate. It is constrained to satisfy {@link FGraphicModel#getLocationConstraints}. A null
     * value is rejected.
     * @return True if successful; false if value was rejected.
     */
@@ -173,7 +173,7 @@ public class LineNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case X2 : ok = setX2((Measure) propValue); break;
@@ -185,7 +185,7 @@ public class LineNode extends FGraphicNode implements Cloneable
    
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case X2 : value = getX2(); break;
@@ -263,7 +263,7 @@ public class LineNode extends FGraphicNode implements Cloneable
       case HCENTER : locus = (p1.getX() + p2.getX()) / 2.0; break;
       case VCENTER : locus = (p1.getY() + p2.getY()) / 2.0; break;
       }
-      return(new Double(locus));
+      return(locus);
    }
 
    /**
@@ -420,7 +420,7 @@ public class LineNode extends FGraphicNode implements Cloneable
          // update first endpoint; this is awkward because we don't have direct access to its coordinates. We don't
          // want the call to setXY() to post a reversible edit nor update the model, so turn notifications off.
          boolean toggleNotify = false;
-         boolean ok = true;
+         boolean ok;
          if(areNotificationsEnabled()) 
          {
             toggleNotify = true;
@@ -449,7 +449,7 @@ public class LineNode extends FGraphicNode implements Cloneable
    }
 
    /**
-    * This method is invoked to undo or redo a reversible relocation of the line segment via {@link #executeMove()}. 
+    * This method is invoked to undo or redo a reversible relocation of the line segment via {@link #executeMove}.
     * Since we're reversing or re-applying a previously applied edit, the change is NOT posted to the containing model's
     * edit history.
     * 
@@ -476,7 +476,7 @@ public class LineNode extends FGraphicNode implements Cloneable
       }
       
       setNotificationsEnabled(false);
-      boolean ok = false;
+      boolean ok;
       try { ok = setXY(x, y); }
       finally { setNotificationsEnabled(true); }
       
@@ -542,7 +542,7 @@ public class LineNode extends FGraphicNode implements Cloneable
     */
    @Override public Shape getDragResizeShape(ResizeAnchor anchor, Point2D p0, Point2D p1, StringBuffer cueBuf)
    {
-      double len = getLengthInMilliInches();;
+      double len = getLengthInMilliInches();
       if(len <= 0 || p0 == null || p1 == null) return(null);
       
       // transform anchor and drag points to local coordinate system
@@ -588,7 +588,7 @@ public class LineNode extends FGraphicNode implements Cloneable
                coords[0] = c.constrain(coords[0], true);
                coords[1] = c.constrain(coords[1], true);
                cueBuf.append(isP1 ? "P1=" : "P2=");
-               cueBuf.append(coords[0].toString() + ", " + coords[1].toString());
+               cueBuf.append(coords[0].toString()).append(", ").append(coords[1].toString());
             }
          } 
       }
@@ -602,7 +602,7 @@ public class LineNode extends FGraphicNode implements Cloneable
     */
    @Override public void executeResize(ResizeAnchor anchor, Point2D p0, Point2D p1)
    {
-      double len = getLengthInMilliInches();;
+      double len = getLengthInMilliInches();
       if(len <= 0 || p0 == null || p1 == null) return;
       
       // transform anchor and drag points to local coordinate system
@@ -839,7 +839,7 @@ public class LineNode extends FGraphicNode implements Cloneable
       }
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    
@@ -880,5 +880,10 @@ public class LineNode extends FGraphicNode implements Cloneable
       for(int i=0; i<getChildCount(); i++) 
          getChildAt(i).toPostscript(psDoc);
       psDoc.endElement();
+   }
+
+   @Override public LineNode clone() throws CloneNotSupportedException
+   {
+      return (LineNode) super.clone();
    }
 }

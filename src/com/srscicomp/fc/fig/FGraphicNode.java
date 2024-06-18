@@ -13,12 +13,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import com.srscicomp.common.g2dutil.PainterStyle;
@@ -108,7 +103,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * font, Postscript font).</li>
     * <li>{@link #HASFILLCATTR} -- Enables support for the text/fill color attribute.</li>
     * <li>{@link #HASSTROKEATTRS} -- Enables support for stroke color, width, cap and join attributes.</li>
-    * <li>{@link HASSTRKPATNATTR} -- Enables support for the stroke pattern attribute.</li>
+    * <li>{@link #HASSTRKPATNATTR} -- Enables support for the stroke pattern attribute.</li>
     * <li>{@link #HASLOCATTRS} -- Enables support for the <i>(x,y)</i> coordinates of the node's "location" with respect
     * to a parent viewport. It includes support for moving the node interactively.</li>
     * <li>{@link #HASSIZEATTRS} -- Enables support for the <i>width</i> and <i>height</i> attributes, which specify a 
@@ -136,7 +131,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    FGraphicNode(int attrFlags)
    {
       this.parent = null;
-      this.subordinates = new ArrayList<FGraphicNode>();
+      this.subordinates = new ArrayList<>();
       this.nComponents = 0;
       this.attrFlags = HASATTRMASK & attrFlags;
       this.attrFlags |= ((ALLOWLFINTITLE|ALLOWATTRINTITLE) & attrFlags);
@@ -280,7 +275,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Append the specified graphic node to the end of this <code>FGraphicNode</code>'s list of children. This is a
-    * convenient shortcut for invoking {@link #insert(FGraphicNode, int, boolean)}.
+    * convenient shortcut for invoking {@link #insert(FGraphicNode, int)}.
     * 
     * @param n The graphic node to be appended.
     * @return <code>True</code> iff the node was successfully appended.
@@ -297,13 +292,13 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * invokes the <code>render()</code> method of each child node as they appear in the child list.</p>
     * 
     * <p>The node will be inserted if it is not <code>null</code>, if it does not already have a parent, and if it 
-    * passes the <code>canInsert(FGNodeType)</code> test. After insertion, {@link #onSubordinateNodeInserted()} is
+    * passes the <code>canInsert(FGNodeType)</code> test. After insertion, {@link #onSubordinateNodeInserted} is
     * invoked to update the rendering infrastructure of the inserted node and to recompute the rendered bounds of this 
     * node and its ancestors. Typically, it will trigger a re-rendering of the graphic model in the regions affected by 
     * the insertion.</p>
     * 
     * <p>[<i>NOTE</i>. Subclasses must <b>NOT</b> use this method to insert a private component node, since doing so 
-    * will expose the component as a public child node subject to removal by the user. Use {@link #addComponentNode()}
+    * will expose the component as a public child node subject to removal by the user. Use {@link #addComponentNode}
     * instead.]</p>
     * 
     * @param n The graphic node to be inserted. It must be non-<code>null</code>, must have no parent, and must not 
@@ -412,7 +407,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
       if(child.isRendered()) 
       {
-         List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+         List<Rectangle2D> dirtyAreas = new ArrayList<>();
          dirtyAreas.add( child.cachedGlobalShape.getBounds2D() );
          model.onChange(this, 1, true, dirtyAreas);
       }
@@ -531,7 +526,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    protected final void removeAllDescendants()
    {
       if(getGraphicModel() != null) return;
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(this);
       while(nodeStack.isEmpty())
       {
@@ -575,7 +570,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * <li>If the node has any component nodes, add each component's style set to the parent node's style set.</li>
     * </ul>
     * To enable the style set feature, a subclass must provide appropriate implementations of the methods described
-    * above, as well as {@link #applyNodeSpecificStyles()}.
+    * above, as well as {@link #applyNodeSpecificStyles}.
     * </p>
     * 
     * @return The node's current style set, as described. If node does not support copying and pasting style sets, then
@@ -658,7 +653,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * value won't need to be reverted in the event this styling operation is "undone".</li>
     * <li>Call {@link #applyNodeSpecificStyles(FGNStyleSet, FGNStyleSet)} to let the subclass handle any node-specific 
     * style properties.</li>
-    * <li>If any property was changed, call {@link #onNodeModified()}.</li>
+    * <li>If any property was changed, call {@link #onNodeModified}.</li>
     * <li>Unblock the model's undo history.</li>
     * <li>If any property was unchanged, R should now contain only those style properties that actually changed. Use it
     * to prepare an instance of {@link StyleSetRevEdit}, and post that to the model's undo history.</li>
@@ -673,11 +668,12 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     */
    public final boolean applyStyleSet(FGNStyleSet applied) 
    { 
-      if(!supportsStyleSet()) { return(false); }
+      if(!supportsStyleSet()) return(false);
       
       // get the node's current style set. It will contain the current values of all node attributes that are considered
       // style properties.
       FGNStyleSet currSS = getCurrentStyleSet();
+      if(currSS == null) return(false);
 
       // this operation may involve lots of property changes, so we block the model's undo history during it.
       FGraphicModel model = getGraphicModel();
@@ -727,6 +723,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if(undoer == null || !supportsStyleSet()) return(false);
       
       FGNStyleSet currSS = getCurrentStyleSet();
+      if(currSS == null) return(false);
       FGNStyleSet applied = undoer.styleSet;
       boolean changed = applyTextDrawStyles(applied, currSS);
       if(applyNodeSpecificStyles(applied, currSS)) changed = true;
@@ -752,7 +749,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * effects on any component nodes.
     * @return True if at least one node property was changed; else false.
     */
-   private final static boolean applyComponentStyling(FGraphicNode n, FGNStyleSet applied, FGNStyleSet restore)
+   private static boolean applyComponentStyling(FGraphicNode n, FGNStyleSet applied, FGNStyleSet restore)
    {
       boolean changed = false;
       if(!n.supportsStyleSet()) return(false);
@@ -938,7 +935,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * the restored style set -- since that value won't be changed. The restored style set will be applied to the node
     * to "undo" the entire operation atomically.</p>
     * <p>Since multiple property values may be changed, do NOT notify the model after each individual change via
-    * {@link #onNodeModified()}. The default implementation of <code>applyStyleSet()</code> will notify the model after
+    * {@link #onNodeModified}. The default implementation of <code>applyStyleSet()</code> will notify the model after
     * all changes are complete.</p>
     * 
     * @param applied The style set being applied to this graphic node.
@@ -958,7 +955,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * @param p The property type.
     * @return <code>True</code> iff the argument represents a graphic style property.
     */
-   public static final boolean isStyleProperty(FGNProperty p)
+   public static boolean isStyleProperty(FGNProperty p)
    {
       return(p == FGNProperty.FONTFAMILY || p == FGNProperty.FONTSTYLE || p == FGNProperty.FONTSIZE || 
             p == FGNProperty.ALTFONT || p == FGNProperty.PSFONT || p == FGNProperty.FILLC || p == FGNProperty.STROKEC || 
@@ -975,7 +972,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    /**
     * Get an array of <code>FGNProperty</code> enumerants representing all of the graphic styling properties that may 
     * be defined on a graphic node in <em>DataNav</em>.
-    * @return List of style property IDs.
+    * @return Array of style property IDs.
     */
    public static FGNProperty[] getStylePropertyIDs() { return(styleIDs); }
 
@@ -983,7 +980,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * Bit mask indicating that a graphic node possesses the font-related attributes (family, style, size, alternate 
     * font, Postscript font).
     */
-   static final int HASFONTATTRS = (1<<0);
+   static final int HASFONTATTRS = (1);
 
    /**
     * Bit mask indicating that a graphic node possesses the text/fill color attribute.
@@ -1031,7 +1028,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    
    /**
     * If this bit is set in attribute mask and the node has the <i>title</i> attribute, then the title string can
-    * be formatted as "styled text". See {@link #toStyledText()} for a full description. 
+    * be formatted as "styled text". See {@link #toStyledText} for a full description.
     */
    static final int ALLOWATTRINTITLE = (1<<13);
    
@@ -1148,13 +1145,13 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     */
    public boolean setFontFamily(String family)
    {
-      if((attrFlags & HASFONTATTRS) != HASFONTATTRS || (family != null && family.length() == 0)) return(false);
+      if((attrFlags & HASFONTATTRS) != HASFONTATTRS || (family != null && family.isEmpty())) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(family != null && family.equals((String) getInheritedValueFor(FGNProperty.FONTFAMILY)))
+      if(family != null && family.equals(getInheritedValueFor(FGNProperty.FONTFAMILY)))
          family = null;
 
-      boolean changed = (fontFamily == null) ? (family != null) : !fontFamily.equals(family);
+      boolean changed = !Objects.equals(fontFamily, family);
       if(changed)
       {
          if(doMultiNodeEdit(FGNProperty.FONTFAMILY, 
@@ -1214,7 +1211,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASFONTATTRS) != HASFONTATTRS) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(style != null && (style == (FontStyle)getInheritedValueFor(FGNProperty.FONTSTYLE)))
+      if(style != null && (style == getInheritedValueFor(FGNProperty.FONTSTYLE)))
          style = null;
 
       boolean changed = (fontStyle != style);
@@ -1266,7 +1263,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASFONTATTRS) != HASFONTATTRS || fontSizeInPoints == null)
       {
          Integer size = (Integer) getInheritedValueFor(FGNProperty.FONTSIZE);
-         return((size == null) ? new Integer(10) : size);
+         return((size == null) ? Integer.valueOf(10) : size);
       }
       else
          return(fontSizeInPoints);
@@ -1286,13 +1283,13 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    public boolean setFontSizeInPoints(Integer size)
    {
       if((attrFlags & HASFONTATTRS) != HASFONTATTRS) return(false);
-      if((size != null) && (size.intValue() < MINFONTSIZE || size.intValue() > MAXFONTSIZE)) return(false);
+      if((size != null) && (size < MINFONTSIZE || size > MAXFONTSIZE)) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(size != null && size.equals((Integer) getInheritedValueFor(FGNProperty.FONTSIZE)))
+      if(size != null && size.equals(getInheritedValueFor(FGNProperty.FONTSIZE)))
          size = null;
 
-      boolean changed = (fontSizeInPoints == null) ? (size != null) : !fontSizeInPoints.equals(size);
+      boolean changed = !Objects.equals(fontSizeInPoints, size);
       if(changed)
       {
          if(doMultiNodeEdit(FGNProperty.FONTSIZE, 
@@ -1357,7 +1354,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASFONTATTRS) != HASFONTATTRS) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(f != null && (f == (GenericFont) getInheritedValueFor(FGNProperty.ALTFONT)))
+      if(f != null && (f == getInheritedValueFor(FGNProperty.ALTFONT)))
          f = null;
 
       boolean changed = (altFont != f);
@@ -1431,7 +1428,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASFONTATTRS) != HASFONTATTRS) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(f != null && (f == (PSFont) getInheritedValueFor(FGNProperty.PSFONT)))
+      if(f != null && (f == getInheritedValueFor(FGNProperty.PSFONT)))
          f = null;
 
       if(doMultiNodeEdit(FGNProperty.PSFONT, f != null ? f : getInheritedValueFor(FGNProperty.PSFONT))) return(true);
@@ -1483,7 +1480,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Set the RGB color with which this graphic node fills any shapes it renders, including text. If a change is made, 
-    * {@link #onNodeModified()} is invoked. If the node does not possess the fill color attribute, this method has no 
+    * {@link #onNodeModified} is invoked. If the node does not possess the fill color attribute, this method has no
     * effect.
     * 
     * @param c The new fill color. A null value makes the attribute implicit, meaning the node will inherit the style 
@@ -1496,10 +1493,10 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASFILLCATTR) != HASFILLCATTR) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(c != null && c.equals((Color)getInheritedValueFor(FGNProperty.FILLC)))
+      if(c != null && c.equals(getInheritedValueFor(FGNProperty.FILLC)))
          c = null;
 
-      boolean changed = (fillC == null) ? (c != null) : !fillC.equals(c);
+      boolean changed = !Objects.equals(fillC, c);
       if(changed)
       {
          if(doMultiNodeEdit(FGNProperty.FILLC, c != null ? c : getInheritedValueFor(FGNProperty.FILLC))) return(true);
@@ -1548,7 +1545,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Set the RGB color with which this graphic node stroke any shapes it renders (except text glyphs -- outlined text
-    * is not supported). If a change is made, {@link #onNodeModified()} is invoked. If the node does not possess the 
+    * is not supported). If a change is made, {@link #onNodeModified} is invoked. If the node does not possess the
     * stroke color attribute, this method has no effect.
     * 
     * @param c The new stroke color. A null value makes the attribute implicit, meaning the node will inherit the style 
@@ -1561,10 +1558,10 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASSTROKEATTRS) != HASSTROKEATTRS) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(c != null && c.equals((Color) getInheritedValueFor(FGNProperty.STROKEC)))
+      if(c != null && c.equals(getInheritedValueFor(FGNProperty.STROKEC)))
          c = null;
 
-      boolean changed = (strokeC == null) ? (c != null) : !strokeC.equals(c);
+      boolean changed = !Objects.equals(strokeC, c);
       if(changed)
       {
          if(doMultiNodeEdit(FGNProperty.STROKEC, c != null ? c : getInheritedValueFor(FGNProperty.STROKEC))) 
@@ -1623,7 +1620,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * <p>Stroke width must be specified in non-relative, physical units. It cannot be negative, and the maximum allowed 
     * stroke width is 1 inch. If the specified measure violates any of these constraints, it is rejected.</p>
     * 
-    * @param c The new stroke width. A null value makes the attribute implicit, meaning the node will inherit the style 
+    * @param m The new stroke width. A null value makes the attribute implicit, meaning the node will inherit the style
     * from its parent. Otherwise, the measure will be constrained to satisfy {@link #STROKEWCONSTRAINTS}.
     * @return True if change was accepted; false if rejected.
     */
@@ -1696,7 +1693,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASSTROKEATTRS) != HASSTROKEATTRS) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(sc != null && (sc == (StrokeCap) getInheritedValueFor(FGNProperty.STROKECAP)))
+      if(sc != null && (sc == getInheritedValueFor(FGNProperty.STROKECAP)))
          sc = null;
 
       boolean changed = (strokeCap != sc);
@@ -1759,7 +1756,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if((attrFlags & HASSTROKEATTRS) != HASSTROKEATTRS) return(false);
 
       // if it's being explicitly set to the inherited value, then make it implicit!
-      if(join != null && (join == (StrokeJoin) getInheritedValueFor(FGNProperty.STROKEJOIN)))
+      if(join != null && (join == getInheritedValueFor(FGNProperty.STROKEJOIN)))
          join = null;
 
       boolean changed = (strokeJoin != join);
@@ -1812,7 +1809,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * glyphs -- <em>DataNav</em> does not support outlined text).  If a change is made, <code>onNodeModified()</code> 
     * is invoked. If the node does not possess the stroke pattern attribute, this method has no effect.
     * 
-    * @param c The new stroke pattern. A <code>null</code> value makes the attribute implicit, meaning the node
+    * @param sp The new stroke pattern. A <code>null</code> value makes the attribute implicit, meaning the node
     * will inherit the style from its parent. 
     * @return <code>True</code> if change was accepted; <code>false</code> if node does not possess the stroke pattern 
     * attribute.
@@ -1892,7 +1889,6 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * 
     * @param style The requested style property.
     * @return The default value for that property.
-    * @see FGraphicModel#getPreferredPropertyValue(String)
     */
    private Object getDefaultStyleValueFromPreferences(FGNProperty style)
    {
@@ -1966,7 +1962,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if(includeDescendants) desc += " and all descendants";
       MultiRevEdit undoer = new MultiRevEdit(model, desc);
       
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(this);
       while(!nodeStack.isEmpty())
       {
@@ -1999,7 +1995,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
                n.psFont = null;
             }
 
-            if(style == null || style != FGNProperty.PSFONT)
+            if(style != FGNProperty.PSFONT)
                n.cacheResolvedFont();
          }
 
@@ -2126,7 +2122,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     */
    void propagateFontChange()
    {
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(this);
       while(!nodeStack.isEmpty())
       {
@@ -2144,7 +2140,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    public double getFontSize()
    {
       // rem: logical units in rendering coordinate system are always milli-inches!
-      return(getFontSizeInPoints().intValue() * Measure.PT2IN * 1000.0);
+      return(getFontSizeInPoints() * Measure.PT2IN * 1000.0);
    }
 
    public Stroke getStroke(float dashPhase)
@@ -2197,9 +2193,9 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Set the x-coordinate of this graphic node's location WRT its parent viewport. If a change occurs, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
-    * @param m The new x-coordinate. It is constrained to satisfy {@link FGraphicModel.getLocationConstraints()}. A null
+    * @param m The new x-coordinate. It is constrained to satisfy {@link FGraphicModel#getLocationConstraints}. A null
     * value is rejected.
     * @return True if successful; false if value was rejected, or if this node is not relocatable.
     */
@@ -2238,9 +2234,9 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Set the y-coordinate of this graphic node's location WRT its parent viewport. If a change occurs, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
-    * @param m The new y-coordinate. It is constrained to satisfy {@link FGraphicModel.getLocationConstraints()}. A null
+    * @param m The new y-coordinate. It is constrained to satisfy {@link FGraphicModel#getLocationConstraints}. A null
     * value is rejected.
     * @return True if successful; false if value was rejected, or if this node is not relocatable.
     */
@@ -2267,7 +2263,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Set both the x- and y-coordinates of this node's location WRT its parent viewport. If a change is made, {@link 
-    * #onNodeModified()} is invoked (unless model notifications are currently disabled).
+    * #onNodeModified} is invoked (unless model notifications are currently disabled).
     * 
     * @param xm The new x-coordinate. The measure is constrained to satisfy the location constraints for this node. A 
     * null value is rejected.
@@ -2313,9 +2309,9 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Set the measured width of this graphic node's bounding box WRT its parent viewport. If a change occurs, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
-    * @param m The new width. The measure is constrained by {@link FGraphicModel#getSizeConstraints()}. A null value is
+    * @param m The new width. The measure is constrained by {@link FGraphicModel#getSizeConstraints}. A null value is
     * rejected. 
     * @return True if successful; false if value was rejected, or if this node does not have a resizable bounding box.
     */
@@ -2355,9 +2351,9 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Set the measured height of this graphic node's bounding box WRT its parent viewport. If a change occurs, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
-    * @param m The new height. The measure is constrained by {@link FGraphicModel#getSizeConstraints()}. A null value is
+    * @param m The new height. The measure is constrained by {@link FGraphicModel#getSizeConstraints}. A null value is
     * rejected. 
     * @return True if successful; false if value was rejected, or if this node does not have a resizable bounding box.
     */
@@ -2395,7 +2391,6 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * Positive angles correspond to CCW rotation.
     * 
     * @return The rotation angle in degrees. If this node may not be rotated WRT its parent, 0 is always returned.
-    * @see FGraphicNode#FGraphicNode(int, boolean)
     */
    public double getRotate() {  return(((attrFlags & HASROTATEATTR) == HASROTATEATTR) ? rotate : 0); }
 
@@ -2423,9 +2418,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * 
     * @param r The rotation angle, in degrees. Restricted to [-180..180].
     * @return <code>True</code> if new rotation angle is accepted without correction; <code>false</code> if node may not 
-    * be rotated WRT its parent, or if the new rotation angle had to be corrected to the allowed range. 
-    * @see FGraphicNode#FGraphicNode(int, boolean)
-    * @see FGraphicNode#getRotate()
+    * be rotated WRT its parent, or if the new rotation angle had to be corrected to the allowed range.
     */
    public boolean setRotate(double r)
    {
@@ -2440,15 +2433,15 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
       if(r != rotate)
       {
-         if(doMultiNodeEdit(FGNProperty.ROTATE, new Double(r))) return(!adjusted);
+         if(doMultiNodeEdit(FGNProperty.ROTATE, r)) return(!adjusted);
 
-         Double old = new Double(rotate);
+         Double old = rotate;
          rotate = r;
          
          if(notify)
          {
             onNodeModified(FGNProperty.ROTATE);
-            FGNRevEdit.post(this, FGNProperty.ROTATE, new Double(rotate), old);
+            FGNRevEdit.post(this, FGNProperty.ROTATE, rotate, old);
          }
       }
       return(!adjusted);
@@ -2498,7 +2491,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * @param pct The scale factor, as a percentage. Allowed range: [<code>MINRESCALE</code>..<code>MAXRESCALE</code>].
     * @param fontSizeOnly If <code>true</code>, then only the fonts are rescaled. Otherwise, this graphic node and all 
     * of its descendants are rescaled.
-    * @see FGraphicNode#rescaleSelf(int)
+    * @see FGraphicNode#rescaleSelf
     */
    void rescale(int pct, boolean fontSizeOnly)
    {
@@ -2516,7 +2509,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       desc += "(" + pct + "%" + (fontSizeOnly ? "; fonts only)" : ")");
       MultiRevEdit undoer = new MultiRevEdit(model, desc);
       
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(this);
       while(!nodeStack.isEmpty())
       {
@@ -2526,8 +2519,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
          {
             Integer old = n.getFontSizeInPoints();
             int fontSz = (int) Math.round(scale * n.getFontSizeInPoints());
-            n.fontSizeInPoints = 
-               new Integer((fontSz<MINFONTSIZE) ? MINFONTSIZE : ((fontSz>MAXFONTSIZE) ? MAXFONTSIZE : fontSz));
+            n.fontSizeInPoints = Utilities.rangeRestrict(MINFONTSIZE, MAXFONTSIZE, fontSz);
             n.cacheResolvedFont();
             
             undoer.addPropertyChange(n, FGNProperty.FONTSIZE, n.getFontSizeInPoints(), old);
@@ -2538,11 +2530,10 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
             if(n.hasStrokeProperties() && (n == this || n.strokeMeasure != null))
             {
                Measure oldSW = n.getMeasuredStrokeWidth();
-               
-               Measure.Constraints c = STROKEWCONSTRAINTS;
+
                Measure m = n.getMeasuredStrokeWidth();
                m = new Measure(m.getValue()*scale, m.getUnits());
-               n.strokeMeasure = c.constrain(m);
+               n.strokeMeasure = STROKEWCONSTRAINTS.constrain(m);
                
                undoer.addPropertyChange(n, FGNProperty.STROKEW, n.getMeasuredStrokeWidth(), oldSW);
             }
@@ -2679,7 +2670,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
    /**
     * Does this graphic node's <i>title</i> property use <i>FypML</i> styled text? The styled text format was introduced
-    * in FC 5.4.0; see {@link #toStyledText()}.
+    * in FC 5.4.0; see {@link #toStyledText}.
     * 
     * <p><b>This method returns true if the title has the styled text format "S|N1:codes1,N2:codes2,...", where the 
     * codes suffix after the pipe ('|') character contains no invalid characters. It does not validate the format of the
@@ -2727,7 +2718,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       }
 
       String title = getTitle().trim();
-      if(title.length() == 0) title = getNodeType().getNiceName();
+      if(title.isEmpty()) title = getNodeType().getNiceName();
       if(title.length() > 50) title = title.substring(0,50) + "...";
          
       // replace any whitespace character (other than space char) with a '|' -- since the title is intended to be
@@ -2743,8 +2734,8 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    
    /** For validating the attributes suffix of a <i>FypML</i> styled text string. */
    private final static Pattern styledTextSuffixPattern = Pattern.compile("[a-fA-F0-9SsnUupwiI:,-]+");
-   private final static Integer NORMSCRIPT = Integer.valueOf(0);
-   private final static Integer UNDERLINE_OFF = Integer.valueOf(-1);
+   private final static Integer NORMSCRIPT = 0;
+   private final static Integer UNDERLINE_OFF = -1;
    
    /** 
     * Convert an {@link AttributedString} to a <i>FypML</i> styled text string.
@@ -2823,7 +2814,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
             else
             {
                String colorCode = BkgFill.colorToHexString(textC);
-               if(colorCode == "none") colorCode = "000000";
+               if(colorCode.equals("none")) colorCode = "000000";
                attrCode += colorCode;
             }
             prevTextC = textC;
@@ -2862,7 +2853,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
             prevScript = script;
          }
          
-         if(attrCode.length() > 0)
+         if(!attrCode.isEmpty())
          {
             if(!gotCode)
             {
@@ -2892,7 +2883,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * </ul>
     * 
     * <p>The styled text argument T must adhere to the format <b>S|N1:codes1,N2:codes2,...</b> as described in {@link 
-    * #toStyledText()}. The encoded attribute changes do not use the '|' character, so we can always separate the 
+    * #toStyledText}. The encoded attribute changes do not use the '|' character, so we can always separate the
     * character sequence S from the attribute changes. If the '|' separator is missing, the entire text is treated as S,
     * and the default styling is applied to the entire sequence. If S is an empty string, any attribute codes are 
     * ignored. <i>If a parsing error is detected, then the attributed string returned contains the entire text content
@@ -2929,14 +2920,14 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       
       // fix style arguments if necessary
       if(!LocalFontEnvironment.isFontInstalled(fam)) fam = LocalFontEnvironment.getSansSerifFont();
-      size = (size < 1) ? 1 : ((size > 99) ? 99 : size);
+      size = Utilities.rangeRestrict(1, 99, size);
       if(textC == null) textC = Color.black;
       if(fontStyle == null) fontStyle = FontStyle.PLAIN;
       
       // font family and font size apply to the entire string. Initially apply default text color, font style, underline
       // and superscript state to the entire string.
       as.addAttribute(TextAttribute.FAMILY, fam);
-      as.addAttribute(TextAttribute.SIZE, fontSzInMil ? new Float(((double)size)*Measure.PT2IN*1000.0) : size);
+      as.addAttribute(TextAttribute.SIZE, fontSzInMil ? (float) (((double) size) * Measure.PT2IN * 1000.0) : size);
       as.addAttribute(TextAttribute.FOREGROUND, textC);
       as.addAttribute(TextAttribute.WEIGHT, 
             fontStyle.isBold() ? TextAttribute.WEIGHT_BOLD : TextAttribute.WEIGHT_REGULAR);
@@ -2948,20 +2939,25 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       // now apply the attribute code changes, if any, in sequence. Abort as soon as a parsing error occurs.
       boolean ok = true;
       int prevStartIdx = -1;
-      for(int i=0; i<attrRuns.length; i++)
+      for(String attrRun : attrRuns)
       {
-         String[] parts = attrRuns[i].split(":");
+         String[] parts = attrRun.split(":");
          if(parts.length != 2)  // number of ':' separators should be exactly 1
          {
             ok = false;
             break;
-         }  
-         
+         }
+
          // get starting text position for attribute run; abort if not an integer, if position is beyond the end of
          // the character sequence, or if attribute runs are not in ascending order by starting position.
-         int start = -1;
-         try { start = Integer.parseInt(parts[0]); }
-         catch(NumberFormatException nfe) { break; }
+         int start;
+         try
+         {
+            start = Integer.parseInt(parts[0]);
+         } catch(NumberFormatException nfe)
+         {
+            break;
+         }
          if((start >= text.length()) || (start <= prevStartIdx))
          {
             ok = false;
@@ -2970,9 +2966,9 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
 
          prevStartIdx = start;
          String run = parts[1];
-         if(run.length() == 0)
+         if(run.isEmpty())
             continue;   // no attribute codes specified - no change
-         
+
          // text color, if specified, is ALWAYS first. Abort if invalid.
          Color c = null;
          if(UnicodeSubset.HEXDIGITS.contains(run.charAt(0)))
@@ -2983,11 +2979,9 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
             {
                ok = false;
                break;
-            }
-            else if(start == 0 && c == textC)
+            } else if(start == 0 && c == textC)
                c = null;
-         }
-         else if((run.charAt(0) == '-') && (start > 0))
+         } else if((run.charAt(0) == '-') && (start > 0))
             c = textC;
          if(c != null) as.addAttribute(TextAttribute.FOREGROUND, c, start, len);
 
@@ -2999,12 +2993,12 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
          if(start == 0 && fs == fontStyle) fs = null;
          if(fs != null)
          {
-            as.addAttribute(TextAttribute.WEIGHT, 
+            as.addAttribute(TextAttribute.WEIGHT,
                   fs.isBold() ? TextAttribute.WEIGHT_BOLD : TextAttribute.WEIGHT_REGULAR, start, len);
             as.addAttribute(TextAttribute.POSTURE,
                   fs.isItalic() ? TextAttribute.POSTURE_OBLIQUE : TextAttribute.POSTURE_REGULAR, start, len);
          }
-         
+
          Integer underline = null;
          if(run.contains("U"))
             underline = TextAttribute.UNDERLINE_ON;
@@ -3012,7 +3006,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
             underline = UNDERLINE_OFF;
          if(underline != null)
             as.addAttribute(TextAttribute.UNDERLINE, underline, start, len);
-         
+
          Integer script = null;
          if(run.contains("S"))
             script = TextAttribute.SUPERSCRIPT_SUPER;
@@ -3030,7 +3024,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       // invalid attribute codes -- treat entire text argument as regular text, styled the same
       as = new AttributedString(attrText);
       as.addAttribute(TextAttribute.FAMILY, fam);
-      as.addAttribute(TextAttribute.SIZE, fontSzInMil ? new Float(((double)size)*Measure.PT2IN*1000.0) : size);
+      as.addAttribute(TextAttribute.SIZE, fontSzInMil ? (float) (((double) size) * Measure.PT2IN * 1000.0) : size);
       as.addAttribute(TextAttribute.FOREGROUND, textC);
       as.addAttribute(TextAttribute.WEIGHT, 
             fontStyle.isBold() ? TextAttribute.WEIGHT_BOLD : TextAttribute.WEIGHT_REGULAR);
@@ -3118,7 +3112,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    
    /** 
     * Are model notifications currently enabled for this graphic node? Normally, notifications are always enabled -- so
-    * that any changes in the node's definition trigger a rendering update via {@link #onNodeModified()} and are posted
+    * that any changes in the node's definition trigger a rendering update via {@link #onNodeModified} and are posted
     * to the model's edit history. However, if a sequence of changes are being applied, notifications may be turned off
     * temporarily.
     * @return True if notifications are enabled, false otherwise.
@@ -3146,9 +3140,9 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * across many nodes all at once. These changes are made WITHOUT triggering a rendering update after each single 
     * change. Likewise, when such a complex operation is undone or reapplied, a rendering update is triggered only after
     * all the individual property changes have been undone or reapplied. The <i>update</i> argument is cleared in this 
-    * situation, and implementations should set the identified property without calling {@link #onNodeModified()}.</p>
+    * situation, and implementations should set the identified property without calling {@link #onNodeModified}.</p>
     * 
-    * <p>The method relies on {@link #setPropertyValue()} to actually update the property specified.</p>
+    * <p>The method relies on {@link #setPropertyValue} to actually update the property specified.</p>
     * 
     * <p>Do NOT invoke this method directly.</p>
     * 
@@ -3156,13 +3150,13 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * @param propValue The value to which the property should be set. This can be safely cast to the appropriate data
     * type for the property. For primitive types, cast to the Java class representing that type, then invoke the 
     * appropriate method to get the primitive value (eg, <code>Double.doubleValue()</code>).
-    * @param upd If this flag is set, then trigger a rendering update after setting the property value. Else do not. 
+    * @param update If this flag is set, then trigger a rendering update after setting the property value. Else do not.
     * The flag is cleared when the method is invoked during a multi-node, multi-property undo-redo action.
     */
    final boolean undoOrRedoPropertyChange(FGNProperty p, Object propValue, boolean update)
    {
       notify = update;
-      boolean ok = false;
+      boolean ok;
       try { ok = setPropertyValue(p, propValue); }
       finally { this.notify = true; }
       return(ok);
@@ -3204,7 +3198,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
          case Y: ok = setY((Measure)propValue); break;
          case WIDTH: ok = setWidth((Measure)propValue); break;
          case HEIGHT: ok = setHeight((Measure)propValue); break;
-         case ROTATE: ok = setRotate(((Double)propValue).doubleValue()); break;
+         case ROTATE: ok = setRotate((Double) propValue); break;
          case TITLE: ok = setTitle((String)propValue); break;
          case ID: ok = setID((String)propValue); break;
          default: break;
@@ -3245,7 +3239,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       case Y: value = getY(); break;
       case WIDTH: value = getWidth(); break;
       case HEIGHT: value = getHeight(); break;
-      case ROTATE: value = new Double(getRotate()); break;
+      case ROTATE: value = getRotate(); break;
       case TITLE: value = getTitle(); break;
       case ID: value = getID(); break;
       default: break;
@@ -3293,7 +3287,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
    protected void onSubordinateNodeInserted(FGraphicNode sub)
    {
       FGraphicModel model = getGraphicModel();
-      if(model == null || sub == null || subordinates.indexOf(sub) == -1) return;
+      if(model == null || sub == null || !subordinates.contains(sub)) return;
 
       Graphics2D g2d = model.getViewerGraphics();
       try
@@ -3307,7 +3301,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
          // inform model, requesting a render update if necessary
          if(!r.isEmpty()) 
          {
-            List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+            List<Rectangle2D> dirtyAreas = new ArrayList<>();
             dirtyAreas.add( sub.cachedGlobalShape.getBounds2D() );
             model.onChange(this, 1, true, dirtyAreas);
          }
@@ -3343,15 +3337,15 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       {
          // save the old render bounds for THIS node, if available, then calculate the new bounds and update all 
          // ancestor nodes
-         Rectangle2D rThisOld = (Rectangle2D) cachedGlobalShape.getBounds2D();
+         Rectangle2D rThisOld = cachedGlobalShape.getBounds2D();
          getRenderBounds(g2d, true, null);
-         Rectangle2D rThisNew = (Rectangle2D) cachedGlobalShape.getBounds2D();
+         Rectangle2D rThisNew = cachedGlobalShape.getBounds2D();
          FGraphicNode.updateAncestorRenderBounds(g2d, this);
 
          // we should only have to re-render within the old render bounds of the removed node. If these are not 
          // available, we will have to render within the old and new bounds of this node. If these aren't both 
          // available, then the dirty region list will be empty, forcing a complete re-rendering of graphic model.
-         List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+         List<Rectangle2D> dirtyAreas = new ArrayList<>();
          if(sub != null && sub.cachedLocalBounds != null && sub.cachedGlobalShape != null)
             dirtyAreas.add(sub.cachedGlobalShape.getBounds2D());
          else
@@ -3407,7 +3401,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       FGraphicModel model = getGraphicModel();
       if(model == null) return;
 
-      List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+      List<Rectangle2D> dirtyAreas = new ArrayList<>();
 
       // first we add the rectangular bounds of our cached global render shape. This represents the old rendering of 
       // the element. We CANNOT use the cached render bounds and then transform them to global coords, because the 
@@ -3552,8 +3546,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * rendering coordinates in milli-inches. Local rendering coordinates can then be transformed to the "global" 
     * rendering coordinate system of the <em>DataNav</em> figure by applying the affine transformation returned by 
     * <code>getLocalToGlobalTransform()</code>.</p>
-    * 
-    * @see     org.hhmi.phyplot.FViewport2D
+    *
     * @return  The node's viewport, or <code>null</code> if unable to construct one.
     */
    public abstract FViewport2D getViewport();
@@ -3726,7 +3719,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
          int alpha = getFillColor().getAlpha();
          if(alpha > 0 && alpha < 255) return(true);
       }
-      for(int i=0; i<subordinates.size(); i++) if(subordinates.get(i).isTranslucent()) return(true);
+      for(FGraphicNode subordinate : subordinates) if(subordinate.isTranslucent()) return (true);
       
       return(false);
    }
@@ -3756,7 +3749,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * bounds of the other subordinates. The resultant rectangle should bound any marks made by any of the node's 
     * subordinates, but not the node itself.</p>
     * 
-    * @param n The graphic node. If <code>null</code>, the method returns an empty rectangle.
+    * @param parent The graphic node. If <code>null</code>, the method returns an empty rectangle.
     * @param g2d A <code>Graphics2D</code> object encapsulating the graphics context in which the node and its 
     * subordinates would be rendered. It should not be changed nor rendered into -- it is intended only to serve as a 
     * source for the font rendering context needed by some nodes to accurately measure text bounds.
@@ -3766,7 +3759,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * @return The union of all non-empty render bounds across all subordinates of the specified graphic node, WRT the 
     * local rendering coordinate system of that parent node.
     */
-   static final Rectangle2D getSubordinateRenderBounds(FGraphicNode parent, Graphics2D g2d, boolean forceRecalc)
+   static Rectangle2D getSubordinateRenderBounds(FGraphicNode parent, Graphics2D g2d, boolean forceRecalc)
    {
       if(parent == null) return( new Rectangle2D.Double() );
 
@@ -3796,7 +3789,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * @param from The <code>FGraphicNode</code> that was changed, necessitating an update in the render bounds of each 
     * of its direct ancestors.
     */
-   final static void updateAncestorRenderBounds(Graphics2D g2d, FGraphicNode from)
+   static void updateAncestorRenderBounds(Graphics2D g2d, FGraphicNode from)
    {
       if(from == null) return;
       FGraphicNode n = from.parent;
@@ -3910,16 +3903,13 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * indicates what node attributes would change should the user "drop" the node at the new position, and what their 
     * new values would be.</p>
     * 
-    * <p>The default implementation is similar to that of {@link #executeMove()}, except that a cue string of the form
+    * <p>The default implementation is similar to that of {@link #executeMove}, except that a cue string of the form
     * "x=..., y=..." is prepared instead of actually adjusting their current values.</p>
     * 
     * <p>Any subclass that implements a different means of "moving" the node should override this method.</p>
     * 
     * @param dx Net change in horizontal position of node, in the root figure's rendering coordinates.
     * @param dy Net change in vertical position of node, in the root figure's rendering coordinates.
-    * @param pCue If not null, this is initialized to indicate the preferred location where the cue string should
-    * be drawn over the rendered figure, in the figure's rendering coordinates. Assumes the cue string is centered both
-    * horizontally and vertically WRT this location.
     * @return The string cue. Returns null if this node is not movable, or could not be moved IAW the <i>dx,dy</i> 
     * arguments.
     */
@@ -3980,7 +3970,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * @param dx Net change in horizontal position of node, in milli-in WRT model's "global" coordinate system.
     * @param dy Net change in vertical position of node, in milli-in WRT model's "global" coordinate system.
     * @param notify If set and node's location was changed, a reversible edit is posted to the model's edit history and
-    * {@link #onNodeModified()} is invoked to trigger a re-rendering of the model.
+    * {@link #onNodeModified} is invoked to trigger a re-rendering of the model.
     * @return True if node's location was changed, false otherwise.
     */
    boolean executeMove(double dx, double dy, boolean notify)
@@ -4185,10 +4175,10 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
          if(ok)
          {
             cueBuf.setLength(0);
-            cueBuf.append("X=" + xRev.toString());
-            cueBuf.append(", Y=" + yRev.toString());
-            cueBuf.append(", W=" + wRev.toString());
-            cueBuf.append(", H=" + hRev.toString());
+            cueBuf.append("X=").append(xRev.toString());
+            cueBuf.append(", Y=").append(yRev.toString());
+            cueBuf.append(", W=").append(wRev.toString());
+            cueBuf.append(", H=").append(hRev.toString());
          }
       }
 
@@ -4373,7 +4363,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * history.
     * 
     * <p>The default implementation assumes the resize operation was performed by the default implementation of {@link
-    * #executeResize()}. Therefore, the affected properties may only include the node's location <i>x, y</i> and 
+    * #executeResize}. Therefore, the affected properties may only include the node's location <i>x, y</i> and
     * dimensions <i>width, height</i>. If the affected properties include none of these, or include other properties, no
     * action is taken and the method returns false.</p>
     * 
@@ -4464,12 +4454,12 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       Double coord = null;
       switch(align)
       {
-      case LEFT: coord = new Double(r.getMinX()); break;
-      case RIGHT: coord = new Double(r.getMaxX()); break;
-      case BOTTOM: coord = new Double(r.getMinY()); break;
-      case TOP: coord = new Double(r.getMaxY()); break;
-      case HCENTER: coord = new Double(r.getCenterX()); break;
-      case VCENTER: coord = new Double(r.getCenterY()); break;
+      case LEFT: coord = r.getMinX(); break;
+      case RIGHT: coord = r.getMaxX(); break;
+      case BOTTOM: coord = r.getMinY(); break;
+      case TOP: coord = r.getMaxY(); break;
+      case HCENTER: coord = r.getCenterX(); break;
+      case VCENTER: coord = r.getCenterY(); break;
       }
       return(coord);
    }
@@ -4733,7 +4723,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
          return;
       }
       
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(this);
       while(!nodeStack.isEmpty())
       {
@@ -4763,7 +4753,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       if(!hasStrokePatternProperty()) return(PSDoc.SOLIDLINE);
       float[] dashGap = getStrokePattern().getDashGapArrayMilliIn(getStrokeWidth(), getStrokeEndcap()!=StrokeCap.BUTT);
       int[] iDashGap = new int[dashGap.length];
-      for(int i=0; i<dashGap.length; i++) iDashGap[i] = (int) Math.round(dashGap[i]);
+      for(int i=0; i<dashGap.length; i++) iDashGap[i] = Math.round(dashGap[i]);
       return(iDashGap);
    }
 
@@ -4787,10 +4777,11 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
     * node. All subordinates in this node are deeply cloned into the new node. The parent of the cloned node is 
     * set to <code>null</code>, and the rendering infrastructure is set to an uninitialized state. 
     */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       FGraphicNode copy = null;
       try {copy = (FGraphicNode) super.clone(); } catch(CloneNotSupportedException cnse) {assert(true);}
+      assert copy != null;
 
       // must set parent to null before inserting clones of children; otherwise, the copy might be hooked into
       // the source model and the insertions below could trigger errant model notifications!
@@ -4802,7 +4793,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       copy.cachedLocalBounds = null;
       copy.cachedGlobalShape = new Rectangle2D.Double();
 
-      copy.subordinates = new ArrayList<FGraphicNode>();
+      copy.subordinates = new ArrayList<>();
       copy.nComponents = 0;
       for(int i=0; i<this.subordinates.size(); i++)
       {
@@ -4828,7 +4819,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       /**
        * Construct a reversible edit which will undor or redo the application of the specified style set to one or more
        * graphic nodes. The "undo" operation restores each node's original style set, while the "redo" operation will
-       * re-apply the specified styling. Affected nodes are recorded by calling {@link #addAffectedNode()}.
+       * re-apply the specified styling. Affected nodes are recorded by calling {@link #addAffectedNode}.
        * 
        * @param applied The style set applied to each node to effect the reversible styling changes.
        */
@@ -4842,7 +4833,7 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
        * Construct a reversible edit which will undo or redo the application of a style set on the specified graphic
        * node. The "undo" operation restores the style set in effect prior to the styling changes, while the "redo"
        * operation will re-apply those changes. Additonal nodes to which the style set is applied can be recorded by
-       * calling {@link #addAffectedNode()}.
+       * calling {@link #addAffectedNode}.
        * 
        * @param n The graphic node that is the subject of the reversible styling changes.
        * @param applied The style set applied to the node to effect the reversible styling changes.
@@ -4899,15 +4890,15 @@ public abstract class FGraphicNode implements Focusable, PainterStyle, PSTransfo
       }
       
       /** The graphic nodes that are the subject of the reversible styling change. */
-      private List<FGraphicNode> affected = new ArrayList<FGraphicNode>();
+      private final List<FGraphicNode> affected = new ArrayList<>();
       /** Style set applied to all nodes to effect the styling changes. It is applied again to "redo" the changes. */
       private FGNStyleSet styleSet;
       /** Each affected node's style set prior to the styling change. Applying it restores node to previous state. */
-      private List<FGNStyleSet> originalSS = new ArrayList<FGNStyleSet>();
+      private final List<FGNStyleSet> originalSS = new ArrayList<>();
    }
    
    /**
-    * Helper method for {@link StyleSetRevEdit#undoOrRedo()}. Allows recursion to handle component node styling, if 
+    * Helper method for {@link StyleSetRevEdit#undoOrRedo}. Allows recursion to handle component node styling, if
     * necessary.
     * @param n The <i>FypML</i> graphic node for which a previous styling operation is to be reversed.
     * @param styleSet The style set to be applied to the node to undo or redo a set of styling changes.

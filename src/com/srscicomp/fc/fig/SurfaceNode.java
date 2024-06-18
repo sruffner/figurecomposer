@@ -82,21 +82,21 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
    //
    
    /** Minimum allowed value for the surface plot's mesh size limit. */
-   public static int MIN_MESHLIMIT = 25;
+   public static final int MIN_MESHLIMIT = 25;
    /** Maximum allowed value for the surface plot's mesh size limit. */
-   public static int MAX_MESHLIMIT = 500;
+   public static final int MAX_MESHLIMIT = 500;
    
    /** The surface plot's mesh size limit. */
    private int meshLimit;
    
    /**
-    * Get the surface plot's current mesh size limit. See {@link #setMeshLimit()} for details.
+    * Get the surface plot's current mesh size limit. See {@link #setMeshLimit} for details.
     * @return The mesh size limit. Value is restricted to [{@link #MIN_MESHLIMIT} .. {@link #MAX_MESHLIMIT}].
     */
    public int getMeshLimit() { return(meshLimit); }
 
    /**
-    * Set the mesh size limit for this surface plot. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the mesh size limit for this surface plot. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * <p>For performance reasons, the total number of mesh polygons making up a surface must be limited. The X-Y 
     * domain space of the data source can be thought of as an NxM rectangular grid, with N divisions in X and M in Y.
@@ -117,12 +117,12 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
       {
          if(doMultiNodeEdit(FGNProperty.MESHLIMIT, limit)) return(true);
          
-         Integer old = new Integer(meshLimit);
+         Integer old = meshLimit;
          meshLimit = limit;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.MESHLIMIT);
-            FGNRevEdit.post(this, FGNProperty.MESHLIMIT, new Integer(meshLimit), old);
+            FGNRevEdit.post(this, FGNProperty.MESHLIMIT, meshLimit, old);
          }
       }
       return(true);
@@ -145,7 +145,7 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
    public boolean isColorMapped() { return(colorMapped); }
 
    /**
-    * Enable or disable color-mapping of this surface. If a change is made, {@link #onNodeModified()} is invoked.
+    * Enable or disable color-mapping of this surface. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param b True for a color-mapped surface, false for single-color.
     */
@@ -153,22 +153,22 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
    {
       if(colorMapped != b)
       {
-         if(doMultiNodeEdit(FGNProperty.CMAP, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.CMAP, b)) return;
          
-         Boolean old = new Boolean(colorMapped);
+         Boolean old = colorMapped;
          colorMapped = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.CMAP);
             String desc = "Turn surface color-mapping " + (colorMapped ? "on" : "off");
-            FGNRevEdit.post(this, FGNProperty.CMAP, new Boolean(colorMapped), old, desc);
+            FGNRevEdit.post(this, FGNProperty.CMAP, colorMapped, old, desc);
          }
       }
    }
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case MESHLIMIT: ok = setMeshLimit((Integer)propValue); break;
@@ -180,11 +180,11 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case MESHLIMIT: value = new Integer( getMeshLimit() ); break;
-         case CMAP: value = new Boolean( isColorMapped() ); break;
+         case MESHLIMIT: value = getMeshLimit(); break;
+         case CMAP: value = isColorMapped(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -215,7 +215,7 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
    /** The only node-specific style for the surface node is the color-mapped flag. */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      styleSet.putStyle(FGNProperty.CMAP, new Boolean(isColorMapped()));
+      styleSet.putStyle(FGNProperty.CMAP, isColorMapped());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -349,8 +349,8 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
       FGNGraph g = getParentGraph();
       if(g == null) return;
       
-      List<Point2D> verts = new ArrayList<Point2D>();
-      List<Number> fillColors = new ArrayList<Number>();
+      List<Point2D> verts = new ArrayList<>();
+      List<Number> fillColors = new ArrayList<>();
       mesh.prepareMeshPolygonsForPSDoc(verts, fillColors);
       if(verts.isEmpty()) return;
       
@@ -371,7 +371,7 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of the surface node that
     * was cloned. The clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected SurfaceNode clone() throws CloneNotSupportedException
    {
       SurfaceNode copy = (SurfaceNode) super.clone();
       copy.mesh = new MeshGenerator();
@@ -424,7 +424,7 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
          if(g3 == null) return;
          prj = g3.get2DProjection();
          colorLUT = isColorMapped() ? g3.getColorBar().getColorLUT() : null;
-         isLogCM = isColorMapped() ? g3.isLogarithmicColorMap() : false;
+         isLogCM = isColorMapped() && g3.isLogarithmicColorMap();
          cMapZRng = null;
          if(isColorMapped())
          {
@@ -481,10 +481,10 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
                   double zAvg = calcMeshCell(i, j, invX, invY);
                   if(Utilities.isWellDefined(zAvg))
                   {
-                     for(int k=0; k<vertices.length; k++)
+                     for(Point2D vertex : vertices)
                      {
-                        double x = vertices[k].getX();
-                        double y = vertices[k].getY();
+                        double x = vertex.getX();
+                        double y = vertex.getY();
                         if(x < xmin) xmin = x;
                         if(x > xmax) xmax = x;
                         if(y < ymin) ymin = y;
@@ -507,10 +507,10 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
                   double zAvg = calcMeshCell(i, j, invX, invY);
                   if(Utilities.isWellDefined(zAvg))
                   {
-                     for(int k=0; k<vertices.length; k++)
+                     for(Point2D vertex : vertices)
                      {
-                        double x = vertices[k].getX();
-                        double y = vertices[k].getY();
+                        double x = vertex.getX();
+                        double y = vertex.getY();
                         if(x < xmin) xmin = x;
                         if(x > xmax) xmax = x;
                         if(y < ymin) ymin = y;
@@ -768,7 +768,7 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
                      verts.add(new Point2D.Double(vertices[3].getX(), vertices[3].getY()));
                      
                      if(isCMapped) 
-                        fillColors.add(new Integer(colorLUT.mapValueToRGB(zAvg, cMapZRng[0], cMapZRng[1], isLogCM)));
+                        fillColors.add(colorLUT.mapValueToRGB(zAvg, cMapZRng[0], cMapZRng[1], isLogCM));
                   }
                   i += iDelta;
                }
@@ -793,7 +793,7 @@ public class SurfaceNode extends FGNPlottableData implements Cloneable
                      verts.add(new Point2D.Double(vertices[3].getX(), vertices[3].getY()));
                      
                      if(isCMapped) 
-                        fillColors.add(new Integer(colorLUT.mapValueToRGB(zAvg, cMapZRng[0], cMapZRng[1], isLogCM)));
+                        fillColors.add(colorLUT.mapValueToRGB(zAvg, cMapZRng[0], cMapZRng[1], isLogCM));
                   }
                   j += jDelta;
                }

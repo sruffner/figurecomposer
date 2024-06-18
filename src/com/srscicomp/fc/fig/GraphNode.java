@@ -107,6 +107,11 @@ public class GraphNode extends FGNGraph implements Cloneable
    @Override public ColorBarNode getColorBar() { return((ColorBarNode)getComponentNodeAt(2)); }
    @Override public LegendNode getLegend() { return((LegendNode)getComponentNodeAt(5)); }
 
+   @Override public GraphNode clone() throws CloneNotSupportedException
+   {
+      return (GraphNode) super.clone();
+   }
+
 
    //
    // Properties
@@ -133,7 +138,7 @@ public class GraphNode extends FGNGraph implements Cloneable
       /** Full 4-quadrant layout, with origin at the center of graph's data box. Mostly used with polar plots. */
       ALLQUAD("allQuad");
       
-      private String tag;
+      private final String tag;
       
       Layout(String tag) { this.tag = tag; }
       
@@ -172,7 +177,7 @@ public class GraphNode extends FGNGraph implements Cloneable
        */
       public boolean isZAxisAutoranged() { return(tag.contains("z")); }
       
-      private String tag;
+      private final String tag;
    }
 
    
@@ -260,12 +265,12 @@ public class GraphNode extends FGNGraph implements Cloneable
                   }
                   if(axis.getStart() != 0)
                   {
-                     undoer.addPropertyChange(axis, FGNProperty.START, new Double(0), new Double(axis.getStart()));
+                     undoer.addPropertyChange(axis, FGNProperty.START, (double) 0, axis.getStart());
                      axis.setStart(0);
                   }
                   if(axis.getEnd() != 360)
                   {
-                     undoer.addPropertyChange(axis, FGNProperty.END, new Double(360), new Double(axis.getEnd()));
+                     undoer.addPropertyChange(axis, FGNProperty.END, 360.0, axis.getEnd());
                      axis.setEnd(360);
                   }
                }
@@ -283,8 +288,8 @@ public class GraphNode extends FGNGraph implements Cloneable
                      if(!majorTicks.isTrackingParentAxis()) majorTicks.setTrackingParentAxis(true);
                      if(majorTicks.getInterval() != 45)
                      {
-                        Double oldIntv = new Double(majorTicks.getInterval());
-                        undoer.addPropertyChange(majorTicks, FGNProperty.INTV, new Double(45), oldIntv);
+                        Double oldIntv = majorTicks.getInterval();
+                        undoer.addPropertyChange(majorTicks, FGNProperty.INTV, 45.0, oldIntv);
                         majorTicks.setInterval(45);
                      }
                   }
@@ -417,7 +422,7 @@ public class GraphNode extends FGNGraph implements Cloneable
    }
 
    /** The background color for the graph's data box (default is transparent black). */
-   private Color boxColor = null;
+   private Color boxColor;
    
    /** 
     * Get the background color for the graph's data box.
@@ -487,12 +492,12 @@ public class GraphNode extends FGNGraph implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case TYPE : ok = setCoordSys((CoordSys)propValue); break;
          case LAYOUT: ok = setLayout((Layout)propValue); break;
-         case CLIP: setClip(((Boolean)propValue).booleanValue()); ok = true; break;
+         case CLIP: setClip((Boolean) propValue); ok = true; break;
          case AUTORANGE: setAutorangeAxes((Autorange)propValue); ok = true; break;
          case BOXC : ok = this.setBoxColor((Color) propValue); break;
          default: ok = super.setPropertyValue(p, propValue); break;
@@ -502,12 +507,12 @@ public class GraphNode extends FGNGraph implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case TYPE : value = getCoordSys(); break;
          case LAYOUT: value = getLayout(); break;
-         case CLIP: value = new Boolean(getClip()); break;
+         case CLIP: value = getClip(); break;
          case AUTORANGE: value = getAutorangeAxes(); break;
          case BOXC: value = getBoxColor(); break;
          default: value = super.getPropertyValue(p); break;
@@ -569,7 +574,7 @@ public class GraphNode extends FGNGraph implements Cloneable
       Graphics2D g2d = model.getViewerGraphics();
       try
       {
-         List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+         List<Rectangle2D> dirtyAreas = new ArrayList<>();
          for(int i=0; i<getChildCount(); i++)
          {
             FGraphicNode n = getChildAt(i);
@@ -586,7 +591,7 @@ public class GraphNode extends FGNGraph implements Cloneable
             }
          }
 
-         if(dirtyAreas.size() > 0)
+         if(!dirtyAreas.isEmpty())
             model.onChange(this, -1, true, dirtyAreas);
       }
       finally { if(g2d != null) g2d.dispose(); }
@@ -616,7 +621,7 @@ public class GraphNode extends FGNGraph implements Cloneable
          }
          finally { if(g2d != null) g2d.dispose(); }
          
-         List<Rectangle2D> dirty = new ArrayList<Rectangle2D>();
+         List<Rectangle2D> dirty = new ArrayList<>();
          dirty.add( getLocalToGlobalTransform().createTransformedShape(getBoundingBoxLocal()).getBounds2D() );
          model.onChange(this, -1, true, dirty);
       }
@@ -752,10 +757,8 @@ public class GraphNode extends FGNGraph implements Cloneable
    // 
    // Support for style sets
    //
-   
-   @Override public boolean supportsStyleSet()  { return(true); }
 
-   /** 
+   /**
     * The node-specific properties exported in a graph node's style set are the coordinate system and layout, the 
     * auto-range state, the 'clip' flag, the data box background color, and attributes affecting the visibility or
     * alignment of the graph's semi-automated title.
@@ -1065,13 +1068,8 @@ public class GraphNode extends FGNGraph implements Cloneable
          }
          
          // render the legend and semi-automated title, unclipped
-         if(isClipped)
-         {
-            g2dCopy.setClip(clipOrig);
-            isClipped = false;
-         }
+         if(isClipped) g2dCopy.setClip(clipOrig);
          if(!legend.render(g2dCopy, task)) return(false);
-         
          if(!renderAutoTitle(g2dCopy, task)) return(false);
       }
       finally 
@@ -1098,7 +1096,7 @@ public class GraphNode extends FGNGraph implements Cloneable
 
       // polar graphs: in all-quad layout, clip shape is a full circle with diam = the smaller dimension of viewport 
       // rect. In single-quad layouts, it is a quarter circle wedge with radius = the smaller dimension.
-      Shape clip = null;
+      Shape clip;
       double w = rBox.getWidth();
       double h = rBox.getHeight();
       double minDim = Math.min(w, h);

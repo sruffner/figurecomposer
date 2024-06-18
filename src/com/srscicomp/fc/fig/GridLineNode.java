@@ -38,7 +38,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
     * If set, this <code>GridLineNode</code> represents the primary grid lines of its parent <code>GraphNode</code>.
     * Otherwise, it represents the secondary grid lines.
     */
-   private boolean isPrimary;
+   private final boolean isPrimary;
 
    /**
     * Construct a <code>GridLineNode</code> for the primary or secondary grid lines of a graph. The grid lines are 
@@ -116,29 +116,29 @@ public class GridLineNode extends FGraphicNode implements Cloneable
    public boolean getHide() { return(hide); }
 
    /**
-    * Set the hide state for this grid line node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the hide state for this grid line node. If a change is made, {@link #onNodeModified} is invoked.
     * @param b True to hide grid lines, false to show them.
     */
    public void setHide(boolean b)
    {
       if(hide != b)
       {
-         if(doMultiNodeEdit(FGNProperty.HIDE, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.HIDE, b)) return;
          
-         Boolean old = new Boolean(hide);
+         Boolean old = hide;
          hide = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = hide ? "Hide " : "Show ";
             desc += isPrimary ? "horizontal (or theta) grid lines" : "vertical (or radial) grid lines";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hide), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hide, old, desc);
          }
       }
    }
 
    /**
-    * Same as {@link #setHide()}, but without posting an "undo" operation or calling {@link #onNodeModified()}. It is
+    * Same as {@link #setHide}, but without posting an "undo" operation or calling {@link #onNodeModified}. It is
     * meant to be used only when multiple properties are being modified in a single, atomic operation.
     * @param b True to hide grid lines, false to show them.
     */
@@ -166,7 +166,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
    {
       if(p == FGNProperty.HIDE)
       {
-         setHide(((Boolean)propValue).booleanValue());
+         setHide((Boolean) propValue);
          return(true);
       }
       return(super.setPropertyValue(p, propValue));
@@ -174,7 +174,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      return((p==FGNProperty.HIDE) ? new Boolean(getHide()) : super.getPropertyValue(p));
+      return((p==FGNProperty.HIDE) ? Boolean.valueOf(getHide()) : super.getPropertyValue(p));
    }
    
    // 
@@ -191,7 +191,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
    /** The only node-specific style property exported in the grid line node's style set is the hide flag. */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
-      styleSet.putStyle(FGNProperty.HIDE, new Boolean(getHide()));
+      styleSet.putStyle(FGNProperty.HIDE, getHide());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -201,7 +201,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.HIDE, getNodeType(), Boolean.class);
       if(b != null && !b.equals(restore.getCheckedStyle(FGNProperty.HIDE, getNodeType(), Boolean.class)))
       {
-         hide = b.booleanValue();
+         hide = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.HIDE);
@@ -281,7 +281,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
     */
    private List<Shape> prepareGridPrimitives()
    {
-      List<Shape> gridLines = new ArrayList<Shape>();
+      List<Shape> gridLines = new ArrayList<>();
 
       // if node is currently not rendered, for whatever reason, return an empty list
       if(!isRendered()) return(gridLines);
@@ -317,27 +317,27 @@ public class GridLineNode extends FGraphicNode implements Cloneable
          if(isPrimary) 
          {
             // Cartesian primary axis grid lines -- horiz lines located IAW major ticks along secondary (Y) axis
-            for(int i=0; i<ax2Ticks.length; i++)
+            for(double ax2Tick : ax2Ticks)
             {
-               p0.setLocation(ax1Start, ax2Ticks[i]);
-               p1.setLocation(ax1End, ax2Ticks[i]);
-               viewport.userUnitsToThousandthInches( p0 );
-               viewport.userUnitsToThousandthInches( p1 );
+               p0.setLocation(ax1Start, ax2Tick);
+               p1.setLocation(ax1End, ax2Tick);
+               viewport.userUnitsToThousandthInches(p0);
+               viewport.userUnitsToThousandthInches(p1);
                if(Utilities.isWellDefined(p0) && Utilities.isWellDefined(p1))
-                  gridLines.add( new Line2D.Double(p0, p1) );
+                  gridLines.add(new Line2D.Double(p0, p1));
             }
          }
          else 
          {
             // Cartesian secondary axis grid lines -- vert lines located IAW major ticks along primary (X) axis
-            for(int i=0; i<ax1Ticks.length; i++ )
+            for(double ax1Tick : ax1Ticks)
             {
-               p0.setLocation(ax1Ticks[i],ax2Start);
-               p1.setLocation(ax1Ticks[i],ax2End);
-               viewport.userUnitsToThousandthInches( p0 );
-               viewport.userUnitsToThousandthInches( p1 );
+               p0.setLocation(ax1Tick, ax2Start);
+               p1.setLocation(ax1Tick, ax2End);
+               viewport.userUnitsToThousandthInches(p0);
+               viewport.userUnitsToThousandthInches(p1);
                if(Utilities.isWellDefined(p0) && Utilities.isWellDefined(p1))
-                  gridLines.add( new Line2D.Double(p0, p1) );
+                  gridLines.add(new Line2D.Double(p0, p1));
             }
          }
       }
@@ -354,32 +354,32 @@ public class GridLineNode extends FGraphicNode implements Cloneable
          {
             // primary axis grid lines are a series of concentric circles or 90-deg arcs about the polar origin; their 
             // radii are specified by the major ticks along the secondary (radial) axis. 
-            
-            for( int i=0; i<ax2Ticks.length; i++ )
+
+            for(double ax2Tick : ax2Ticks)
             {
-               p1.setLocation( ax1Start, ax2Ticks[i] );
+               p1.setLocation(ax1Start, ax2Tick);
                double r = viewport.convertUserDistanceToThousandthInches(pOriginUser, p1);
                if(r <= 0) continue;
 
-               double left = pOriginMils.getX()-r;
-               double bot = pOriginMils.getY()-r;
-               double size = r *2;
+               double left = pOriginMils.getX() - r;
+               double bot = pOriginMils.getY() - r;
+               double size = r * 2;
                if(g.getLayout() == GraphNode.Layout.ALLQUAD)
-                  gridLines.add( new Ellipse2D.Double(left, bot, size, size) );
+                  gridLines.add(new Ellipse2D.Double(left, bot, size, size));
                else
-                  gridLines.add( new Arc2D.Double(left, bot, size, size, -ax1Start, -90, Arc2D.OPEN) );
+                  gridLines.add(new Arc2D.Double(left, bot, size, size, -ax1Start, -90, Arc2D.OPEN));
             }
          }
          else
          {
             // radial grid lines emanate from origin out to the maximum radial value, at angular intervals indicated 
             // by the major ticks along the primary (theta) axis.
-            for( int i=0; i<ax1Ticks.length; i++ )
+            for(double ax1Tick : ax1Ticks)
             {
-               p1.setLocation(ax1Ticks[i], ax2End);
-               viewport.userUnitsToThousandthInches( p1 );
-               if( Utilities.isWellDefined(p1) )
-                  gridLines.add( new Line2D.Double(pOriginMils, p1) );
+               p1.setLocation(ax1Tick, ax2End);
+               viewport.userUnitsToThousandthInches(p1);
+               if(Utilities.isWellDefined(p1))
+                  gridLines.add(new Line2D.Double(pOriginMils, p1));
             }
          }
       }
@@ -405,8 +405,9 @@ public class GridLineNode extends FGraphicNode implements Cloneable
    protected Rectangle2D getRenderBoundsForSelf(Graphics2D g2d, boolean forceRecalc)
    {
       Rectangle2D rSelf = new Rectangle2D.Double();
-      if(isRendered())
-         rSelf.setRect( getParentGraph().getBoundingBoxLocal() );
+      GraphNode g = getParentGraph();
+      if(isRendered() && g != null)
+         rSelf.setRect( g.getBoundingBoxLocal() );
       return(rSelf);
    }
 
@@ -428,7 +429,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
       
       // prepare list of primitives that must be stroked to render the grid. If it's empty, there's nothing to do.
       List<Shape> gridLines = prepareGridPrimitives();
-      if(gridLines.size() == 0) return(true);
+      if(gridLines.isEmpty()) return(true);
 
       Graphics2D g2dCopy = (Graphics2D) g2d.create();
       try
@@ -440,7 +441,7 @@ public class GridLineNode extends FGraphicNode implements Cloneable
       }
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    
@@ -451,9 +452,9 @@ public class GridLineNode extends FGraphicNode implements Cloneable
    public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException
    {
       FViewport2D parentVP = getParentViewport();
-      if(parentVP == null || getHide() || !isStroked()) return;
-      
       GraphNode g = getParentGraph();
+      if(parentVP == null || g == null || getHide() || !isStroked()) return;
+
       boolean isPolar = g.isPolar();
 
       // get the axis endpoints and major ticks -- which we need to determine placement of grid lines
@@ -483,10 +484,10 @@ public class GridLineNode extends FGraphicNode implements Cloneable
          if(isPrimary) 
          {
             // primary axis grid lines -- horizontal lines located IAW major ticks along secondary (Y) axis
-            for(int i = 0; i < ax2Ticks.length; i++)
+            for(double ax2Tick : ax2Ticks)
             {
-               p0.setLocation(ax1Start, ax2Ticks[i]);
-               p1.setLocation(ax1End, ax2Ticks[i]);
+               p0.setLocation(ax1Start, ax2Tick);
+               p1.setLocation(ax1End, ax2Tick);
                parentVP.userUnitsToThousandthInches(p0);
                parentVP.userUnitsToThousandthInches(p1);
                if(Utilities.isWellDefined(p0) && Utilities.isWellDefined(p1))
@@ -496,10 +497,10 @@ public class GridLineNode extends FGraphicNode implements Cloneable
          else 
          {
             // secondary axis grid lines -- vertical lines located IAW major ticks along primary (X) axis
-            for(int i = 0; i < ax1Ticks.length; i++)
+            for(double ax1Tick : ax1Ticks)
             {
-               p0.setLocation(ax1Ticks[i],ax2Start);
-               p1.setLocation(ax1Ticks[i], ax2End);
+               p0.setLocation(ax1Tick, ax2Start);
+               p1.setLocation(ax1Tick, ax2End);
                parentVP.userUnitsToThousandthInches(p0);
                parentVP.userUnitsToThousandthInches(p1);
                if(Utilities.isWellDefined(p0) && Utilities.isWellDefined(p1))
@@ -539,9 +540,9 @@ public class GridLineNode extends FGraphicNode implements Cloneable
             {
                // radial grid lines emanate from origin out to the maximum radial value, at angular intervals indicated 
                // by the major ticks along the primary (theta) axis.
-               for(int i = 0; i < ax1Ticks.length; i++)
+               for(double ax1Tick : ax1Ticks)
                {
-                  p1.setLocation(ax1Ticks[i], ax2End);
+                  p1.setLocation(ax1Tick, ax2End);
                   parentVP.userUnitsToThousandthInches(p1);
                   if(Utilities.isWellDefined(p1))
                      psDoc.renderLine(pOriginMils, p1);
@@ -551,5 +552,10 @@ public class GridLineNode extends FGraphicNode implements Cloneable
       }
 
       psDoc.endElement();
+   }
+
+   @Override public GridLineNode clone() throws CloneNotSupportedException
+   {
+      return (GridLineNode) super.clone();
    }
 }

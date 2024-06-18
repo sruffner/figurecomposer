@@ -3,10 +3,7 @@ package com.srscicomp.fc.fig;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import com.srscicomp.common.g2dutil.CircularArcPainter;
 import com.srscicomp.common.g2dutil.Painter;
@@ -157,7 +154,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    public DisplayMode getMode() { return(mode); }
 
    /**
-    * Set the data display mode for this raster node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the data display mode for this raster node. If a change is made, {@link #onNodeModified} is invoked.
     * @param mode The new display mode. Null is rejected.
     * @return True if new value was accepted; false otherwise.
     */
@@ -190,7 +187,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    public float getXOffset() { return(xOffset); }
    
    /**
-    * Set the X-coordinate offset. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the X-coordinate offset. If a change is made, {@link #onNodeModified} is invoked.
     * @param xoff A new value for the X-coordinate offset. NaN and +/-infinity are rejected.
     * @return True if new value was accepted; false otherwise.
     */
@@ -199,14 +196,14 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(xoff)) return(false);
       if(xOffset != xoff)
       {
-         if(doMultiNodeEdit(FGNProperty.XOFF, new Float(xoff))) return(true);
+         if(doMultiNodeEdit(FGNProperty.XOFF, xoff)) return(true);
          
-         Float old = new Float(xOffset);
+         Float old = xOffset;
          xOffset = xoff;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.XOFF);
-            FGNRevEdit.post(this, FGNProperty.XOFF, new Float(xOffset), old);
+            FGNRevEdit.post(this, FGNProperty.XOFF, xOffset, old);
          }
       }
       return(true);
@@ -224,7 +221,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    public float getBaseline() { return(baseline); }
     
    /**
-    * Set the Y-coordinate baseline. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the Y-coordinate baseline. If a change is made, {@link #onNodeModified} is invoked.
     * @param base The new baseline, in user units. NaN and +/-infinity are rejected.
     * @return True if new value was accepted; false otherwise.
     */
@@ -233,14 +230,14 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(base)) return(false);
       if(baseline != base)
       {
-         if(doMultiNodeEdit(FGNProperty.BASELINE, new Float(base))) return(true);
+         if(doMultiNodeEdit(FGNProperty.BASELINE, base)) return(true);
          
-         Float old = new Float(baseline);
+         Float old = baseline;
          baseline = base;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.BASELINE);
-            FGNRevEdit.post(this, FGNProperty.BASELINE, new Float(baseline), old);
+            FGNRevEdit.post(this, FGNProperty.BASELINE, baseline, old);
          }
       }
       return(true);
@@ -262,7 +259,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    public int getNumBins() { return(numBins); }
     
    /**
-    * Set the number of histogram bins. If a change is made, {@link #onNodeModified()} is invoked. 
+    * Set the number of histogram bins. If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param n Requested number of bins. Values outside [{@link #MINNUMBINS}, {@link #MAXNUMBINS}] are rejected.
     * @return True if new value was accepted; false otherwise.
@@ -272,14 +269,14 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       if(n < MINNUMBINS || n > MAXNUMBINS) return(false);
       if(numBins != n)
       {
-         if(doMultiNodeEdit(FGNProperty.NBINS, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.NBINS, n)) return(true);
          
-         Integer old = new Integer(numBins);
+         Integer old = numBins;
          numBins = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.NBINS);
-            FGNRevEdit.post(this, FGNProperty.NBINS, new Integer(numBins), old);
+            FGNRevEdit.post(this, FGNProperty.NBINS, numBins, old);
          }
       }
       return(true);
@@ -299,21 +296,21 @@ public class RasterNode extends FGNPlottableData implements Cloneable
 
    /**
     * Select whether or not histogram bar reflects average count per raster per bin or total count per bin in the {@link 
-    * DisplayMode#HISTOGRAM} mode only. If a change is made, {@link #onNodeModified()} in invoked.
+    * DisplayMode#HISTOGRAM} mode only. If a change is made, {@link #onNodeModified} in invoked.
     * @param b True for average count; false for total count.
     */
    public void setAveraged(boolean b)
    {
       if(b != averaged)
       {
-         if(doMultiNodeEdit(FGNProperty.AVG, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.AVG, b)) return;
          
-         Boolean old = new Boolean(averaged);
+         Boolean old = averaged;
          averaged = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.AVG);
-            FGNRevEdit.post(this, FGNProperty.AVG, new Boolean(averaged), old);
+            FGNRevEdit.post(this, FGNProperty.AVG, averaged, old);
          }
       }
    }
@@ -329,23 +326,23 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    public int getLineHeight() { return(lineHeight); }
 
    /**
-    * Set the raster line height. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the raster line height. If a change is made, {@link #onNodeModified} is invoked.
     * @param n The raster line height, in stroke-width units. Rejected if non-positive.
-    * @returns True if new value was accepted; false otherwise.
+    * @return True if new value was accepted; false otherwise.
     */
    public boolean setLineHeight(int n)
    {
       if(n < 1) return(false);
       if(lineHeight != n)
       {
-         if(doMultiNodeEdit(FGNProperty.HEIGHT, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.HEIGHT, n)) return(true);
          
-         Integer old = new Integer(lineHeight);
+         Integer old = lineHeight;
          lineHeight = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HEIGHT);
-            FGNRevEdit.post(this, FGNProperty.HEIGHT, new Integer(lineHeight), old);
+            FGNRevEdit.post(this, FGNProperty.HEIGHT, lineHeight, old);
          }
       }
       return(true);
@@ -362,30 +359,30 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    public int getLineSpacer() { return(lineSpacer); }
 
    /**
-    * Set the raster line spacer. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the raster line spacer. If a change is made, {@link #onNodeModified} is invoked.
     * @param n The raster line spacer, in stroke-width units. Rejected if non-positive.
-    * @returns True if new value was accepted; false otherwise.
+    * @return True if new value was accepted; false otherwise.
     */
    public boolean setLineSpacer(int n)
    {
       if(n < 1) return(false);
       if(lineSpacer != n)
       {
-         if(doMultiNodeEdit(FGNProperty.SPACER, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.SPACER, n)) return(true);
          
-         Integer old = new Integer(lineSpacer);
+         Integer old = lineSpacer;
          lineSpacer = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.SPACER);
-            FGNRevEdit.post(this, FGNProperty.SPACER, new Integer(lineSpacer), old);
+            FGNRevEdit.post(this, FGNProperty.SPACER, lineSpacer, old);
          }
       }
       return(true);
    }
 
    /** Sample range [S, E] applicable to all histogram-like display modes. */
-   private double[] range = new double[] {0, 0};
+   private final double[] range = new double[] {0, 0};
    
    /**
     * Get the start S of the sample range [S..E] which controls the bar width and overall extent of the rendered 
@@ -405,7 +402,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    
    /**
     * Set the histogram sample range [S..E], which controls the bar width and overall extent of the rendered histogram 
-    * in any of the histogram display modes. If a change is made, {@link #onNodeModified()} is invoked. Note that if 
+    * in any of the histogram display modes. If a change is made, {@link #onNodeModified} is invoked. Note that if
     * S >= E, this range is ignored and the actual observed sample range is used instead.
     * @param s Start of the range, S.
     * @param e End of the range, E.
@@ -414,7 +411,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
     */
    public boolean setHistogramRange(double s, double e)
    {
-      if(!(Utilities.isWellDefined(s) && Utilities.isWellDefined(s))) return(false);
+      if(!(Utilities.isWellDefined(s) && Utilities.isWellDefined(e))) return(false);
       if(s == range[0] && e == range[1]) return(true);
       if(doMultiNodeEdit(FGNProperty.RANGE, new double[] {s, e})) return(true);
 
@@ -432,7 +429,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case MODE : ok = setMode((DisplayMode)propValue); break;
@@ -453,16 +450,16 @@ public class RasterNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case MODE : value = getMode(); break;
-         case XOFF: value = new Float(getXOffset()); break;
-         case BASELINE: value = new Float(getBaseline()); break;
-         case NBINS: value = new Integer(getNumBins()); break;
-         case AVG: value = new Boolean(getAveraged()); break;
-         case HEIGHT: value = new Integer(getLineHeight()); break;
-         case SPACER: value = new Integer(getLineSpacer()); break;
+         case XOFF: value = getXOffset(); break;
+         case BASELINE: value = getBaseline(); break;
+         case NBINS: value = getNumBins(); break;
+         case AVG: value = getAveraged(); break;
+         case HEIGHT: value = getLineHeight(); break;
+         case SPACER: value = getLineSpacer(); break;
          case RANGE : value = new double[] {getHistogramRangeStart(), getHistogramRangeEnd()}; break;
          default : value = super.getPropertyValue(p); break;
       }
@@ -484,11 +481,11 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
       styleSet.putStyle(FGNProperty.MODE, getMode());
-      styleSet.putStyle(FGNProperty.NBINS, new Integer(getNumBins()));
-      styleSet.putStyle(FGNProperty.AVG, new Boolean(getAveraged()));
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
-      styleSet.putStyle(FGNProperty.HEIGHT, new Integer(getLineHeight()));
-      styleSet.putStyle(FGNProperty.SPACER, new Integer(getLineSpacer()));
+      styleSet.putStyle(FGNProperty.NBINS, getNumBins());
+      styleSet.putStyle(FGNProperty.AVG, getAveraged());
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
+      styleSet.putStyle(FGNProperty.HEIGHT, getLineHeight());
+      styleSet.putStyle(FGNProperty.SPACER, getLineSpacer());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -506,7 +503,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       Integer n = (Integer) applied.getCheckedStyle(FGNProperty.NBINS, getNodeType(), Integer.class);
       if(n != null && (n>=MINNUMBINS) && (n<=MAXNUMBINS) && !n.equals(restore.getStyle(FGNProperty.NBINS)))
       {
-         numBins = n.intValue();
+         numBins = n;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.NBINS);
@@ -514,7 +511,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       n = (Integer) applied.getCheckedStyle(FGNProperty.HEIGHT, getNodeType(), Integer.class);
       if(n != null && (n >= 1) && !n.equals(restore.getStyle(FGNProperty.HEIGHT)))
       {
-         lineHeight = n.intValue();
+         lineHeight = n;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.HEIGHT);
@@ -522,7 +519,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       n = (Integer) applied.getCheckedStyle(FGNProperty.SPACER, getNodeType(), Integer.class);
       if(n != null && (n >= 1) && !n.equals(restore.getStyle(FGNProperty.SPACER)))
       {
-         lineSpacer = n.intValue();
+         lineSpacer = n;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.SPACER);
@@ -539,7 +536,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       b = (Boolean) applied.getCheckedStyle(FGNProperty.AVG, null, Boolean.class);
       if(b != null && !b.equals(restore.getStyle(FGNProperty.AVG)))
       {
-         averaged = b.booleanValue();
+         averaged = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.AVG);
@@ -584,10 +581,10 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       if(!needRecalc) return(false);
       
       DataSet set = getDataSet();
-      float minX = 0;
-      float maxX = 0;
-      float minY = 0;
-      float maxY = 0;
+      float minX;
+      float maxX;
+      float minY;
+      float maxY;
       boolean useObservedRng = (range[0] >= range[1]);
       if(mode == DisplayMode.TRAINS || mode == DisplayMode.TRAINS2)
       {
@@ -612,11 +609,11 @@ public class RasterNode extends FGNPlottableData implements Cloneable
          maxY = -Float.MAX_VALUE;
          minY = Float.MAX_VALUE;
          int nTotal = 0;
-         for(int i=0; i<countsPerBin.length; i++)
+         for(int j : countsPerBin)
          {
-            nTotal += countsPerBin[i];
-            float y = countsPerBin[i];
-            if(averaged && mode==DisplayMode.HISTOGRAM) y /= set.getNumberOfSets();
+            nTotal += j;
+            float y = j;
+            if(averaged && mode == DisplayMode.HISTOGRAM) y /= set.getNumberOfSets();
             if(y > maxY) maxY = y;
             if(y < minY) minY = y;
          }
@@ -725,7 +722,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       if(needsRendering(task))
       {
          if(painter == null) updatePainter();
-         if(!painter.render(g2d, task)) return(false);
+         return painter.render(g2d, task);
       }
       return(true);
    }
@@ -739,7 +736,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    
    /** 
     * Helper method recalculates the "counts-per-bin" summary histogram for the underlying raster data set. Note that
-    * we use the histogram sample range [S..E] as set via {@link #setHistogramRange()}; if this range is a subset of the
+    * we use the histogram sample range [S..E] as set via {@link #setHistogramRange}; if this range is a subset of the
     * observed sample range, any samples outside [S..E] are unaccounted for in the computed histogram. If S >= E, the
     * observed sample range is used.
     * 
@@ -759,7 +756,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       }
       
       if(countsPerBin.length != numBins) countsPerBin = new int[numBins];
-      for(int i=0; i<countsPerBin.length; i++) countsPerBin[i] = 0;
+      Arrays.fill(countsPerBin, 0);
       
       // special case: polar graph: Effective range limited to [S..S+360], and all raster samples are interpreted in
       // degrees and mapped to the equivalent angle in that range.
@@ -801,17 +798,17 @@ public class RasterNode extends FGNPlottableData implements Cloneable
     * 
     * <p>For the "train"-like display modes: A {@link PolylinePainter} is configured to connect render all of the 
     * individual vertical hash marks that comprise the raster trains. It is styled IAW this nodes own draw styles. Any
-    * ill-defined raster samples are omitted. The inner class {@link #RasterTrainProducer} serves as the location 
-    * producer for this painter.</p>
+    * ill-defined raster samples are omitted. The inner class {@link RasterNode.RasterTrainProducer} serves as the
+    * location producer for this painter.</p>
     * 
     * <p>For the "histogram" display modes. In these modes, a histogram is prepared from the raster sample data and 
     * drawn IAW several histogram-specific properties. The exact nature of the histogram depends on the display mode
     * chosen: a "raw" histogram indicating count per bin or average counts per raster per bin if {@link #getAveraged()}
     * is true; a normalized histogram in which the raw count per bin is divided by the total number of samples in the
     * data set; a probability density function; or a cumulative density function. In all cases, the inner class {@link 
-    * #HistogramVertexProducer} serves as the location for the internal painter -- a {@link PolylinePainter} configured 
-    * to draw the rectangular histogram bars in a Cartesian graph, or a {@link CircularArcPainter} to draw the histogram
-    * bars as pie wedges or radial sections in a polar graph.</p>
+    * RasterNode.HistogramVertexProducer} serves as the location for the internal painter -- a {@link PolylinePainter}
+    * configured to draw the rectangular histogram bars in a Cartesian graph, or a {@link CircularArcPainter} to draw
+    * the histogram bars as pie wedges or radial sections in a polar graph.</p>
     */
    private void updatePainter()
    {
@@ -824,7 +821,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
           
           FViewport2D parentVP = getParentViewport();
           HistogramVertexProducer vertexProvider = new HistogramVertexProducer(false);
-          if(parentVP.isPolar())
+          if(parentVP != null && parentVP.isPolar())
           {
              Point2D origin = parentVP.getPhysicalUserOrigin();
              CircularArcPainter arcPainter = new CircularArcPainter(this, vertexProvider, origin);
@@ -895,7 +892,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       int nPtsSoFar;
       int nSetsSoFar;
       int which;  // 0 for first pt of hash mark, 1 for second pt, 2 for undefined pt to separate from next hash!
-      Point2D pCurrent;
+      final Point2D pCurrent;
 
       public Iterator<Point2D> iterator() { return(new RasterTrainProducer()); }
 
@@ -1016,7 +1013,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       
       int nPtsSoFar;
       int nVertsSoFar;
-      Point2D[] barVertices;
+      final Point2D[] barVertices;
 
       public Iterator<Point2D> iterator() { return(new HistogramVertexProducer(forPS)); }
 
@@ -1036,7 +1033,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
          DataSet rasterData = getDataSet();
          
          xOffset = getXOffset();
-         double xMax = 0;
+         double xMax;
          if(getHistogramRangeStart() < getHistogramRangeEnd())
          {
             xMin = getHistogramRangeStart();
@@ -1052,8 +1049,8 @@ public class RasterNode extends FGNPlottableData implements Cloneable
          baseline = getBaseline();
 
          // prepare the correct histogram for each distinct display mode. Catch special case: an empty histogram
-         int nTotal = 0; 
-         for(int i=0; i<countsPerBin.length; i++) nTotal += countsPerBin[i];
+         int nTotal = 0;
+         for(int j : countsPerBin) nTotal += j;
          hist = new double[nTotal > 0 ? countsPerBin.length : 0];
          
          if(hist.length > 0)
@@ -1088,7 +1085,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
             }
          }
          
-         isPolar = graphVP.isPolar();
+         isPolar = graphVP != null && graphVP.isPolar();
          polarOrigin = (graphVP != null) ? graphVP.getPhysicalUserOrigin() : new Point2D.Double(0,0);
 
          nPtsSoFar = 0;
@@ -1162,7 +1159,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
             // The next call to hasNext() will return false.
             if(!gotNextBar)
             {
-               for(int i = 0; i<barVertices.length; i++) barVertices[i].setLocation(Double.NaN, Double.NaN);
+               for(Point2D barVertex : barVertices) barVertex.setLocation(Double.NaN, Double.NaN);
             }
 
             nVertsSoFar = 0;
@@ -1199,7 +1196,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    }
    
    /**
-    * Helper method for {@link #toPostscript()}. Handles PS rendering in any of the raster "train" display modes.
+    * Helper method for {@link #toPostscript}. Handles PS rendering in any of the raster "train" display modes.
     * @param psDoc The Postscript document in which this raster node is rendered.
     */
    private void renderAsRasterTrains(PSDoc psDoc)
@@ -1208,7 +1205,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       if(parentVP == null || !isStroked()) return;
       
       // use RasterTrainProducer to generate all the points in the polyline path
-      List<Point2D> listOfPoints = new ArrayList<Point2D>();
+      List<Point2D> listOfPoints = new ArrayList<>();
       Iterator<Point2D> iterator = new RasterTrainProducer();
       while(iterator.hasNext()) 
          listOfPoints.add((Point2D) iterator.next().clone());   // must close, because producer reuses a Point2D!
@@ -1223,7 +1220,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
    }
    
    /**
-    * Helper method for {@link toPostscript()} Handles PS rendering in any of the histogram display modes.
+    * Helper method for {@link #toPostscript} Handles PS rendering in any of the histogram display modes.
     * @param psDoc The Postscript document in which this raster node is rendered.
     */
    private void renderAsHistogram(PSDoc psDoc)
@@ -1237,11 +1234,11 @@ public class RasterNode extends FGNPlottableData implements Cloneable
       
       // use HistogramVertexProducer to generate the vertices for the histogram bar shapes.
       Iterator<Point2D> iterator = new HistogramVertexProducer(true);
-      List<Point2D> vertices = new ArrayList<Point2D>();
+      List<Point2D> vertices = new ArrayList<>();
       while(iterator.hasNext()) 
          vertices.add((Point2D) iterator.next().clone());    // must clone, b/c producer reuses a Point2D
 
-      if(vertices.size() == 0) return;
+      if(vertices.isEmpty()) return;
       
       
       // if there are some histogram bars to render, invoke the Postscript document's appropriate utility method.
@@ -1266,7 +1263,7 @@ public class RasterNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of this raster node. The 
     * clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected RasterNode clone() throws CloneNotSupportedException
    {
       RasterNode copy = (RasterNode) super.clone();
       copy.painter = null;

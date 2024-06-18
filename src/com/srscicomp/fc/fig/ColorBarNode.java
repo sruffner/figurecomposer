@@ -44,7 +44,7 @@ import com.srscicomp.common.util.Utilities;
  * 
  * <p>As of v5.4.0 (schema version 24), <b>ColorBarNode</b> supports a "styled text" label, in which text color, font
  * style, underline state, superscript, and subscript can vary on a per-character basis. See {@link 
- * FGraphicNode#toStyledText()}.</p>
+ * FGraphicNode#toStyledText}.</p>
  * 
  * @author 	sruffner
  */
@@ -111,14 +111,14 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       if(isAutoranged() || !Utilities.isWellDefined(d)) return(false);
       if(start != d)
       {
-         if(doMultiNodeEdit(FGNProperty.START, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.START, d)) return(true);
          
-         Double old = new Double(start);
+         Double old = start;
          start = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.START);
-            FGNRevEdit.post(this, FGNProperty.START, new Double(start), old, "Change start of color bar axis range");
+            FGNRevEdit.post(this, FGNProperty.START, start, old, "Change start of color bar axis range");
          }
       }
       return(true);
@@ -146,14 +146,14 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       if(isAutoranged() || !Utilities.isWellDefined(d)) return(false);
       if(end != d)
       {
-         if(doMultiNodeEdit(FGNProperty.END, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.END, d)) return(true);
          
-         Double old = new Double(end);
+         Double old = end;
          end = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.END);
-            FGNRevEdit.post(this, FGNProperty.END, new Double(end), old, "Change end of color bar axis range");
+            FGNRevEdit.post(this, FGNProperty.END, end, old, "Change end of color bar axis range");
          }
       }
       return(true);
@@ -166,7 +166,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
 
    /**
     * Set the color bar's scale factor -- an integer exponent N such that numeric tick mark labels along the color bar
-    * axis are scaled by 10^N. If a change was made, {@link #onNodeModified()} is invoked.
+    * axis are scaled by 10^N. If a change was made, {@link #onNodeModified} is invoked.
     * 
     * @param n New value for scale factor exponent. Rejected if outside allowed range. See {@link #getPowerScale()}.
     * @return True if successful; false if value rejected.
@@ -176,14 +176,14 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       if(n < MINPOWERSCALE || n > MAXPOWERSCALE) return(false);
       if(powerScale != n)
       {
-         if(doMultiNodeEdit(FGNProperty.SCALE, new Integer(n))) return(true);
+         if(doMultiNodeEdit(FGNProperty.SCALE, n)) return(true);
          
-         Integer old = new Integer(powerScale);
+         Integer old = powerScale;
          powerScale = n;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.SCALE);
-            FGNRevEdit.post(this, FGNProperty.SCALE, new Double(powerScale), old, "Change color bar axis power scale");
+            FGNRevEdit.post(this, FGNProperty.SCALE, (double) powerScale, old, "Change color bar axis power scale");
          }
       }
       return(true);
@@ -199,7 +199,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    public ColorMap getColorMap() { return(cmap); }
 
    /**
-    * Set the current colormap for this color bar. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the current colormap for this color bar. If a change is made, {@link #onNodeModified} is invoked.
     * @param cmap Enumerated value selecting a supported colormap. A null value is rejected.
     * @return False if argument was null; true otherwise.
     */
@@ -232,7 +232,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    public boolean isReversed() { return(reversed); }
 
    /**
-    * Set the reversed state for this color bar's underlying color map. If a change is made, {@link #onNodeModified()} 
+    * Set the reversed state for this color bar's underlying color map. If a change is made, {@link #onNodeModified}
     * is invoked.
     * @param b True to reverse the normal color map direction.
     */
@@ -240,15 +240,15 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    {
       if(reversed != b)
       {
-         if(doMultiNodeEdit(FGNProperty.DIR, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.DIR, b)) return;
          
-         Boolean old = new Boolean(reversed);
+         Boolean old = reversed;
          reversed = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.DIR);
             String desc = "Use color map in the " + (reversed ? "reversed" : "normal") + " direction";
-            FGNRevEdit.post(this, FGNProperty.DIR, new Boolean(reversed), old, desc);
+            FGNRevEdit.post(this, FGNProperty.DIR, reversed, old, desc);
          }
       }
    }
@@ -278,7 +278,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    /**
     * Set the color to which all ill-defined data are mapped by this color bar. This color is always assigned to index 
     * entry 0 in the current colormap's lookup table (LUT).
-    * @param The color to which all ill-defined (NaN or infinite) data are mapped. The alpha component is ignored --
+    * @param c The color to which all ill-defined (NaN or infinite) data are mapped. The alpha component is ignored --
     * the color must be fully opaque. A null value is rejected.
     * @return False if argument was null; true otherwise.
     */
@@ -326,7 +326,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    public CMapMode getColorMapMode() { return(mode); }
 
    /**
-    * Set the current data-to-color mapping mode for this color bar. If a change is made, {@link #onNodeModified()} is 
+    * Set the current data-to-color mapping mode for this color bar. If a change is made, {@link #onNodeModified} is
     * invoked.
     * 
     * <p><b>NOTE</b>: For the 3D graph node, this property is ignored. The mapping mode will be logarithmic if the
@@ -370,7 +370,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
 
    /**
     * Set the size of the gap separating the color bar from the parent graph. If a change is made, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * <p>A color bar's rendering consists of a rectangle filled with the colormap LUT gradient, and an axis line 
     * (possibly with tick marks) that illustrates the data range mapping onto that gradient. The gradient rectangle is 
     * drawn along one edge (left, right, top or bottom) of the parent graph's bounding box. The <i>gap</i> property sets 
@@ -411,7 +411,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    public Measure getBarSize() { return(barSize); }
 
    /**
-    * Set the width of this color bar's gradient bar. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the width of this color bar's gradient bar. If a change is made, {@link #onNodeModified} is invoked.
     * <p>A color bar's rendering consists of a rectangular bar filled with the colormap LUT gradient, and an axis line 
     * (possibly with tick marks) that illustrates the data range mapping onto that gradient. The gradient bar is drawn 
     * along one edge (left, right, top or bottom) of the parent graph's bounding box. This property sets the width of 
@@ -469,7 +469,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    
    /**
     * Set the graph bounding box edge along which this color bar should be rendered. If a change is made, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * <p>A color bar's rendering consists of a rectangular bar filled with the colormap LUT gradient, and an axis line 
     * (possibly with tick marks) that illustrates the data range mapping onto that gradient. The gradient bar is drawn 
     * along one edge (left, right, top or bottom) of the parent graph's bounding box.</p>
@@ -508,7 +508,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
 
    /**
     * Set the perpendicular distance between the axis line and the closest parallel edge of the gradient bar. If a 
-    * change is made, {@link #onNodeModified()} is invoked.
+    * change is made, {@link #onNodeModified} is invoked.
     * @param m The new bar-axis spacer size. The measure is constrained to satisfy {@link #GAPCONSTRAINTS}. A null value
     * is rejected.
     * @return True if change was accepted; false if rejected.
@@ -547,7 +547,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
 
    /**
     * Set the perpendicular distance between the axis line and the bottom or top of the axis label (whichever is 
-    * closer). If a change is made, {@link #onNodeModified()} is invoked.
+    * closer). If a change is made, {@link #onNodeModified} is invoked.
     * 
     * @param m The new axis label offset. The measure is constrained to satisfy {@link #GAPCONSTRAINTS}. A null value is
     * rejected.
@@ -585,31 +585,31 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    public boolean getHide() { return(hide); }
 
    /**
-    * Set the hide state for this color bar. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the hide state for this color bar. If a change is made, {@link #onNodeModified} is invoked.
     * @param b True to hide color bar, false to show it.
     */
    public void setHide(boolean b)
    {
       if(hide != b)
       {
-         if(doMultiNodeEdit(FGNProperty.HIDE, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.HIDE, b)) return;
          
-         Boolean old = new Boolean(hide);
+         Boolean old = hide;
          hide = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.HIDE);
             String desc = (hide ? "Hide " : "Show ") + "Z (color) axis";
-            FGNRevEdit.post(this, FGNProperty.HIDE, new Boolean(hide), old, desc);
+            FGNRevEdit.post(this, FGNProperty.HIDE, hide, old, desc);
          }
       }
    }
 
    /**
     * Text line height, as a fraction of the element's font size. Applicable only when the auto-generated axis label is
-    * multi-line. Defaults to 1.2; range-restricted to [0.8, 3.0].
+    * multi-line. Range-restricted to [0.8, 3.0].
     */
-   private double lineHeight = 1.2;
+   private double lineHeight;
 
    /**
     * Get the text line height for the axis label, in the event it is laid out in two or more text lines.
@@ -631,15 +631,15 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       lh = Utilities.rangeRestrict(0.8, 3.0, lh);
       if(lineHeight != lh)
       {
-         if(doMultiNodeEdit(FGNProperty.LINEHT, new Double(lh))) return(true);
+         if(doMultiNodeEdit(FGNProperty.LINEHT, lh)) return(true);
          
-         Double old = new Double(lineHeight);
+         Double old = lineHeight;
          lineHeight = lh;
          
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LINEHT);
-            FGNRevEdit.post(this, FGNProperty.LINEHT, new Double(lineHeight), old);
+            FGNRevEdit.post(this, FGNProperty.LINEHT, lineHeight, old);
         }
       }
       return(true);
@@ -647,7 +647,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case END : ok = setEnd((Double) propValue); break;
@@ -671,14 +671,14 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case END : value = new Double(getEnd()); break;
-         case START : value = new Double(getStart()); break;
-         case SCALE : value = new Integer(getPowerScale()); break;
+         case END : value = getEnd(); break;
+         case START : value = getStart(); break;
+         case SCALE : value = getPowerScale(); break;
          case CMAP : value = getColorMap(); break;
-         case DIR : value = new Boolean(isReversed()); break;
+         case DIR : value = isReversed(); break;
          case CMAPNAN : value = getColorNaN(); break;
          case CMODE : value = getColorMapMode(); break;
          case EDGE : value = getEdge(); break;
@@ -686,8 +686,8 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
          case SIZE: value = getBarSize(); break;
          case LABELOFFSET: value = getLabelOffset(); break;
          case SPACER: value = getBarAxisSpacer(); break;
-         case HIDE: value = new Boolean(getHide()); break;
-         case LINEHT : value = new Double(getLineHeight()); break;
+         case HIDE: value = getHide(); break;
+         case LINEHT : value = getLineHeight(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -784,7 +784,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
             FGraphicNode.updateAncestorRenderBounds(g2d, this); 
             if(!getHide()) dirtyShape = getCachedGlobalShape();      // global bounds after the change
 
-            List<Rectangle2D> dirtyAreas = new ArrayList<Rectangle2D>();
+            List<Rectangle2D> dirtyAreas = new ArrayList<>();
             dirtyAreas.add( dirtyShape.getBounds2D() );
             model.onChange(this, 0, true, dirtyAreas);
          }
@@ -878,7 +878,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
       styleSet.putStyle(FGNProperty.CMAP, getColorMap());
-      styleSet.putStyle(FGNProperty.DIR, new Boolean(isReversed()));
+      styleSet.putStyle(FGNProperty.DIR, isReversed());
       styleSet.putStyle(FGNProperty.CMAPNAN, getColorNaN());
       styleSet.putStyle(FGNProperty.CMODE, getColorMapMode());
       styleSet.putStyle(FGNProperty.EDGE, getEdge());
@@ -886,7 +886,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       styleSet.putStyle(FGNProperty.SIZE, getBarSize());
       styleSet.putStyle(FGNProperty.LABELOFFSET, getLabelOffset());
       styleSet.putStyle(FGNProperty.SPACER, getBarAxisSpacer());
-      styleSet.putStyle(FGNProperty.LINEHT, new Double(getLineHeight()));
+      styleSet.putStyle(FGNProperty.LINEHT, getLineHeight());
 
       for(int i=0; i<getChildCount(); i++)
       {
@@ -991,7 +991,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       Double lineHt = (Double) applied.getCheckedStyle(FGNProperty.LINEHT, isTB ? null : nt, Double.class);
       if(lineHt != null && !lineHt.equals(restore.getStyle(FGNProperty.LINEHT)))
       {
-         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt.doubleValue());
+         lineHeight = Utilities.rangeRestrict(0.8, 3.0, lineHt);
          changed = true;
       }
       else restore.removeStyle(FGNProperty.LINEHT); 
@@ -1095,7 +1095,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       FGNGraph g2 = getParentGraph();
       if(!(g2 instanceof GraphNode)) return(0);
       GraphNode g = (GraphNode) g2;
-      if(g == null || g.isPolar() || (g.getLayout() == GraphNode.Layout.ALLQUAD)) return( 0 );
+      if(g.isPolar() || g.getLayout() == GraphNode.Layout.ALLQUAD) return( 0 );
 
       AxisNode orthoAxis = (edge == Edge.LEFT || edge == Edge.RIGHT) ? g.getPrimaryAxis() : g.getSecondaryAxis();
       double adj = orthoAxis.getStrokeWidth() / 2.0;
@@ -1305,7 +1305,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       }
       finally { if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    //
@@ -1434,7 +1434,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
       // cannot handle transparency). Note that label is rendered as multi-line text even if it does not contain any
       // linebreaks.
       String title = getAxisLabel();
-      if(title.length() > 0 && getFillColor().getAlpha() > 0)
+      if((!title.isEmpty()) && getFillColor().getAlpha() > 0)
       {
          double yOffset = labelOffset.toMilliInches();
          TextAlign vAlign = TextAlign.TRAILING;
@@ -1482,7 +1482,7 @@ public class ColorBarNode extends FGNGraphAxis implements Cloneable
     * independent of the resources allocated to this node.
     */
    @Override
-   protected Object clone()
+   protected Object clone() throws CloneNotSupportedException
    {
       ColorBarNode copy = (ColorBarNode) super.clone();
       copy.labelPainter = null;

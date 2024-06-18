@@ -128,23 +128,23 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
    /**
     * Set the length of the calibration bar. If a change is made, <code>onNodeModified()</code> is invoked.
     * 
-    * @param New length of calibration bar, in same units as the graph axis to which it is linked. A negative value, 
+    * @param d New length of calibration bar, in same units as the graph axis to which it is linked. A negative value,
     * NaN, or infinity is rejected.
-    * @param <code>True</code> if successful; <code>false</code> if argument was rejected.
+    * @return <code>True</code> if successful; <code>false</code> if argument was rejected.
     */
    public boolean setLength(double d)
    {
       if(!Utilities.isWellDefined(d) || (d < 0)) return(false);
       if(length != d)
       {
-         if(doMultiNodeEdit(FGNProperty.LEN, new Double(d))) return(true);
+         if(doMultiNodeEdit(FGNProperty.LEN, d)) return(true);
 
-         Double old = new Double(length);
+         Double old = length;
          length = d;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.LEN);
-            FGNRevEdit.post(this, FGNProperty.LEN, new Double(length), old);
+            FGNRevEdit.post(this, FGNProperty.LEN, length, old);
          }
       }
       return(true);
@@ -178,16 +178,16 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
    {
       if(primary != b)
       {
-         if(doMultiNodeEdit(FGNProperty.PRIMARY, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.PRIMARY, b)) return;
          
-         Boolean old = new Boolean(primary);
+         Boolean old = primary;
          primary = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.PRIMARY);
             String desc = "Attach calibration bar to ";
             desc += primary ? "horizontal (theta) axis" : "vertical (radial) axis";
-            FGNRevEdit.post(this, FGNProperty.PRIMARY, new Boolean(primary), old, desc);
+            FGNRevEdit.post(this, FGNProperty.PRIMARY, primary, old, desc);
          }
       }
    }
@@ -217,15 +217,15 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
    {
       if(autoLabelOn != b)
       {
-         if(doMultiNodeEdit(FGNProperty.AUTO, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.AUTO, b)) return;
          
-         Boolean old = new Boolean(autoLabelOn);
+         Boolean old = autoLabelOn;
          autoLabelOn = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.AUTO);
             String desc = (autoLabelOn ? "Enable" : "Disable") + " calibration bar's auto-generated label";
-            FGNRevEdit.post(this, FGNProperty.AUTO, new Boolean(autoLabelOn), old, desc);
+            FGNRevEdit.post(this, FGNProperty.AUTO, autoLabelOn, old, desc);
          }
       }
    }
@@ -288,7 +288,7 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
    public Measure getEndCapSize() { return(endCapSize); }
 
    /**
-    * Set the size of the endcap adornments for this calibration bar. If a change is made, {@link #onNodeModified()}
+    * Set the size of the endcap adornments for this calibration bar. If a change is made, {@link #onNodeModified}
     * is invoked.
     * 
     * <p>To prevent rendering of endcaps, use this method to set the endcap size to zero!</p>
@@ -320,19 +320,18 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
 
    @Override protected void rescaleSelf(double scale, MultiRevEdit undoer)
    {
-      Measure.Constraints c = ENDCAPSIZECONSTRAINTS;
       double d = endCapSize.getValue();
       if(d > 0)
       {
          Measure old = endCapSize;
-         endCapSize = c.constrain(new Measure(d*scale, endCapSize.getUnits()));
+         endCapSize = ENDCAPSIZECONSTRAINTS.constrain(new Measure(d*scale, endCapSize.getUnits()));
          undoer.addPropertyChange(this, FGNProperty.CAPSIZE, endCapSize, old);
       }
    }
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case AUTO : setAutoLabelOn((Boolean)propValue); ok = true; break;
@@ -347,14 +346,14 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
-         case AUTO : value = new Boolean(isAutoLabelOn()); break;
+         case AUTO : value = isAutoLabelOn(); break;
          case CAP : value = getEndCap(); break;
          case CAPSIZE: value = getEndCapSize(); break;
-         case LEN: value =  new Double(getLength()); break;
-         case PRIMARY: value = new Boolean(isPrimary()); break;
+         case LEN: value = getLength(); break;
+         case PRIMARY: value = isPrimary(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -375,7 +374,7 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
    {
       styleSet.putStyle(FGNProperty.CAP, getEndCap());
       styleSet.putStyle(FGNProperty.CAPSIZE, getEndCapSize());
-      styleSet.putStyle(FGNProperty.AUTO, new Boolean(isAutoLabelOn()));
+      styleSet.putStyle(FGNProperty.AUTO, isAutoLabelOn());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -402,7 +401,7 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
       Boolean bAuto = (Boolean) applied.getCheckedStyle(FGNProperty.AUTO, getNodeType(), Boolean.class);
       if(bAuto != null && !bAuto.equals(restore.getStyle(FGNProperty.AUTO)))
       {
-         this.autoLabelOn = bAuto.booleanValue();
+         this.autoLabelOn = bAuto;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.AUTO);
@@ -636,7 +635,9 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
       // get properties we need to transform parent graph viewport to our local rendering viewport
       double lenMI = getLengthInMilliInches();
       Point2D[] pts = getEndpointsInMilliInches();
-      boolean isHoriz = primary || getParentGraph().isPolar();
+      if(pts == null) return(true);
+      GraphNode g = getParentGraph();
+      boolean isHoriz = primary || (g != null && g.isPolar());
       
       // make sure our painters have been initialized
       if(barPainter == null) updatePainters();
@@ -667,7 +668,7 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
       }
       finally {if(g2dCopy != null) g2dCopy.dispose(); }
 
-      return((task == null) ? true : task.updateProgress());
+      return(task == null || task.updateProgress());
    }
 
    @Override
@@ -729,7 +730,7 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
       // STEP 1: PolylinePainter or LineSegmentPainter to render bar itself
       //
       // prepare the list of points which we give to the painter. Will be empty if bar not rendered.
-      if(barLocs == null) barLocs = new ArrayList<Point2D>();
+      if(barLocs == null) barLocs = new ArrayList<>();
       if(lenMI <= 0 || !(isStroked() || doAdorn)) 
          barLocs.clear();
       else if(isLineup || isLinedown)
@@ -819,22 +820,23 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
    public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException
    {
       FViewport2D parentVP = getParentViewport();
-      if(parentVP == null) return;
+      GraphNode g = getParentGraph();
+      if(parentVP == null || g == null) return;
 
       // special case: secondary calib assoc w/radial axis of polar plot is drawn horizontally
       boolean isHoriz = isPrimary();
-      if((!isHoriz) && getParentGraph().isPolar()) isHoriz = true;
+      if((!isHoriz) && g.isPolar()) isHoriz = true;
 
       // given its length, midpoint, and orientation, calculate the bar's left (or bottom) endpt in thousandth-inches 
       // wrt the parent viewport
       double barLength = getLengthInMilliInches();
       if(barLength <= 0.0) return;
       Point2D midPoint = parentVP.toMilliInches(getX(), getY());
-      Point2D p0 = null;
+      Point2D p0;
       if(isHoriz) p0 = new Point2D.Double(midPoint.getX() - barLength/2.0, midPoint.getY());
       else p0 = new Point2D.Double(midPoint.getX(), midPoint.getY() - barLength/2.0);
 
-       psDoc.startElement(this);
+      psDoc.startElement(this);
 
       // establish a new non-clipping viewport for the bar and its children: a square viewport with size = the bar's 
       // length and set up so that the bar itself lies along the top edge
@@ -892,7 +894,7 @@ public class CalibrationBarNode extends FGraphicNode implements Cloneable
     * This override ensures that the rendering infrastructure for the <code>CalibrationBarNode</code> clone is 
     * independent of the element cloned.
     */
-   @Override protected Object clone()
+   @Override protected Object clone() throws CloneNotSupportedException
    {
       CalibrationBarNode copy = (CalibrationBarNode) super.clone();
       copy.barLocs = null;

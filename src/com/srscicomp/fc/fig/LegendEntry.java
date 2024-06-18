@@ -21,7 +21,7 @@ import com.srscicomp.fc.fig.FGNPlottableData.GrpInfo;
  * 
  * @author sruffner
  */
-class LegendEntry
+public class LegendEntry
 {
    /**
     * Construct the legend entry renderer for the specified data presentation node.
@@ -63,7 +63,7 @@ class LegendEntry
       boolean mid = legend.getMid();
       double sw = plottable.getStrokeWidth();
 
-      double ofs = 0;
+      double ofs;
       if(plottable.useBarInLegend() || !areSymbolsRendered()) 
          ofs = len + sw/2;
       else
@@ -136,7 +136,7 @@ class LegendEntry
       
       Point2D p0 = new Point2D.Double(0, y);
       Point2D p1 = new Point2D.Double(len, y);
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       pts.add(p0);
       ShapePainter shapePainter = new ShapePainter(plottable, pts, null, 1f, null);
       
@@ -243,7 +243,7 @@ class LegendEntry
       if(getSymbolSizeInMilliInches() > 0) return(true);
 
       SymbolNode sym = plottable.getSymbolNode();
-      return(sym != null && sym.getCharacter().length() > 0);
+      return(sym != null && !sym.getCharacter().isEmpty());
    }
    
    /**
@@ -280,8 +280,8 @@ class LegendEntry
    boolean hasTraceLine() { return(plottable.isStroked() && !plottable.useBarInLegend()); }
    
    /** The data presentation node represented by this legend entry. */
-   FGNPlottable plottable = null;
+   FGNPlottable plottable;
    
    /** The data group represented by this legend entry -- for grouped presentation nodes only. */
-   GrpInfo dataGrpInfo = null;
+   GrpInfo dataGrpInfo;
 }

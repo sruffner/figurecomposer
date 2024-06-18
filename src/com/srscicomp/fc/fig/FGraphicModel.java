@@ -59,7 +59,7 @@ public class FGraphicModel implements RenderableModel, Printable
       // destination takes on source model's content, and initial selection is placed on root node.
       if(src.root == null) dst.root = new FigureNode();
       else dst.root = src.root;
-      dst.currSelection = new ArrayList<FGraphicNode>();
+      dst.currSelection = new ArrayList<>();
       dst.currSelection.add(dst.root);
       dst.root.setOwnerModel(dst);
       dst.fireFocusChanged();
@@ -71,7 +71,7 @@ public class FGraphicModel implements RenderableModel, Printable
       
       // reset source model
       src.root = new FigureNode();
-      src.currSelection = new ArrayList<FGraphicNode>();
+      src.currSelection = new ArrayList<>();
       src.currSelection.add(src.root);
       src.root.setOwnerModel(src);
    }
@@ -105,9 +105,9 @@ public class FGraphicModel implements RenderableModel, Printable
       if(src == null) return(null);
       
       FGraphicModel dst = new FGraphicModel();
-      FigureNode fig = (FigureNode) ((FigureNode)src.getRoot()).clone();
-      dst.root = fig;
-      dst.currSelection = new ArrayList<FGraphicNode>();
+      try {dst.root = (FigureNode) src.getRoot().clone(); }
+      catch(CloneNotSupportedException e) { throw new AssertionError("Unable to clone figure!"); }
+      dst.currSelection = new ArrayList<>();
       dst.currSelection.add(dst.root);
       dst.root.setOwnerModel(dst);
       dst.fireFocusChanged();
@@ -118,14 +118,6 @@ public class FGraphicModel implements RenderableModel, Printable
       return(dst);
    }
    
-   /**
-    * Return a copy of a <i>DataNav</i> figure's graphic model, emptying but not removing any data sets that are 
-    * rendered by data presentation nodes in the model.
-    * 
-    * @param src The graphic model to be copied. Its content is not changed in any way. 
-    * @return An independent copy of the source model, but with empty versions of the data sets defined in the source. 
-    * If source is null, method returns null.
-    */
    /* NO LONGER USED -- would need to be updated for newer graph containers Graph3DNode and PolarPlotNode
    public static FGraphicModel copyModelWithoutData(FGraphicModel src)
    {
@@ -216,18 +208,18 @@ public class FGraphicModel implements RenderableModel, Printable
     * model, the ID string cannot be checked for uniqueness and will be returned unchanged.
     * 
     * @param fgn The graphic node.
-    * @param s
-    * @return
+    * @param s The candidate object ID.
+    * @return The object ID, possibly modified to ensure uniqueness.
     */
    static String ensureUniqueGraphicObjectID(FGraphicNode fgn, String s)
    {
-      if(s.length() == 0) return(s);
+      if(s.isEmpty()) return(s);
       FGraphicModel model = (fgn != null) ? fgn.getGraphicModel() : null;
       if(model == null) return(s);
       
       // traverse figure model object tree and collect any existing node IDs (skip the node in question, though)
-      HashMap<String, Object> idMap = new HashMap<String, Object>();
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      HashMap<String, Object> idMap = new HashMap<>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(model.root);
       while(!nodeStack.isEmpty())
       {
@@ -291,7 +283,7 @@ public class FGraphicModel implements RenderableModel, Printable
       
       int count = 0; // in case we're updating data presentation nodes, make sure we update at least one.
       
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(root);
       while(!nodeStack.isEmpty())
       {
@@ -367,7 +359,7 @@ public class FGraphicModel implements RenderableModel, Printable
       
       // find the graph to be replaced. It could be a 2D or a 3D graph.
       FGNGraph oldG = null;
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(root);
       while(!nodeStack.isEmpty())
       {
@@ -386,7 +378,13 @@ public class FGraphicModel implements RenderableModel, Printable
       
       // ensure replacement graph is not currently in another figure!
       if(graph.getGraphicModel() != null)
-         graph = (FGNGraph) graph.clone();
+      {
+         try { graph = graph.clone(); }
+         catch(CloneNotSupportedException e)
+         {
+            return (false);
+         }
+      }
       
       // set location and size of replacement graph to match the graph being replaced. Also preserve the object ID!
       // NOTE: This does NOT work well when the two graphs are not both 2D or both 3D, because location and dimensions
@@ -396,7 +394,7 @@ public class FGraphicModel implements RenderableModel, Printable
       graph.setXY(oldG.getX(), oldG.getY());
       graph.setWidth(oldG.getWidth());
       graph.setHeight(oldG.getHeight());
-      if((graph instanceof Graph3DNode) && (graph instanceof Graph3DNode))
+      if(graph instanceof Graph3DNode)
          ((Graph3DNode) graph).setDepth(((Graph3DNode) oldG).getDepth());
       
       // X-axis: preserve axis properties that affect spacing. If both old and new axis have a major tick set, preserve
@@ -563,12 +561,11 @@ public class FGraphicModel implements RenderableModel, Printable
       
       // repeat for graph's color bar. All graph containers support a color bar.
       tickLen = null;
-      Measure barSz = null;
       ColorBarNode cbar = oldG.getColorBar();
       spacer = cbar.getBarAxisSpacer();
       labelOfs = cbar.getLabelOffset();
       lineHt = cbar.getLineHeight();
-      barSz = cbar.getBarSize();
+      Measure barSz = cbar.getBarSize();
       TickSetNode ticks = cbar.getMajorTickSet();
       if(ticks != null)
       {
@@ -577,7 +574,7 @@ public class FGraphicModel implements RenderableModel, Printable
          tickOri = ticks.getTickOrientation();
       }
 
-      cbar = graph .getColorBar();
+      cbar = graph.getColorBar();
       cbar.setBarAxisSpacer(spacer);
       cbar.setLabelOffset(labelOfs);
       cbar.setLineHeight(lineHt);
@@ -594,8 +591,9 @@ public class FGraphicModel implements RenderableModel, Printable
       // NOTE: Here we can equate the X-axis of a Cartesian 2D or 3D graph with the theta axis of the specialized 2D
       // polar graph; similarly with the Y-axis and radial axis. Again, though, the axes in the specialized polar graph
       // do not have tick sets. All have the standard style properties.
-      FGraphicNode ticksOld, ticksNew;
-      List<FGraphicNode> nodes = new ArrayList<FGraphicNode>();
+      FGraphicNode ticksOld = null;
+      FGraphicNode ticksNew = null;
+      List<FGraphicNode> nodes = new ArrayList<>();
       nodes.add(graph);
       nodes.add(oldG);
       if(graph instanceof GraphNode)
@@ -608,14 +606,14 @@ public class FGraphicModel implements RenderableModel, Printable
       {
          PolarAxisNode ax = ((PolarPlotNode) graph).getThetaAxis();
          nodes.add(ax);
-         ticksNew = null;
       }
-      else
+      else if(graph instanceof Graph3DNode)
       {
          Axis3DNode ax3 = ((Graph3DNode) graph).getAxis(Graph3DNode.Axis.X);
          nodes.add(ax3);
          ticksNew = ax3.getMajorTickSet();
       }
+
       if(oldG instanceof GraphNode)
       {
          AxisNode ax = ((GraphNode) oldG).getPrimaryAxis();
@@ -626,20 +624,21 @@ public class FGraphicModel implements RenderableModel, Printable
       {
          PolarAxisNode ax = ((PolarPlotNode) oldG).getThetaAxis();
          nodes.add(ax);
-         ticksOld = null;
       }
-      else
+      else if(oldG instanceof Graph3DNode)
       {
          Axis3DNode ax3 = ((Graph3DNode) oldG).getAxis(Graph3DNode.Axis.X);
          nodes.add(ax3);
          ticksOld = ax3.getMajorTickSet();
       }
+
       if(ticksNew != null && ticksOld != null)
       {
          nodes.add(ticksNew);
          nodes.add(ticksOld);
       }
-      
+
+      ticksOld = ticksNew = null;
       if(graph instanceof GraphNode)
       {
          AxisNode ax = ((GraphNode) graph).getSecondaryAxis();
@@ -650,14 +649,14 @@ public class FGraphicModel implements RenderableModel, Printable
       {
          PolarAxisNode ax = ((PolarPlotNode) graph).getRadialAxis();
          nodes.add(ax);
-         ticksNew = null;
       }
-      else
+      else if(graph instanceof Graph3DNode)
       {
          Axis3DNode ax3 = ((Graph3DNode) graph).getAxis(Graph3DNode.Axis.Y);
          nodes.add(ax3);
          ticksNew = ax3.getMajorTickSet();
       }
+
       if(oldG instanceof GraphNode)
       {
          AxisNode ax = ((GraphNode) oldG).getSecondaryAxis();
@@ -668,21 +667,21 @@ public class FGraphicModel implements RenderableModel, Printable
       {
          PolarAxisNode ax = ((PolarPlotNode) oldG).getRadialAxis();
          nodes.add(ax);
-         ticksOld = null;
       }
-      else
+      else if(oldG instanceof Graph3DNode)
       {
          Axis3DNode ax3 = ((Graph3DNode) oldG).getAxis(Graph3DNode.Axis.Y);
          nodes.add(ax3);
          ticksOld = ax3.getMajorTickSet();
       }
+
       if(ticksNew != null && ticksOld != null)
       {
          nodes.add(ticksNew);
          nodes.add(ticksOld);
       }
 
-      if((graph instanceof Graph3DNode) && (oldG instanceof Graph3DNode))
+      if((oldG instanceof Graph3DNode) && (graph instanceof Graph3DNode))
       {
          Axis3DNode ax3 = ((Graph3DNode) graph).getAxis(Graph3DNode.Axis.Z);
          nodes.add(ax3);
@@ -758,7 +757,11 @@ public class FGraphicModel implements RenderableModel, Printable
          return(false);
       
       // if the graph is currently in another figure, clone it
-      if(graph.getGraphicModel() != null) graph = (FGNGraph) graph.clone();
+      if(graph.getGraphicModel() != null)
+      {
+         try { graph = graph.clone(); }
+         catch(CloneNotSupportedException e) { return(false); }
+      }
 
       // set location and dimensions of the new graph as specified
       boolean ok = graph.setXY(new Measure(loc[0], Measure.Unit.IN), new Measure(loc[1], Measure.Unit.IN));
@@ -776,16 +779,6 @@ public class FGraphicModel implements RenderableModel, Printable
    // Dataset-related operations
    //
    
-   /**
-    * Create a default data presentation node that can render the specified data set, then append it as a child of the
-    * specified graph. The {@link Fmt#RASTER1D}, {@link Fmt#XYZIMG}, and {@link Fmt#XYZSET}
-    * formats are mapped to specialized presentation nodes; all other data formats are mapped to {@link TraceNode}.
-    *
-    * @param ds The data set. If null, no action is taken.
-    * @param g The graph parent in which the new data presentation node is added. If null or not part of this model's 
-    * graphic node tree, no action is taken.
-    * @return True if successful; false otherwise.
-    */
    /* NO LONGER USED
    public boolean appendPlottableDataNode(DataSet ds, GraphNode g)
    {
@@ -813,10 +806,10 @@ public class FGraphicModel implements RenderableModel, Printable
     */
    public List<FGNPlottableData> getAllPlottableDataNodes()
    {
-      List<FGNPlottableData> plottables = new ArrayList<FGNPlottableData>();
+      List<FGNPlottableData> plottables = new ArrayList<>();
       if(root == null) return(plottables);
       
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(root);
       while(!nodeStack.isEmpty())
       {
@@ -848,7 +841,7 @@ public class FGraphicModel implements RenderableModel, Printable
    public List<DataSet> getAllDataSetsInUse()
    {
       blockEditHistory();
-      List<DataSet> sets = new ArrayList<DataSet>();
+      List<DataSet> sets = new ArrayList<>();
       List<FGNPlottableData> dsNodes = getAllPlottableDataNodes();
       for(FGNPlottableData dsn : dsNodes)
       {
@@ -882,7 +875,7 @@ public class FGraphicModel implements RenderableModel, Printable
 
    /**
     * Retrieve the dataset in the current figure that has the specified ID.
-    * @param The ID of the requested dataset.
+    * @param id The ID of the requested dataset.
     * @return The requested dataset, or <code>null</code> if it was not found.
     */
    public DataSet getDataset(String id)
@@ -920,7 +913,7 @@ public class FGraphicModel implements RenderableModel, Printable
     */
    public List<DataSetInfo> findMatchingDatasetsInFigure(DataSetInfo[] setInfo)
    {
-      List<DataSetInfo> matches = new ArrayList<DataSetInfo>();
+      List<DataSetInfo> matches = new ArrayList<>();
       if(setInfo == null || setInfo.length == 0) return(matches);
       
       List<FGNPlottableData> dsNodes = getAllPlottableDataNodes();
@@ -945,7 +938,7 @@ public class FGraphicModel implements RenderableModel, Printable
    public boolean replaceDataSetInUse(DataSet ds)
    {
       if(ds == null) return(false);
-      List<DataSet> sets = new ArrayList<DataSet>();
+      List<DataSet> sets = new ArrayList<>();
       sets.add(ds);
       int n = replaceDataSetsInUse(sets, true);
       return(n==1);
@@ -967,7 +960,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * be counted as having been used. This would cause the conversion procedure to fail, and the valid schema document 
     * could no longer be opened. To avoid this issue, the <i>force</i> flag should be set in this use case. It should
     * not be set when injecting data in to a template figure.</p>
-    * @param set The replacement data sets. If null or empty, the method has no effect.
+    * @param sets The replacement data sets. If null or empty, the method has no effect.
     * @param force If true, a replacement set is used even if it is identical to a data presentation node's current
     * data set. <i>See NOTE above.</i>
     * @return The number of data sets in the list that were actually used.
@@ -975,12 +968,11 @@ public class FGraphicModel implements RenderableModel, Printable
    @SuppressWarnings({ "rawtypes", "unchecked" })
    public int replaceDataSetsInUse(List<DataSet> sets, boolean force)
    {
-      if(sets == null || sets.size() == 0) return(0);
+      if(sets == null || sets.isEmpty()) return(0);
       
       // to keep track of which source sets were used
       boolean[] used = new boolean[sets.size()];
-      for(int i=0; i<used.length; i++) used[i] = false;
-      
+
       // prepare a list of (oldDS, newDS, datanode) pairs, where oldDs and newDS are the current and replacement 
       // datasets and datanode is the target presentation node
       List replaceList = new ArrayList();
@@ -1006,7 +998,7 @@ public class FGraphicModel implements RenderableModel, Printable
       }
       
       // handle special cases: 0 or 1 set replaced
-      if(replaceList.size() == 0) return(0);
+      if(replaceList.isEmpty()) return(0);
       if(replaceList.size() == 3)
       {
          DataSet ds = (DataSet) replaceList.get(1);
@@ -1016,7 +1008,7 @@ public class FGraphicModel implements RenderableModel, Printable
       }
       
       int nUsed = 0;
-      for(int i=0; i<used.length; i++) if(used[i]) nUsed++;
+      for(boolean b : used) if(b) nUsed++;
       
       // handle multiple dataset replacement as a single reversible edit. We block the edit history while replacing the
       // data sets, then unblock it and update it with a reversible edit that can undo what we've just done!
@@ -1110,7 +1102,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * @return Measurement constraints that should be applied to the location coordinates of any instance of the 
     * specified node type.
     */
-   public final static Measure.Constraints getLocationConstraints(FGNodeType type)
+   public static Measure.Constraints getLocationConstraints(FGNodeType type)
    {
       Measure.Constraints c = COORDCONSTRAINTS;
       switch(type)
@@ -1155,7 +1147,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * @param type The graphic node type.
     * @return Measurement constraints applied to the dimensions of any instance of the specified node type.
     */
-   public final static Measure.Constraints getSizeConstraints(FGNodeType type)
+   public static Measure.Constraints getSizeConstraints(FGNodeType type)
    {
       Measure.Constraints c = SIZECONSTRAINTS;
       if(type==FGNodeType.SHAPE) c = SHAPESIZECONSTRAINTS;
@@ -1174,7 +1166,7 @@ public class FGraphicModel implements RenderableModel, Printable
    {
       root = new FigureNode();
       root.setOwnerModel(this);
-      currSelection = new ArrayList<FGraphicNode>();
+      currSelection = new ArrayList<>();
       currSelection.add(root);
       isModified = false;
       modifyCount = 0L;
@@ -1233,7 +1225,7 @@ public class FGraphicModel implements RenderableModel, Printable
    /**
     * Get the graphics node within this model that is currently selected for GUI display and editing purposes. If more
     * than one node is currently selected, this method returns the first node in the selection list. Call {@link
-    * #getSelectedNodes()} to retrieve the complete list.
+    * #getSelectedNodes} to retrieve the complete list.
     * @return The first node in the model's current selection list.
     */
    public FGraphicNode getSelectedNode() { return(currSelection.get(0)); }
@@ -1242,15 +1234,15 @@ public class FGraphicModel implements RenderableModel, Printable
     * Get the list of graphics nodes within this model that are currently selected for GUI display and editing purposes.
     * The last node in the selection list is considered the "anchor" for the selection. It has meaning only when 
     * aligning the nodes in the selection: all nodes are aligned with respect to the anchor!
-    * @param out If not null, this list will be cleared and reinitialized with the list of nodes currently selected. 
-    * Else, a new list is constructed.
+    * @param selected If not null, this list will be cleared and reinitialized with the list of nodes currently
+    * selected. Else, a new list is constructed.
     * @return A reference to the list provided, or the newly constructed list. In either case, the returned list will
     * contain the nodes currently selected in the model.
     */
    public List<FGraphicNode> getSelectedNodes(List<FGraphicNode> selected) 
    { 
       if(selected != null) selected.clear();
-      else selected = new ArrayList<FGraphicNode>();
+      else selected = new ArrayList<>();
       selected.addAll(currSelection);
       return(selected); 
    }
@@ -1395,7 +1387,7 @@ public class FGraphicModel implements RenderableModel, Printable
       if(currSelection.isEmpty())
       {
          currSelection.add(last);
-         if(oldSz == 1) changed = false;
+         changed = false;
       }
       
       if(changed) 
@@ -1417,11 +1409,11 @@ public class FGraphicModel implements RenderableModel, Printable
       if(isMultiNodeSelection() || (getSelectedNode().getNodeType() == FGNodeType.FIGURE)) return;
       
       // accumulate list of nodes in figure that have the same type as current singly-selected node
-      List<FGraphicNode> addNodes = new ArrayList<FGraphicNode>();
+      List<FGraphicNode> addNodes = new ArrayList<>();
       FGraphicNode currSel = getSelectedNode();
       FGNodeType selType = currSel.getNodeType();
       
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(root);
       while(!nodeStack.isEmpty())
       {
@@ -1445,7 +1437,7 @@ public class FGraphicModel implements RenderableModel, Printable
       }
 
       // if any "like" nodes found, add them to the current selection!
-      if(addNodes.size() > 0) reviseSelection(addNodes, null);
+      if(!addNodes.isEmpty()) reviseSelection(addNodes, null);
    }
    
    /**
@@ -1476,7 +1468,7 @@ public class FGraphicModel implements RenderableModel, Printable
       
       // check all selected nodes to see how many can move. Remove descendants of movable nodes, since they'll be moved
       // with their movable ancestor (else they would move twice as far!)
-      ArrayList<FGraphicNode> movable = new ArrayList<FGraphicNode>();
+      ArrayList<FGraphicNode> movable = new ArrayList<>();
       int nMove = 0;
       for(FGraphicNode n : currSelection) if(n.canMove())
       {
@@ -1596,7 +1588,7 @@ public class FGraphicModel implements RenderableModel, Printable
 
    /**
     * Get an internal count of the number of changes in this figure graphic model since the last time it was saved --
-    * or, more accurately, the last time the count was reset by a call to {@link #setModified()}. This count is merely
+    * or, more accurately, the last time the count was reset by a call to {@link #setModified}. This count is merely
     * a rough estimate and is only intended to detect that the model has changed state over time.
     * @return The model's current modification count.
     */
@@ -1886,7 +1878,7 @@ public class FGraphicModel implements RenderableModel, Printable
    {
       // check all selected nodes to see how many can be deleted. Remove descendants of removable nodes, since they'll 
       // be deleted anyway.
-      ArrayList<FGraphicNode> removable = new ArrayList<FGraphicNode>();
+      ArrayList<FGraphicNode> removable = new ArrayList<>();
       for(FGraphicNode n : currSelection) if(canDeleteNode(n))
       {
          // discard removable descendants of this removable node
@@ -2053,13 +2045,13 @@ public class FGraphicModel implements RenderableModel, Printable
       // the nodes in the selection list are aligned WRT the focus node for the selection. If we cannot compute the
       // alignment locus for that node, abort.
       Double locusD = getFocusForSelection().getAlignmentLocus(align);
-      if(locusD == null || !Utilities.isWellDefined(locusD.doubleValue())) return;
+      if(locusD == null || !Utilities.isWellDefined(locusD)) return;
       
-      double locus = locusD.doubleValue();
+      double locus = locusD;
       
       // align the objects. For each node actually changed, notify model listeners that the node's definition has
       // changed WITHOUT triggering a re-render.
-      MultiRevEdit undoer = new MultiRevEdit(this, "Align nodes - " + align.toString());
+      MultiRevEdit undoer = new MultiRevEdit(this, "Align nodes - " + align);
       blockEditHistory();
       try
       {
@@ -2085,7 +2077,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * The graphic node(s) currently in the "clipboard" shared by all instances of <code>FGraphicModel</code>. It is 
     * list to support copying, cutting and pasting a multiple-node selection. Initially empty.
     */
-   private static List<FGraphicNode> nodeClipboard = new ArrayList<FGraphicNode>();
+   private static final List<FGraphicNode> nodeClipboard = new ArrayList<>();
 
    /**
     * Get the number of graphic nodes in the "node clipboard", a static resource shared by all instances of
@@ -2124,10 +2116,13 @@ public class FGraphicModel implements RenderableModel, Printable
       
       // always clone the node, even if it's deleted. If the deleted node was restored and then edited, and then the
       // user pasted the node from the clipboard, the node will be different from what it was when it was cut.
-      nodeClipboard.clear();
-      nodeClipboard.add((FGraphicNode) n.clone());
-
-      return(true);
+      try
+      {
+         nodeClipboard.clear();
+         nodeClipboard.add((FGraphicNode) n.clone());
+         return(true);
+      }
+      catch(CloneNotSupportedException e) { return(false); }
    }
 
    /**
@@ -2139,19 +2134,22 @@ public class FGraphicModel implements RenderableModel, Printable
    public static boolean copyToClipboard(List<FGraphicNode> nodes)
    {
       if(nodes == null || nodes.isEmpty()) return(false);
-      
-      List<FGraphicNode> copied = new ArrayList<FGraphicNode>();
-      for(FGraphicNode n : nodes)
+
+      try
       {
-         FGraphicModel model = n.getGraphicModel();
-         if(model != null && model.canCopyNode(n)) copied.add((FGraphicNode) n.clone());
+         List<FGraphicNode> copied = new ArrayList<>();
+         for(FGraphicNode n : nodes)
+         {
+            FGraphicModel model = n.getGraphicModel();
+            if(model != null && model.canCopyNode(n)) copied.add((FGraphicNode) n.clone());
+         }
+
+         if(copied.isEmpty()) return(false);
+         nodeClipboard.clear();
+         nodeClipboard.addAll(copied);
+         return(true);
       }
-      
-      if(copied.isEmpty()) return(false);
-      
-      nodeClipboard.clear();
-      nodeClipboard.addAll(copied);
-      return(true);
+      catch(CloneNotSupportedException e) { return(false); }
    }
    
    /**
@@ -2184,12 +2182,16 @@ public class FGraphicModel implements RenderableModel, Printable
       if(model == null) return(false);
       
       // clone each clipboard node that can be pasted into parent
-      List<FGraphicNode> copies = new ArrayList<FGraphicNode>();
-      for(FGraphicNode n : nodeClipboard) if(parent.canInsert(n.getNodeType()))
+      List<FGraphicNode> copies = new ArrayList<>();
+      try
       {
-         copies.add((FGraphicNode) n.clone());
+         for(FGraphicNode n : nodeClipboard) if(parent.canInsert(n.getNodeType()))
+         {
+            copies.add((FGraphicNode) n.clone());
+         }
       }
-      
+      catch(CloneNotSupportedException e) { return(false); }
+
       // now insert each copied node into the parent
       if(copies.isEmpty()) return(false);
       else if(copies.size() == 1) 
@@ -2253,7 +2255,7 @@ public class FGraphicModel implements RenderableModel, Printable
       
       /** Issued only when model's "modified" flag is reset -- typically, when model is saved to file. */
       MODFLAG_RESET
-   };
+   }
 
    /**
     * Each graphic node in the <code>FGraphicModel</code> must invoke this method whenever its definition changes in 
@@ -2292,7 +2294,7 @@ public class FGraphicModel implements RenderableModel, Printable
    /**
     * The list of objects registered to listen for changes in this <code>FGraphicModel</code>.
     */
-   private List<FGModelListener> listeners = new ArrayList<FGModelListener>();
+   private final List<FGModelListener> listeners = new ArrayList<>();
 
    /**
     * Adds a listener to this <code>FGraphicModel</code>'s listener list. If a model mutation event is currently being 
@@ -2327,11 +2329,10 @@ public class FGraphicModel implements RenderableModel, Printable
    private void fireModelChanged(FGraphicNode affected, Change type)
    {
       // clone the listener list so that, if the list mutates during the event dispatch, the dispatch is unaffected
-      List<FGModelListener> copyOfListeners = new ArrayList<FGModelListener>();
+      List<FGModelListener> copyOfListeners;
       synchronized(listeners)
       {
-         for(int i=0; i<listeners.size(); i++)
-            copyOfListeners.add(listeners.get(i));
+         copyOfListeners = new ArrayList<>(listeners);
       }
 
       // dispatch the event
@@ -2361,7 +2362,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * among the list of currently selected nodes, or is a component or tick set under a selected node.
     * @param prop The property to be changed.
     * @param value The new value for the property. It is assumed that the value type is consistent with the specified
-    * property so that it can be safely set using {@link FGraphicNode#setPropertyValue()}.
+    * property so that it can be safely set using {@link FGraphicNode#setPropertyValue}.
     * @return False if the operation was not performed because the current selection list contains only a single node or
     * is not homogeneous -- or because a multi-object edit is already in progess. Else returns true.
     */
@@ -2405,7 +2406,7 @@ public class FGraphicModel implements RenderableModel, Printable
    }
    
    /**
-    * Helper method for {@link #doMultiNodeEdit()}. It prepares the list of nodes to be edited by scanning the current
+    * Helper method for {@link #doMultiNodeEdit}. It prepares the list of nodes to be edited by scanning the current
     * multi-selection and finding nodes that match the node on which the property edit was initiated. This task is
     * complicated by the fact that some nodes cannot be selected in the UI for editing purposes, while others are
     * components of the complex graph node:
@@ -2418,7 +2419,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * approach is taken when multiple 3D graphs are selected. <i>Note that you cannot perform a multi-object edit across
     * 2D and 3D graphs, because different node types are involved.</i></li>
     * <li>When the property edit is initiated on a 2D tick set ({@link TickSetNode}) -- call it T --, then the current 
-    * selection will either include all axis nodes of the same type (either {@link AxisNode} or {@link ColorAxisNode}), 
+    * selection will either include all axis nodes of the same type (either {@link AxisNode} or {@link ColorBarNode}),
     * or all 2D graph nodes. In the former case, the node list will include the tick set of each selected axis that is
     * at the same position in the child list as T (note that not all axes may have such a tick set!). In the latter 
     * case, only tick sets that are on the same axis in the selected graphs (primary, secondary, or color axis) and at
@@ -2431,9 +2432,21 @@ public class FGraphicModel implements RenderableModel, Printable
     */
    private List<FGraphicNode> prepareMultiNodeEditList(FGraphicNode initialFGN)
    {
-      List<FGraphicNode> nodes = new ArrayList<FGraphicNode>();
+      List<FGraphicNode> nodes = new ArrayList<>();
       FGNodeType nt = initialFGN.getNodeType();
-      if(nt == FGNodeType.SYMBOL)
+      if(currSelection.get(0).getNodeType() == FGNodeType.BOX && nt != FGNodeType.BOX)
+      {
+         // multiple box plots are selected, but user is editing an intrinsic component of one of the box plots. In this
+         // case we also edit the corresponding components in all selected box plots.
+         for(FGraphicNode n : currSelection)
+         {
+            BoxPlotNode box = (BoxPlotNode)n;
+            if(nt == FGNodeType.SYMBOL) nodes.add(box.getSymbolNode());
+            else if(nt == FGNodeType.EBAR) nodes.add(box.getWhiskerNode());
+            else if(nt == FGNodeType.VIOLIN) nodes.add(box.getViolinStyleNode());
+         }
+      }
+      else if(nt == FGNodeType.SYMBOL)
       {
          // current selection must contain all trace nodes or all function nodes, which possess a symbol child.
          for(FGraphicNode n : currSelection) nodes.add(((FGNPlottable) n).getSymbolNode());
@@ -2561,136 +2574,6 @@ public class FGraphicModel implements RenderableModel, Printable
             else if(nt == FGNodeType.CBAR) nodes.add(g3.getColorBar());
          }
       }
-      /*
-      else if(nt==FGNodeType.GRAPH || nt==FGNodeType.AXIS || nt==FGNodeType.CBAR || nt==FGNodeType.LEGEND || 
-            nt==FGNodeType.GRIDLINE)
-      {
-         // first pass: the list of directly or indirectly selected graph nodes
-         for(FGraphicNode n : currSelection)
-         {
-            while(n.getNodeType() != FGNodeType.GRAPH) n = n.getParent();
-            nodes.add(n);
-         }
-         
-         // second pass: if a child node is to be edited, replace each graph node with the child that corresponds to
-         // the node on which editing was initiated.
-         if(nt != FGNodeType.GRAPH) for(int i=0; i<nodes.size(); i++)
-         {
-            GraphNode g = (GraphNode) nodes.get(i);
-            if(nt == FGNodeType.LEGEND)
-               nodes.set(i, g.getLegend());
-            else if(nt == FGNodeType.CBAR)
-               nodes.set(i, g.getZAxis());
-            else if(nt == FGNodeType.AXIS)
-               nodes.set(i, ((AxisNode)initialFGN).isPrimary() ? g.getPrimaryAxis() : g.getSecondaryAxis());
-            else if(nt == FGNodeType.GRIDLINE)
-               nodes.set(i, 
-                     ((GridLineNode)initialFGN).isPrimary() ? g.getPrimaryGridLines() : g.getSecondaryGridLines());
-         }
-      }
-      else if(nt==FGNodeType.TICKS)
-      {
-         // determine to which axis the tick set belongs, and its position in the axis's child list.
-         TickSetNode tsn = (TickSetNode) initialFGN;
-         FGNGraphAxis axis = (FGNGraphAxis) tsn.getParent();
-         boolean isPrimary = axis.isPrimary();
-         boolean isZ = axis.isZAxis();
-         int pos = -1;
-         for(int i=0; i<axis.getChildCount(); i++) if(axis.getChildAt(i) == tsn)
-         {
-            pos = i;
-            break;
-         }
-         if(pos < 0) return(nodes);  // node list will be empty -- should never happen
-         
-         // first pass: the list of directly or indirectly selected graph nodes
-         List<GraphNode> selGraphs = new ArrayList<GraphNode>();
-         for(FGraphicNode n : currSelection)
-         {
-            while(n.getNodeType() != FGNodeType.GRAPH) n = n.getParent();
-            selGraphs.add((GraphNode) n);
-         }
-         
-         // second pass: for each graph, find the tick set that's under the same graph axis and is at the same 
-         // position in the child list as the tick set node on which editing was initiated. Note that such a tick set
-         // may not exist for every graph!
-         for(GraphNode g : selGraphs)
-         {
-            if(isZ) axis = g.getZAxis();
-            else if(isPrimary) axis = g.getPrimaryAxis();
-            else axis = g.getSecondaryAxis();
-            int nTickSets = axis.getChildCount();
-            if(pos < nTickSets) nodes.add(axis.getChildAt(pos));
-         }
-      }
-      else if(nt==FGNodeType.GRAPH3D || nt==FGNodeType.AXIS3D || nt==FGNodeType.BACK3D || nt==FGNodeType.GRID3D)
-      {
-         // first pass: the list of directly or indirectly selected 3D graph nodes
-         for(FGraphicNode n : currSelection)
-         {
-            while(n.getNodeType() != FGNodeType.GRAPH3D) n = n.getParent();
-            nodes.add(n);
-         }
-         
-         // second pass: if a child node is to be edited, replace each 3D graph node with the child that corresponds to
-         // the node on which editing was initiated.
-         if(nt != FGNodeType.GRAPH3D) for(int i=0; i<nodes.size(); i++)
-         {
-            Graph3DNode g3 = (Graph3DNode) nodes.get(i);
-            if(nt == FGNodeType.AXIS3D)
-               nodes.set(i, g3.getAxis(((Axis3DNode)initialFGN).getAxis()));
-            else if(nt == FGNodeType.GRID3D)
-               nodes.set(i, g3.getGrid3DNode(((Grid3DNode)initialFGN).getPerpendicularAxis()));
-            else if(nt == FGNodeType.BACK3D)
-               nodes.set(i, g3.getBackPlane(((BackPlane3DNode)initialFGN).getBackplaneSide()));
-         }
-      }
-      else if(nt==FGNodeType.TICKS3D)
-      {
-         // determine to which axis the 3D tick set belongs, and its position in the axis's child list.
-         Ticks3DNode t3 = (Ticks3DNode) initialFGN;
-         Axis3DNode a3 = (Axis3DNode) t3.getParent();
-         Graph3DNode.Axis which = a3.getAxis();
-         int pos = -1;
-         for(int i=0; i<a3.getChildCount(); i++) if(a3.getChildAt(i) == t3)
-         {
-            pos = i;
-            break;
-         }
-         if(pos < 0) return(nodes);  // node list will be empty -- should never happen
-         
-         // first pass: the list of directly or indirectly selected 3D graph nodes
-         List<Graph3DNode> selGraphs = new ArrayList<Graph3DNode>();
-         for(FGraphicNode n : currSelection)
-         {
-            while(n.getNodeType() != FGNodeType.GRAPH3D) n = n.getParent();
-            selGraphs.add((Graph3DNode) n);
-         }
-         
-         // second pass: for each 3D graph, find the tick set that's under the same graph axis and is at the same 
-         // position in the child list as the 3D tick set node on which editing was initiated. Note that such a tick set
-         // may not exist for every graph!
-         for(Graph3DNode g3 : selGraphs)
-         {
-            a3 = g3.getAxis(which);
-            int nTickSets = a3.getChildCount();
-            if(pos < nTickSets) nodes.add(a3.getChildAt(pos));
-         }
-      }
-      */
-      else if(currSelection.get(0).getNodeType() == FGNodeType.BOX && nt != FGNodeType.BOX)
-      {
-         // multiple box plots are selected, but user is editing an intrinsic component of one of the box plots. In this
-         // case we also edit the corresponding components in all selected box plots.
-         for(FGraphicNode n : currSelection)
-         {
-            BoxPlotNode box = (BoxPlotNode)n;
-            if(nt == FGNodeType.SYMBOL) nodes.add(box.getSymbolNode());
-            else if(nt == FGNodeType.EBAR) nodes.add(box.getWhiskerNode());
-            else if(nt == FGNodeType.VIOLIN) nodes.add(box.getViolinStyleNode());
-         }
-      }
-
       else
       {
          // all other cases: selected nodes should same type as node on which editing was initiated
@@ -2706,7 +2589,7 @@ public class FGraphicModel implements RenderableModel, Printable
    private final static int EDITHISTORY_DEPTH = 30;
 
    /** The model's edit history of reversible changes, in ascending chronological order. */
-   private List<ReversibleEdit> editHistory = new ArrayList<ReversibleEdit>();
+   private final List<ReversibleEdit> editHistory = new ArrayList<>();
    
    /** 
     * Index of last reversible change in edit history that was undone. A "redo" operation is possible only if this
@@ -2782,7 +2665,7 @@ public class FGraphicModel implements RenderableModel, Printable
          }
          
          // remove any undone changes. Once we post the new change, they cannot be redone!
-         while(lastUndone < editHistory.size() && editHistory.size() > 0)
+         while(lastUndone < editHistory.size() && !editHistory.isEmpty())
          {
             ReversibleEdit reDiscard = editHistory.remove(editHistory.size()-1);
             reDiscard.release();
@@ -2880,7 +2763,7 @@ public class FGraphicModel implements RenderableModel, Printable
             if(!ok)
             {
                lastUndone = 0;
-               while(editHistory.size() > 0) editHistory.remove(editHistory.size()-1).release();
+               while(!editHistory.isEmpty()) editHistory.remove(editHistory.size()-1).release();
             }
          }
       }
@@ -2898,11 +2781,11 @@ public class FGraphicModel implements RenderableModel, Printable
       boolean changed = false;
       synchronized(this)
       {
-         if(editHistory.size() > 0)
+         if(!editHistory.isEmpty())
          {
             changed = true;
             lastUndone = 0;
-            while(editHistory.size() > 0) editHistory.remove(editHistory.size()-1).release();
+            while(!editHistory.isEmpty()) editHistory.remove(editHistory.size()-1).release();
             blockHistoryCount = 0;
          }
       }
@@ -2933,8 +2816,8 @@ public class FGraphicModel implements RenderableModel, Printable
    {
       /** 
        * Construct a reversible model-level edit representing the deletion of one or more non-component nodes, or the
-       * insertion of one or more nodes. Initially contains no insertions or deletions; call {@link #addDeletedNode()} 
-       * to record each node deletion, or {@link #addInsertedNode()} to record each node insertion. NOTE that the 
+       * insertion of one or more nodes. Initially contains no insertions or deletions; call {@link #addDeletedNode}
+       * to record each node deletion, or {@link #addInsertedNode} to record each node insertion. NOTE that the
        * reversible edit object cannot handle a mix of deletions and insertions; only one or the other.
        * @param isInsert True is this reversible edit will contain node insertions; else, node deletions.
        */
@@ -3016,7 +2899,7 @@ public class FGraphicModel implements RenderableModel, Printable
        * @param replaceList A list of the original data sets, the corresponding replacement data sets, and the affected
        * data presentation nodes. These are stored in the list in triplets: dsOld1, dsNew1, dataNode1, dsOld2, dsNew2,
        * dataNode2, etc. The list must contain at least two such triplets. Replacing a single data set is handled by
-       * {@link FGNPlottableData#setDataSet()}.
+       * {@link FGNPlottableData#setDataSet}.
        */
       @SuppressWarnings("rawtypes")
       FGMRevOp(List replaceList)
@@ -3058,7 +2941,7 @@ public class FGraphicModel implements RenderableModel, Printable
          boolean ok = false;
          NodeInfo ni;
          List<FGraphicNode> selAfter = null;
-         if((type==NODES_INSERTED && redo) || (type==NODES_DELETED && !redo)) selAfter = new ArrayList<FGraphicNode>();
+         if((type==NODES_INSERTED && redo) || (type==NODES_DELETED && !redo)) selAfter = new ArrayList<>();
          
          switch(type)
          {
@@ -3127,10 +3010,10 @@ public class FGraphicModel implements RenderableModel, Printable
       private final static int DS_REPLACED = 3;
       
       /** The undoable operation type. */
-      private int type = -1;
+      private int type;
       
       /** Encapsulation of the operation(s) on one or more nodes in the figure. */
-      private List<NodeInfo> nodesAffected = new ArrayList<NodeInfo>();
+      private final List<NodeInfo> nodesAffected = new ArrayList<>();
             
       /**
        * For a multi-dataset replacement only. This list will contain two or more <code>DataSet,FGNPlottableData</code> 
@@ -3154,10 +3037,10 @@ public class FGraphicModel implements RenderableModel, Printable
             this.posAfter = posAfter;
          }
          
-         FGraphicNode node;
-         FGraphicNode parent;
-         int posBefore;
-         int posAfter;
+         final FGraphicNode node;
+         final FGraphicNode parent;
+         final int posBefore;
+         final int posAfter;
       }
    }
 
@@ -3177,12 +3060,9 @@ public class FGraphicModel implements RenderableModel, Printable
       rmviewer = viewer;
 
       // do a complete re-render in the new viewer
-      if(rmviewer != null)
-      {
-         Graphics2D g2d = getViewerGraphics();
-         try { root.getRenderBounds(g2d, true, null); }
-         finally { if(g2d != null) g2d.dispose(); }
-      }
+      Graphics2D g2d = getViewerGraphics();
+      try { root.getRenderBounds(g2d, true, null); }
+      finally { if(g2d != null) g2d.dispose(); }
       return(true);
    }
 
@@ -3262,7 +3142,7 @@ public class FGraphicModel implements RenderableModel, Printable
    /**
     * Starting with the graphic's root node, find the smallest node -- i.e., the node with a bounding rectangle of the
     * smallest overall area -- that contains the specified point. This uses the same algorithm as {@link 
-    * #pointClicked()}, but it does not change the identity of the current focus node and does not post any 
+    * #pointClicked}, but it does not change the identity of the current focus node and does not post any
     * notifications to registered listeners. <i>The method only works when the graphic is installed in a viewer, which 
     * provides a context for computing node bounds.</i>
     * 
@@ -3288,10 +3168,10 @@ public class FGraphicModel implements RenderableModel, Printable
     */
    public List<FGraphicNode> findAllIntersectingNodes(Rectangle2D r)
    {
-      List<FGraphicNode> out = new ArrayList<FGraphicNode>();
+      List<FGraphicNode> out = new ArrayList<>();
       if(r == null) return(out);
       
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       for(int i=0; i<root.getChildCount(); i++) nodeStack.push(root.getChildAt(i));
       while(!nodeStack.isEmpty())
       {
@@ -3352,7 +3232,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * @param s The string to be filtered.
     * @return A string equal to the provided string, but with any unsupported characters replaced by question marks.
     */
-   public static final String replaceUnsupportedCharacters(String s)
+   public static String replaceUnsupportedCharacters(String s)
    {
       return( SUPPORTEDCHARS.replaceBadCharacters('?', s));
    }
@@ -3364,7 +3244,7 @@ public class FGraphicModel implements RenderableModel, Printable
     * @param rmvOther If true, any tab, carriage-return, and line-feed characters are also removed.
     * @return The filtered string, possibly unchanged.
     */
-   public static final String removeUnsupportedCharacters(String s, boolean rmvOther)
+   public static String removeUnsupportedCharacters(String s, boolean rmvOther)
    {
       return((rmvOther ? SUPPORTEDCHARS_NOCRLFTAB : SUPPORTEDCHARS).replaceBadCharacters('\0', s));
    }

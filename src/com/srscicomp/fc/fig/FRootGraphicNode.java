@@ -60,15 +60,10 @@ public abstract class FRootGraphicNode extends FGraphicNode implements RootRende
       if(ownerModel != owner)
       {
          ownerModel = owner;
-         if(ownerModel == null)
-            releaseRenderResources();
-         else
-         {
-            Graphics2D g2d = ownerModel.getViewerGraphics();
-            try { getRenderBounds(g2d, true, null); }
-            finally { if(g2d != null) g2d.dispose(); }
-            ownerModel.onChange(this, 2, true, null);
-         }
+         Graphics2D g2d = ownerModel.getViewerGraphics();
+         try { getRenderBounds(g2d, true, null); }
+         finally { if(g2d != null) g2d.dispose(); }
+         ownerModel.onChange(this, 2, true, null);
       }
    }
 
@@ -76,7 +71,7 @@ public abstract class FRootGraphicNode extends FGraphicNode implements RootRende
     * Overridden to ensure that the cloned root node does not have an owner model.
     */
    @Override
-   protected Object clone()
+   protected Object clone() throws CloneNotSupportedException
    {
       // we must set owner model of THIS to null before cloning, because cloning of FGraphicNode will trigger model
       // notifications. We then restore owner model afterwards.

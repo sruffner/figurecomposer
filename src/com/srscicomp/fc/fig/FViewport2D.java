@@ -118,7 +118,7 @@ public class FViewport2D
 	private final static int SEMILOGRCOORDS = 6;
 
 	/** Viewport type, ie, the type of user coordinate system mapped to the viewport. */
-	private int userType = NOUSERCOORDS;
+	private final int userType;
 
 	/** Actual width of viewport in milli-inches. */
 	private final double width;
@@ -183,8 +183,8 @@ public class FViewport2D
 	 * Construct a viewport that does not support user units. Any coordinate specified in user units will be treated by 
 	 * this viewport object as though it was specified in milli-inches relative to (0,0).
 	 * 
-	 * @param width Width of viewport in milli-inches.
-	 * @param height Height of viewport in milli-inches.
+	 * @param w Width of viewport in milli-inches.
+	 * @param h Height of viewport in milli-inches.
     * @throws IllegalArgumentException if any numeric argument is not well-defined (infinite or NaN).
 	 */
 	public FViewport2D(double w, double h)
@@ -208,8 +208,8 @@ public class FViewport2D
 	/**
 	 * Construct a viewport that supports user units in a standard Cartesian x,y-coordinate system.
 	 * 
-    * @param width Width of viewport in milli-inches. 
-    * @param height Height of viewport in milli-inches. 
+    * @param w Width of viewport in milli-inches.
+    * @param h Height of viewport in milli-inches.
     * @param userW Width of viewport in user units.
     * @param userH Height of viewport in user units.
 	 * @param userOrigin The viewport's bottom-left corner in user units; this is the origin by convention in a 
@@ -238,8 +238,8 @@ public class FViewport2D
 	 * Construct a viewport that supports user units in cartesian, loglog, or semilog coordinate systems.  The range 
 	 * of coordinate values along a logarithmic axis must be strictly non-negative.
 	 * 
-    * @param width Width of viewport in milli-inches.
-    * @param height Height of viewport in milli-inches.
+    * @param w Width of viewport in milli-inches.
+    * @param h Height of viewport in milli-inches.
 	 * @param left The x-coord of the viewport's left edge in user units.
 	 * @param right The x-coord of the viewport's right edge in user units.
 	 * @param bottom The y-coord of the viewport's bottom edge in user units.
@@ -300,8 +300,8 @@ public class FViewport2D
 	 * <p>Radial values increase outward from the origin; angular values increase in the CCW direction; and 0 degrees
 	 * always points to the right.</p>
 	 * 
-    * @param width Width of viewport in milli-inches.
-    * @param height Height of viewport in milli-inches.
+    * @param w Width of viewport in milli-inches.
+    * @param h Height of viewport in milli-inches.
 	 * @param polarOrigin Location of the polar coordinate system origin, specified in viewport units -- ie, in 
 	 * milli-inches WRT an origin at the bottom-left corner and y-axis increasing upward. If <code>null</code> or 
     * otherwise ill-defined, it is assumed to lie at the center of the viewport rectangle.
@@ -535,7 +535,7 @@ public class FViewport2D
                result = new Rectangle2D.Double(ptBL.getX(), ptBL.getY(), w, h);
          }
       }
-      catch(IllegalArgumentException iae) {}
+      catch(IllegalArgumentException ignored) {}
   
       return(result);
 	}
@@ -668,8 +668,8 @@ public class FViewport2D
     *  
     * @param x X-coordinate of a location, in milli-inches WRT this viewport's rendering coordinate system.
     * @param xUnits The target measurement units for the converted x-coordinate.
-    * @param x Y-coordinate of a location, in milli-inches WRT this viewport's rendering coordinate system.
-    * @param xUnits The target measurement units for the converted y-coordinate.
+    * @param y Y-coordinate of a location, in milli-inches WRT this viewport's rendering coordinate system.
+    * @param yUnits The target measurement units for the converted y-coordinate.
     * @param prec Desired precision of converted coordinate values (max # of fractional digits). Restricted to [0..3].
     * @return A two-element array containing the coordinates x,y (in that order), with the desired measurement units.
     * If unable to convert, null is returned.
@@ -679,7 +679,7 @@ public class FViewport2D
       if(!Utilities.isWellDefined(new double[] {x, y})) return(null);
 
       Measure[] coords = new Measure[2];
-      int p = (prec < 0) ? 0 : ((prec > 3) ? 3 : prec);
+      int p = Utilities.rangeRestrict(0, 3, prec);
       
       if((userType == POLARCOORDS || userType == SEMILOGRCOORDS) && 
             (xUnits == Measure.Unit.USER || yUnits == Measure.Unit.USER))
@@ -859,8 +859,7 @@ public class FViewport2D
 	 */
 	public void userUnitsToThousandthInches(Point2D[] points)
 	{
-		for(int i=0; i < points.length; i++)
-			userUnitsToThousandthInches(points[i]);
+      for(Point2D point : points) userUnitsToThousandthInches(point);
 	}
 
    /**
@@ -871,7 +870,7 @@ public class FViewport2D
     */
    public void userUnitsToThousandthInches(List<Point2D> points)
    {
-      if(points == null || points.size() == 0) return;
+      if(points == null || points.isEmpty()) return;
       for(Point2D p : points)
          userUnitsToThousandthInches(p);
    }
@@ -897,7 +896,7 @@ public class FViewport2D
 		userUnitsToThousandthInches(copyP1);
 
 		// if either point is ill-defined, return 0; else return computed distance in thousandth-in
-		if( copyP0.getX() == Double.NaN || copyP1.getX() == Double.NaN )
+		if( !(Double.isFinite(copyP0.getX()) && Double.isFinite(copyP1.getX())) )
 			return( 0.0 );
 		else
 			return( copyP0.distance( copyP1 ) );

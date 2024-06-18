@@ -128,7 +128,7 @@ public class SymbolNode extends FGraphicNode implements Cloneable
 
    /**
     * Set the rendered size of the marker symbol defined by this symbol node. If a change is made, {@link 
-    * #onNodeModified()} is invoked.
+    * #onNodeModified} is invoked.
     * 
     * @param m The new size. It is constrained to satisfy {@link #SYMBOLSIZECONSTRAINTS}. A null value is rejected.
     * @return True if successful; false if value was rejected.
@@ -165,17 +165,16 @@ public class SymbolNode extends FGraphicNode implements Cloneable
    @Override
    public boolean setTitle(String s)
    {
-      return(((s != null) && (s.length() > 1)) ? false : super.setTitle(s));
+      return(((s == null) || (s.length() <= 1)) && super.setTitle(s));
    }
 
    @Override protected void rescaleSelf(double scale, MultiRevEdit undoer)
    {
-      Measure.Constraints c = SYMBOLSIZECONSTRAINTS;
       double d = size.getValue();
       if(d > 0)
       {
          Measure old = size;
-         size = c.constrain(new Measure(d*scale, size.getUnits()));
+         size = SYMBOLSIZECONSTRAINTS.constrain(new Measure(d*scale, size.getUnits()));
          undoer.addPropertyChange(this, FGNProperty.SIZE, size, old);
       }
    }
@@ -198,7 +197,7 @@ public class SymbolNode extends FGraphicNode implements Cloneable
          FGNPlottable plottable = (FGNPlottable) getParent();
          if((!plottable.usesSymbols()) || 
                (hint != null && hint != FGNProperty.SIZE && hint != FGNProperty.TITLE && 
-                     getSizeInMilliInches() == 0 && getTitle().length() == 0))
+                     getSizeInMilliInches() == 0 && getTitle().isEmpty()))
             model.onChange(this, 0, false, null);
          else
             plottable.onNodeModified(this);
@@ -207,7 +206,7 @@ public class SymbolNode extends FGraphicNode implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case SIZE : ok = setSize((Measure) propValue); break;
@@ -219,7 +218,7 @@ public class SymbolNode extends FGraphicNode implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case SIZE : value = getSize(); break;
@@ -322,4 +321,8 @@ public class SymbolNode extends FGraphicNode implements Cloneable
 
    public void toPostscript(PSDoc psDoc) throws UnsupportedOperationException { /* NOOP */ }
 
+   @Override public SymbolNode clone() throws CloneNotSupportedException
+   {
+      return (SymbolNode) super.clone();
+   }
 }

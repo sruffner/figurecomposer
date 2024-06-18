@@ -63,7 +63,7 @@ public class FGModelSchemaConverter
    public static String toXML(FGraphicModel model, File f)
    {
       BufferedWriter wrt = null;
-      String errDesc = null;
+      String errDesc;
       try 
       { 
          wrt = new BufferedWriter(new FileWriter(f));
@@ -79,7 +79,7 @@ public class FGModelSchemaConverter
       }
       finally
       {
-         try { if(wrt != null) wrt.close(); } catch(IOException ioe) {}
+         try { if(wrt != null) wrt.close(); } catch(IOException ignored) {}
       }
       
       return(errDesc);
@@ -90,7 +90,7 @@ public class FGModelSchemaConverter
     * This method may take a significant amount of time to execute, so it should be invoked on a background thread.
     * 
     * @param model The graphic model.
-    * @param writer. The stream writer to which the XML definition of the model is written. The writer is <b>NOT</b> 
+    * @param writer The stream writer to which the XML definition of the model is written. The writer is <b>NOT</b>
     * closed after the operation is completed.
     * @return Null if operation succeeds; else a brief message explaining the error that occurred.
     */
@@ -127,7 +127,7 @@ public class FGModelSchemaConverter
    public static FGraphicModel fromXML(File f, StringBuffer errBuf)
    {
       Reader rdr = null;
-      FGraphicModel model = null;
+      FGraphicModel model;
       try
       {
          rdr = new BufferedReader(new FileReader(f));
@@ -141,7 +141,7 @@ public class FGModelSchemaConverter
       }
       finally
       {
-         try { if(rdr != null) rdr.close(); } catch(IOException ioe) {}
+         try { if(rdr != null) rdr.close(); } catch(IOException ignored) {}
       }
       
       return(model);
@@ -216,7 +216,7 @@ public class FGModelSchemaConverter
          // dataset it renders
          model.getAllDataSetsInUse();
          
-         graphicNodeToXML(schema, null, (FGraphicNode) model.getRoot());
+         graphicNodeToXML(schema, null, model.getRoot());
          putDataSetsToXML(schema, model);
       }
       catch(Throwable t)
@@ -226,8 +226,9 @@ public class FGModelSchemaConverter
          StackTraceElement[] trace = t.getStackTrace();
          sb.append("\nTop of stack trace:\n");
          if(trace == null || trace.length == 0) sb.append("Unavailable.");
-         else for(int i=0; i<trace.length; i++)
-            sb.append(trace[i].toString() + "\n");
+         else
+            for(StackTraceElement stackTraceElement : trace)
+               sb.append(stackTraceElement.toString()).append("\n");
          sb.append("\nReport to developer.");
          throw new XMLException(sb.toString());
       }
@@ -241,7 +242,6 @@ public class FGModelSchemaConverter
     * 
     * @param schema The schema document.
     * @return The graphic model of a <em>DataNav</em> figure, as defined by the schema document.
-    * @throws 
     * @throws XMLException if schema document is null or does not conform to the current schema version, or if there's a
     * programming error in the conversion code. The exception message suggests reporting the problem to <i>DataNav</i>'s
     * developer.
@@ -254,7 +254,7 @@ public class FGModelSchemaConverter
       FGraphicModel model = new FGraphicModel();
       try
       {
-         graphicNodeFromXML(schema, (BasicSchemaElement) schema.getRootElement(), (FGraphicNode) model.getRoot());
+         graphicNodeFromXML(schema, (BasicSchemaElement) schema.getRootElement(), model.getRoot());
          getDataSetsFromXML(schema, model);
          
          // put focus on root node initially, then clear model's edit history and modified flag!
@@ -273,7 +273,7 @@ public class FGModelSchemaConverter
    /**
     * Get the tag name of the <i>FypML</i> element that encapsulates the definition of a graphic node with the specified
     * node type. Note that, with the introduction of the 3D graph node in schema version 21 (app version 5.0.0), 
-    * certain node types map to the same <i>FypML</i> element. See {@link #getNodeTypeForFypMLTag()}.
+    * certain node types map to the same <i>FypML</i> element. See {@link #getNodeTypeForFypMLTag}.
     * 
     * @param nt The graphic node type.
     * @return The tag of the corresponding <i>FypML</i> element. Returns null if node type not recognized.
@@ -425,7 +425,25 @@ public class FGModelSchemaConverter
       propertiesToXML(e, n);
       switch(nodeType)
       {
-         case FIGURE: 
+         case FIGURE:
+         case LABEL:
+         case LINE:
+         case SHAPE:
+         case CALIB:
+         case AXIS:
+         case CBAR:
+         case AXIS3D:
+         case LEGEND:
+         case GRIDLINE:
+         case GRID3D:
+         case BACK3D:
+         case SYMBOL:
+         case EBAR:
+         case RASTER:
+         case CONTOUR:
+         case SURFACE:
+         case VIOLIN:
+         case SCATLINESTYLE:
             break;
          case GRAPH: 
             GraphNode graph = (GraphNode)n;
@@ -458,7 +476,7 @@ public class FGModelSchemaConverter
             graphicNodeToXML(schema, e, g3.getColorBar());
             break;
          case TEXTBOX:  // the XML text content of a "text box" is mapped to the "title" property in the model node
-            e.setTextContent(((TextBoxNode)n).getTitle(), false);
+            e.setTextContent(n.getTitle(), false);
             break;
          case IMAGE:   // the XML text content of this node is the source image in PNG format, base64-encoded binary
             try
@@ -481,11 +499,6 @@ public class FGModelSchemaConverter
                throw new XMLException("Unable to embed PNG image as base64-encoded text content");
             }
             break;
-         case LABEL:
-         case LINE:
-         case SHAPE:
-         case CALIB:
-            break;
          case FUNCTION:
             FunctionNode func = (FunctionNode)n;
             graphicNodeToXML(schema, e, func.getSymbolNode());
@@ -495,10 +508,6 @@ public class FGModelSchemaConverter
             TraceNode trace = (TraceNode)n;
             graphicNodeToXML(schema, e, trace.getSymbolNode());
             graphicNodeToXML(schema, e, trace.getErrorBarNode());
-            break;
-         case AXIS:
-         case CBAR:
-         case AXIS3D:
             break;
          case PAXIS:
             {
@@ -520,18 +529,6 @@ public class FGModelSchemaConverter
                String content = ((Ticks3DNode) n).getCustomTickLabelsAsCommaSeparatedList();
                if(!content.isEmpty()) e.setTextContent(content, false);
             }
-            break;
-         case LEGEND:
-         case GRIDLINE:
-         case GRID3D:
-         case BACK3D:
-         case SYMBOL:
-         case EBAR:
-         case RASTER:
-         case CONTOUR:
-         case SURFACE:
-         case VIOLIN:
-         case SCATLINESTYLE:
             break;
          case BAR:
          case AREA:
@@ -586,7 +583,22 @@ public class FGModelSchemaConverter
       int nComponents = 0;
       switch(nodeType)
       {
-         case FIGURE: 
+         case FIGURE:
+         case LABEL:
+         case LINE:
+         case SHAPE:
+         case CALIB:
+         case LEGEND:
+         case GRIDLINE:
+         case GRID3D:
+         case BACK3D:
+         case SYMBOL:
+         case EBAR:
+         case RASTER:
+         case CONTOUR:
+         case SURFACE:
+         case VIOLIN:
+         case SCATLINESTYLE:
             break;
          case GRAPH: 
             GraphNode graph = (GraphNode)n;
@@ -622,7 +634,7 @@ public class FGModelSchemaConverter
             nComponents = 11;
             break;
          case TEXTBOX:  // the XML text content of a "text box" is mapped to the "title" property in the model node
-            ((TextBoxNode) n).setTitle(e.getTextContent());
+            n.setTitle(e.getTextContent());
             break;
          case IMAGE:   // the XML text content of this node is the source image in PNG format, base64-encoded binary
             ImageNode img = (ImageNode) n;
@@ -650,11 +662,6 @@ public class FGModelSchemaConverter
                if(r != null) img.setCrop(r);
             }
             break;
-         case LABEL:
-         case LINE:
-         case SHAPE:
-         case CALIB:
-            break;
          case FUNCTION:
             FunctionNode func = (FunctionNode)n;
             func.setFunctionString(e.getTextContent());
@@ -673,7 +680,8 @@ public class FGModelSchemaConverter
             // ensure the axis initially has no children. The constructors for these node types automatically insert a 
             // single tick set child with default properties.
             FGraphicModel model = n.getGraphicModel();
-            while(n.getChildCount() > 0) model.deleteNode(n.getChildAt(0));
+            if(model != null)
+               while(n.getChildCount() > 0) model.deleteNode(n.getChildAt(0));
             break;
          case PAXIS:
             // unlike the other axis node types, the polar axis does not allow any child nodes. In addition, the text
@@ -687,18 +695,6 @@ public class FGModelSchemaConverter
          case TICKS3D:
             // text content is a comma-separated list of custom tick mark labels (typically empty)
             ((Ticks3DNode) n).setCustomTickLabelsFromCommaSeparatedList(e.getTextContent().trim());
-            break;
-         case LEGEND:
-         case GRIDLINE:
-         case GRID3D:
-         case BACK3D:
-         case SYMBOL:
-         case EBAR:
-         case RASTER:
-         case CONTOUR:
-         case SURFACE:
-         case VIOLIN:
-         case SCATLINESTYLE:
             break;
          case BAR:
          case AREA:
@@ -726,6 +722,7 @@ public class FGModelSchemaConverter
       }
       
       FGraphicModel model = n.getGraphicModel();
+      assert model != null;
       boolean isFigure = FGModelSchema.EL_FIGURE.equals(elTag);
       for(int i=nComponents; i<e.getChildCount(); i++)
       {
@@ -790,11 +787,12 @@ public class FGModelSchemaConverter
       Measure.Constraints locCon = FGraphicModel.getLocationConstraints(n.getNodeType());
       Measure.Constraints szCon = FGraphicModel.getSizeConstraints(n.getNodeType());
       Measure.Constraints swCon = FGraphicNode.STROKEWCONSTRAINTS;
+      String s;
       switch(n.getNodeType())
       {
          case FIGURE: 
             FigureNode fig = (FigureNode)n;
-            String s = fig.getBorderWidth().toString(swCon);
+            s = fig.getBorderWidth().toString(swCon);
             if(!FGModelSchema.DEFAULT_BORDER.equals(s)) e.setAttributeValueByName(FGModelSchema.A_BORDER, s);
             s = fig.getBackgroundFill().toXML();
             if(!FGModelSchema.DEFAULT_FIGURE_BKG.equals(s)) e.setAttributeValueByName(FGModelSchema.A_BKG, s);
@@ -1362,7 +1360,7 @@ public class FGModelSchemaConverter
     */
    private static String rectangleToString(Rectangle r)
    {
-      return(r==null ? null : "" + r.x + " " + r.y + " " + r.width + " " + r.height);
+      return(r==null ? null : r.x + " " + r.y + " " + r.width + " " + r.height);
    }
    
    /**
@@ -1377,21 +1375,16 @@ public class FGModelSchemaConverter
       if(strR == null) return(null);
       StringTokenizer tokenizer = new StringTokenizer(strR);
       if(tokenizer.countTokens() != 4) return(null);
-      
-      int x = 0;
-      int y = 0;
-      int w = 0;
-      int h = 0;
+
       try
       {
-         x = Integer.parseInt(tokenizer.nextToken());
-         y = Integer.parseInt(tokenizer.nextToken());
-         w = Integer.parseInt(tokenizer.nextToken());
-         h = Integer.parseInt(tokenizer.nextToken());
+         int x = Integer.parseInt(tokenizer.nextToken());
+         int y = Integer.parseInt(tokenizer.nextToken());
+         int w = Integer.parseInt(tokenizer.nextToken());
+         int h = Integer.parseInt(tokenizer.nextToken());
+         return((x>=0) && (y>=0) && (w>0) && (h>0) ? new Rectangle(x, y, w, h) : null);
       }
       catch(NumberFormatException nfe) { return(null); }
-      
-      return((x>=0) && (y>=0) && (w>0) && (h>0) ? new Rectangle(x, y, w, h) : null);
    }
 
    /**
@@ -1413,17 +1406,19 @@ public class FGModelSchemaConverter
    }
    
    /**
-    * The inverse of {@link #fromTextAlignmentToXML()}.
+    * The inverse of {@link #fromTextAlignmentToXML}.
     * @param horiz True for horizontal alignment, false for vertical.
     * @param xmlAlign The alignment as persisted in the XML schema representation of the node.
     * @return The corresponding text alignment in the graphic model.
     */
    private static TextAlign fromXMLToTextAlignment(boolean horiz, String xmlAlign)
    {
-      TextAlign ta = TextAlign.LEADING;
+      TextAlign ta;
       if(xmlAlign.equals(FGModelSchema.HALIGN_RIGHT) || xmlAlign.equals(FGModelSchema.VALIGN_BOTTOM))
          ta = TextAlign.TRAILING;
-      else if(xmlAlign.equals(FGModelSchema.HALIGN_CENTER) || xmlAlign.equals(FGModelSchema.VALIGN_CENTER))
+      else if(xmlAlign.equals(FGModelSchema.HALIGN_LEFT) || xmlAlign.equals(FGModelSchema.VALIGN_TOP))
+         ta = TextAlign.LEADING;
+      else
          ta = TextAlign.CENTERED;
       
       return(ta);
@@ -1451,7 +1446,7 @@ public class FGModelSchemaConverter
       // NOTE: if the attribute value is implicit, then it is inherited from its parent. Since the node may have been
       // initialized otherwise, we must be sure to "reset" the property as implicit. This is done by passing null to
       // the relevant setter method
-      String s = null;
+      String s;
       if(e.hasAttribute(FGModelSchema.A_FONT))
          n.setFontFamily(e.getAttributeValueByName(FGModelSchema.A_FONT));
       if(e.hasAttribute(FGModelSchema.A_PSFONT))
@@ -1515,13 +1510,17 @@ public class FGModelSchemaConverter
       // remaining properties by node type. Note default attribute value handling!!
       Measure.Constraints locCon = FGraphicModel.getLocationConstraints(n.getNodeType());
       Measure.Constraints szCon = FGraphicModel.getSizeConstraints(n.getNodeType());
+      Measure m, m2;
+      int index;
+      DataSet ds;
+      String s2;
       switch(n.getNodeType())
       {
          case FIGURE: 
             FigureNode fig = (FigureNode)n;
             s = e.getAttributeValueByName(FGModelSchema.A_BORDER);
             if(s == null) s = FGModelSchema.DEFAULT_BORDER;
-            Measure m = Measure.fromString(s);
+            m = Measure.fromString(s);
             fig.setBorderWidth(FigureNode.STROKEWCONSTRAINTS.constrain(m));
             s = e.getAttributeValueByName(FGModelSchema.A_BKG);
             if(s == null) s = FGModelSchema.DEFAULT_FIGURE_BKG;
@@ -1541,9 +1540,9 @@ public class FGModelSchemaConverter
             fig.setTitleVerticalAlignment(fromXMLToTextAlignment(false, s));
             
             s = e.getAttributeValueByName(FGModelSchema.A_LOC);
-            int index = s.indexOf(' ');
+            index = s.indexOf(' ');
             m = Measure.fromString(s.substring(0, index));
-            Measure m2 = Measure.fromString(s.substring(index+1));
+            m2 = Measure.fromString(s.substring(index+1));
             fig.setXY(locCon.constrain(m), locCon.constrain(m2));
 
             m = Measure.fromString(e.getAttributeValueByName(FGModelSchema.A_WIDTH));
@@ -1845,7 +1844,7 @@ public class FGModelSchemaConverter
             // are injected after the model is constructed.
             s = e.getAttributeValueByName(FGModelSchema.A_SRC);
             if(s == null) throw new XMLException("Missing required attribute", FGModelSchema.EL_TRACE, FGModelSchema.A_SRC);
-            DataSet ds = trace.getDataSet().changeID(s.substring(1));
+            ds = trace.getDataSet().changeID(s.substring(1));
             if(ds == null) throw new XMLException("Bad dataset ID reference", FGModelSchema.EL_TRACE, FGModelSchema.A_SRC);
             trace.setDataSet(ds);
             break;
@@ -1874,7 +1873,7 @@ public class FGModelSchemaConverter
             raster.setAveraged("true".equals(s));
             
             s = e.getAttributeValueByName(FGModelSchema.A_START);
-            String s2 = e.getAttributeValueByName(FGModelSchema.A_END);
+            s2 = e.getAttributeValueByName(FGModelSchema.A_END);
             raster.setHistogramRange(
                   Float.parseFloat((s != null) ? s : FGModelSchema.DEFAULT_RASTER_STARTEND),
                   Float.parseFloat((s2 != null) ? s2 : FGModelSchema.DEFAULT_RASTER_STARTEND));
@@ -2411,10 +2410,10 @@ public class FGModelSchemaConverter
 
    /**
     * Helper method extracts all defined data sets from the schema document and injects them into the graphic model 
-    * under construction. It must be called after populating the graphic model via {@link #graphicNodeFromXML()}, at 
+    * under construction. It must be called after populating the graphic model via {@link #graphicNodeFromXML}, at
     * which point all data presentation elements will exist but will have empty data sets with IDs corresponding to the 
     * data sets stored in the schema's "ref" element. After extracting the sets from this schema element, the method
-    * injects them into the model via {@link FGraphicModel#replaceDataSetsInUse()}. If any data set goes unused, then 
+    * injects them into the model via {@link FGraphicModel#replaceDataSetsInUse}. If any data set goes unused, then
     * there must be something wrong with the schema document, and the method throws an exception.
     * 
     * @param schema The XML schema content document.
@@ -2424,7 +2423,7 @@ public class FGModelSchemaConverter
    private static void getDataSetsFromXML(ISchema schema, FGraphicModel model) throws XMLException
    {
       if(schema == null || schema.getRootElement() == null || model == null) return;
-      List<DataSet> sets = new ArrayList<DataSet>();
+      List<DataSet> sets = new ArrayList<>();
       BasicSchemaElement fig = (BasicSchemaElement) schema.getRootElement();
       BasicSchemaElement ref = (BasicSchemaElement) fig.getChildAt(fig.getChildCount()-1);
       
@@ -2437,11 +2436,12 @@ public class FGModelSchemaConverter
          boolean isV7 = "true".equals(eSet.getAttributeValueByName(FGModelSchema.A_V7));
          if(using == null)
          {
-            DataSet ds = null;
+            DataSet ds;
             if(isV7)
             {
                float dx = 1;
-               try { dx = Float.parseFloat(eSet.getAttributeValueByName(FGModelSchema.A_DX)); } catch(Throwable t) {}
+               try { dx = Float.parseFloat(eSet.getAttributeValueByName(FGModelSchema.A_DX)); }
+               catch(Throwable ignored) {}
                DataSet.Fmt dsFmt = Utilities.getEnumValueFromString(fmt, DataSet.Fmt.values());
                ds = DataSet.fromCommaSeparatedTuples(id, dsFmt, dx, eSet.getTextContent());
             }
@@ -2509,9 +2509,9 @@ public class FGModelSchemaConverter
       if(srcVersion != 8) return;
       
       // get a list of all graphs in the figure. We must fix each separately, and graphs can be nested!
-      List<GraphNode> graphs = new ArrayList<GraphNode>();
+      List<GraphNode> graphs = new ArrayList<>();
       FigureNode fig = (FigureNode) model.getRoot();
-      Stack<FGraphicNode> nodeStack = new Stack<FGraphicNode>();
+      Stack<FGraphicNode> nodeStack = new Stack<>();
       nodeStack.push(fig);
       while(!nodeStack.isEmpty())
       {
@@ -2559,7 +2559,7 @@ public class FGModelSchemaConverter
     * 
     * <p><b>NO LONGER USED</b>. As of V4.7.0 (May 2015), we no longer support a "style set palette" that was preserved
     * in the user's workspace. This method was used to save a style set in JSON format. It and its inverse, {@link 
-    * #fgnPropertyFromString()}, are no longer used. <i>If the two methods are put back into use, then they probably 
+    * #fgnPropertyFromString}, are no longer used. <i>If the two methods are put back into use, then they probably
     * need a careful vetting since they may not handle more recently added properties.</i></p>
     * 
     * @param nodeType The figure graphic node type.
@@ -2711,7 +2711,7 @@ public class FGModelSchemaConverter
       case SLICEOFS :
       case PSCALE :
       case MESHLIMIT :
-         try { propObj = Integer.parseInt(strValue); } catch(NumberFormatException nfe) {}
+         try { propObj = Integer.parseInt(strValue); } catch(NumberFormatException ignored) {}
          break;
       
       // these properties are floating-point values, all mapped to Double 
@@ -2729,7 +2729,7 @@ public class FGModelSchemaConverter
       case LINEHT :
       case IRAD :
       case ORAD :
-         try { propObj = Double.parseDouble(strValue); } catch(NumberFormatException nfe) {}
+         try { propObj = Double.parseDouble(strValue); } catch(NumberFormatException ignored) {}
          break;
      
       // barWidth is an Integer for the bar plot and scatter3d node; else it is a Double
@@ -2739,7 +2739,7 @@ public class FGModelSchemaConverter
             if(nodeType==FGNodeType.BAR || nodeType==FGNodeType.SCATTER3D) propObj = Integer.parseInt(strValue);
             else propObj = Double.parseDouble(strValue); 
          } 
-         catch(NumberFormatException nfe) {}
+         catch(NumberFormatException ignored) {}
          break;
          
       // these properties are all Color values
@@ -2822,12 +2822,12 @@ public class FGModelSchemaConverter
 
       // these two properties map to enum values, but the mapping is not straightforward...
       case HALIGN :
-         if(strValue.length() == 0) propObj = TextAlign.LEADING;
+         if(strValue.isEmpty()) propObj = TextAlign.LEADING;
          else if(strValue.equalsIgnoreCase(FGModelSchema.HALIGN_RIGHT)) propObj = TextAlign.TRAILING;
          else if(strValue.equalsIgnoreCase(FGModelSchema.HALIGN_CENTER)) propObj = TextAlign.CENTERED; 
          break;
       case VALIGN :
-         if(strValue.length() == 0) propObj = TextAlign.TRAILING;
+         if(strValue.isEmpty()) propObj = TextAlign.TRAILING;
          else if(strValue.equalsIgnoreCase(FGModelSchema.VALIGN_TOP)) propObj = TextAlign.LEADING;
          else if(strValue.equalsIgnoreCase(FGModelSchema.VALIGN_CENTER)) propObj = TextAlign.CENTERED; 
          break;
@@ -2882,7 +2882,7 @@ public class FGModelSchemaConverter
       case SPACER :
          if(nodeType == FGNodeType.RASTER)
          {
-            try { propObj = Integer.parseInt(strValue); } catch(NumberFormatException nfe) {}
+            try { propObj = Integer.parseInt(strValue); } catch(NumberFormatException ignored) {}
          }
          else if(nodeType==FGNodeType.AXIS || nodeType==FGNodeType.AXIS3D) mCon = AxisNode.SPACERCONSTRAINTS;
          else if(nodeType == FGNodeType.CBAR) mCon = ColorBarNode.GAPCONSTRAINTS;
@@ -2891,7 +2891,7 @@ public class FGModelSchemaConverter
       case HEIGHT :
          if(nodeType == FGNodeType.RASTER)
          {
-            try { propObj = Integer.parseInt(strValue); } catch(NumberFormatException nfe) {}
+            try { propObj = Integer.parseInt(strValue); } catch(NumberFormatException ignored) {}
          }
          else
          {
@@ -2902,7 +2902,7 @@ public class FGModelSchemaConverter
       case LEN :
          if(nodeType == FGNodeType.CALIB)
          {
-            try { propObj = Double.parseDouble(strValue); } catch(NumberFormatException nfe) {} 
+            try { propObj = Double.parseDouble(strValue); } catch(NumberFormatException ignored) {}
          }
          else if(nodeType == FGNodeType.TICKS) mCon = TickSetNode.TICKLENCONSTRAINTS; 
          else if(nodeType == FGNodeType.LEGEND) mCon = LegendNode.LENCONSTRAINTS; 

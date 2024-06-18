@@ -35,7 +35,7 @@ import com.srscicomp.common.util.Utilities;
  * piecewise-linear interpolation of the R/G/B components between adjacent key frames. The LUT may be accessed in either
  * the forward or reverse direction -- so you essentially get two LUTs for each unique color map.</p>
  * 
- * <p>{@link ColorMap}s are immutable. To create a new map, use {@link #createColorMap()}. You can also derive another
+ * <p>{@link ColorMap}s are immutable. To create a new map, use {@link #createColorMap}. You can also derive another
  * map from an existing one -- see, for example, {@link #deriveColorMap(int)}. To access any built-in color map, use the
  * enumeration {@link BuiltIn}.</p>
  * 
@@ -72,7 +72,7 @@ public class ColorMap
       { 
          cm = new ColorMap(name, keyframes, true); 
          if(ColorMap.duplicatesBuiltin(cm)) cm = null;
-      } catch(IllegalArgumentException iae) {}
+      } catch(IllegalArgumentException ignored) {}
       return(cm);
    }
    
@@ -99,7 +99,7 @@ public class ColorMap
    /**
     * Get the {@link ColorMap} previously encoded in string form.
     * 
-    * @param s String encoding a color map as described in {@link #asString()}.
+    * @param s String encoding a color map as described in {@link #asString}.
     * @return The decoded color map, or null if <i>s</i> does not encode a color map.
     */
    public static ColorMap fromString(String s)
@@ -121,7 +121,7 @@ public class ColorMap
          for(int i=0; i<frames.length; i++) frames[i] = Integer.parseUnsignedInt(sFrames[i], 16);
          return(createColorMap(name, frames));
       }
-      catch(Exception e) {}
+      catch(Exception ignored) {}
       
       return(null);
    }
@@ -159,12 +159,11 @@ public class ColorMap
             String[] lines = s.split("\n");
             if(lines.length < 2 || lines.length > ColorMap.MAXKEYFRAMES)
                throw new Exception("Number of lines in clip invalid: " + lines.length);
-            
-            int nPerLine = 0;
+
             String[] line1 = lines[0].trim().split("\\s+");
             if(line1.length != 3 && line1.length != 4)
                throw new Exception("Invalid number of tokens in first line: " + line1.length);
-            nPerLine = line1.length;
+            int nPerLine = line1.length;
             boolean isFloat = false;
             try { Integer.parseInt(line1[0]); } 
             catch(NumberFormatException nfe)
@@ -174,7 +173,7 @@ public class ColorMap
             }
             
             int[] keyframes = new int[lines.length];
-            int idx = 0;
+            int idx;
             int[] rgb = new int[3];
             for(int i=0; i<lines.length; i++)
             {
@@ -238,7 +237,7 @@ public class ColorMap
    @Override public int hashCode()
    {
       int res = keyFrames.length;
-      for(int i=0; i<keyFrames.length; i++) res = res*31 + keyFrames[i];
+      for(int keyFrame : keyFrames) res = res * 31 + keyFrame;
       return(res);
    }
 
@@ -270,9 +269,9 @@ public class ColorMap
          Color c0 = getKeyFrameColor(i-1);
          Color c1 = getKeyFrameColor(i);
          
-         int r = (int)Math.round(c0.getRed() + (idx-start)*(c1.getRed()-c0.getRed())/((float) end-start));
-         int g = (int)Math.round(c0.getGreen() + (idx-start)*(c1.getGreen()-c0.getGreen())/((float) end-start));
-         int b = (int)Math.round(c0.getBlue() + (idx-start)*(c1.getBlue()-c0.getBlue())/((float) end-start));
+         int r = Math.round(c0.getRed() + (idx-start)*(c1.getRed()-c0.getRed())/((float) end-start));
+         int g = Math.round(c0.getGreen() + (idx-start)*(c1.getGreen()-c0.getGreen())/((float) end-start));
+         int b = Math.round(c0.getBlue() + (idx-start)*(c1.getBlue()-c0.getBlue())/((float) end-start));
          
          return(0xFF000000 | ((r<<16) + (g<<8) + b));
       }
@@ -283,7 +282,7 @@ public class ColorMap
     * Return a copy of the color lookup table representing this color map.
     * 
     * @param reverse If true, the returned copy is the "reverse-direction" version of the map's LUT.
-    * @return Array of length {@link LUTSIZE}; each element is an opaque RGB color packed into an int: 0xFFRRGGBB.
+    * @return Array of length {@link #LUTSIZE}; each element is an opaque RGB color packed into an int: 0xFFRRGGBB.
     */
    public int[] getLUT(boolean reverse)
    {
@@ -296,9 +295,9 @@ public class ColorMap
          Color c1 = getKeyFrameColor(i+1);
          for(int j=start; j<=end; j++)
          {
-            int r = (int)Math.round(c0.getRed() + (j-start)*(c1.getRed()-c0.getRed())/((float) end-start));
-            int g = (int)Math.round(c0.getGreen() + (j-start)*(c1.getGreen()-c0.getGreen())/((float) end-start));
-            int b = (int)Math.round(c0.getBlue() + (j-start)*(c1.getBlue()-c0.getBlue())/((float) end-start));
+            int r = Math.round(c0.getRed() + (j-start)*(c1.getRed()-c0.getRed())/((float) end-start));
+            int g = Math.round(c0.getGreen() + (j-start)*(c1.getGreen()-c0.getGreen())/((float) end-start));
+            int b = Math.round(c0.getBlue() + (j-start)*(c1.getBlue()-c0.getBlue())/((float) end-start));
             
             lut[j] = 0xFF000000 | ((r<<16) + (g<<8) + b);
          }
@@ -306,7 +305,7 @@ public class ColorMap
       
       if(reverse)
       {
-         int end = lut.length - 1, tmp = 0;
+         int end = lut.length - 1, tmp;
          for(int i=0; i<lut.length/2; i++) { tmp = lut[i]; lut[i] = lut[end-i]; lut[end-i] = tmp; }
       }
       return(lut);
@@ -335,7 +334,7 @@ public class ColorMap
     * components between key frames) -- suitable for defining a linear color gradient representing the map.
     * @param reverse If true, return the key colors for the reverse-direction LUT.
     * @return Array of key colors. 
-    * @see {@link #getKeyFrames(boolean)}
+    * @see #getKeyFrames
     */
    public Color[] getKeyColors(boolean reverse) 
    { 
@@ -364,7 +363,7 @@ public class ColorMap
     */
    public Color getKeyFrameColor(int pos) { return(new Color(keyFrames[pos] & 0x00FFFFFF)); }
    
-   private static final Pattern NAME_REGEX = Pattern.compile("[\\w]+");
+   private static final Pattern NAME_REGEX = Pattern.compile("\\w+");
    
    /**
     * Create a new color map with the same key frame definition as this one, but a different name.
@@ -445,7 +444,7 @@ public class ColorMap
 
    /**
     * Construct a color map.
-    * @param The color map's name. Cannot be null or empty.
+    * @param name The color map's name. Cannot be null or empty.
     * @param packed Array of key frames. Each is represented as a packed integer: 0xNNRRGGBB. 
     * @param custom True for a user-defined colormap, false for one of the built-in maps.
     * @throws IllegalArgumentException if either argument is invalid.
@@ -457,7 +456,7 @@ public class ColorMap
       this.name = name;
       this.custom = custom;
       keyFrames = new int[packed.length];
-      for(int i=0; i<packed.length; i++) keyFrames[i] = packed[i];
+      System.arraycopy(packed, 0, keyFrames, 0, packed.length);
    }
    
    private boolean validateKeyFrames(int[] frames)
@@ -489,7 +488,7 @@ public class ColorMap
    private final boolean custom;
 
    /** Enumeration of the color maps built into <i>Figure Composer</i>. */
-   public static enum BuiltIn
+   public enum BuiltIn
    {
       /** Grayscale (black to white) color map. */
       gray(new int[] {0, 0xFFFFFFFF}),

@@ -58,7 +58,7 @@ import com.srscicomp.fc.data.DataSet.Fmt;
  * 
  * <p>The implementation relies on {@link ContourGenerator} to generate the contour level lines and filled contour 
  * paths rendered in three of the 4 display modes. For the heat map display, <b>ContourNode</b> relies on the {@link 
- * DataSet#prepareImage()} method to prepare a {@link BufferedImage} that is the same width and height as the data 
+ * DataSet#prepareImage} method to prepare a {@link BufferedImage} that is the same width and height as the data
  * matrix and that is initialized IAW the values in the data matrix and the current settings on the graph's color axis. 
  * The image is cached and reused each time the node is re-rendered; of course, the cached image must be recreated each 
  * time the data set or the graph's color map changes. During rendering, the cached image is copied into the parent 
@@ -117,10 +117,10 @@ public class ContourNode extends FGNPlottableData implements Cloneable
       
       @Override public String toString() { return(niceName); }
       
-      private DisplayMode(String s) { niceName = s; }
+      DisplayMode(String s) { niceName = s; }
       
       /** The display mode name as it should appear in GUI and in FypML markup. */
-      private String niceName;
+      private final String niceName;
   }
    
    /** The current data display mode. */
@@ -133,7 +133,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
    public DisplayMode getMode() { return(mode); }
    
    /**
-    * Set the data display mode for this contour plot node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the data display mode for this contour plot node. If a change is made, {@link #onNodeModified} is invoked.
     * @param mode The new display mode. Null is rejected.
     * @return False if argument was null; true otherwise.
     */
@@ -210,7 +210,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
    /**
     * Is smooth interpolation (bicubic algorithm) of the heat map image enabled during rendering? (If not, nearest-
     * neighbor interpolation is used, which results in blocky images when scaled up.)
-    * @param True if smooth interpolation is enabled; false otherwise.
+    * @return True if smooth interpolation is enabled; false otherwise.
     */
    public boolean isSmoothed() { return(smoothed); }
    
@@ -218,7 +218,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
     * Set the flag which enables/disable smooth interpolation of the heat map image during rendering. If enabled, 
     * bicubic interpolation is used to smooth the image when it is scaled up or down at rendering. If disabled, 
     * nearest-neighbor interpolation is used, which presents a blocky image when scaled up. If the flag's value is 
-    * changed, {@link #onNodeModified()} is invoked.
+    * changed, {@link #onNodeModified} is invoked.
     * 
     * @param b True to enable smooth interpolation, false to disable.
     */
@@ -226,14 +226,14 @@ public class ContourNode extends FGNPlottableData implements Cloneable
    {
       if(smoothed != b)
       {
-         if(doMultiNodeEdit(FGNProperty.SMOOTH, new Boolean(b))) return;
+         if(doMultiNodeEdit(FGNProperty.SMOOTH, b)) return;
          
-         Boolean old = new Boolean(smoothed);
+         Boolean old = smoothed;
          smoothed = b;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.SMOOTH);
-            FGNRevEdit.post(this, FGNProperty.SMOOTH, new Boolean(smoothed), old, 
+            FGNRevEdit.post(this, FGNProperty.SMOOTH, smoothed, old,
                   (smoothed ? "Enable" : "Disable") + " smooth interpolation of heatmap image");
          }
       }
@@ -242,12 +242,12 @@ public class ContourNode extends FGNPlottableData implements Cloneable
    
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case MODE: value = getMode(); break;
          case LEVELS: value = getLevelList(); break;
-         case SMOOTH: value = new Boolean(isSmoothed()); break;
+         case SMOOTH: value = isSmoothed(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -255,7 +255,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case MODE: ok = setMode((DisplayMode)propValue); break;
@@ -321,7 +321,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
    {
       styleSet.putStyle(FGNProperty.MODE, getMode());
       styleSet.putStyle(FGNProperty.LEVELS, getLevelList());
-      styleSet.putStyle(FGNProperty.SMOOTH, new Boolean(isSmoothed()));
+      styleSet.putStyle(FGNProperty.SMOOTH, isSmoothed());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -347,7 +347,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.SMOOTH, null, Boolean.class);
       if(b != null && !b.equals(restore.getStyle(FGNProperty.SMOOTH)))
       {
-         smoothed = b.booleanValue();
+         smoothed = b;
          changed = true;
       }
       else restore.removeStyle(FGNProperty.SMOOTH);
@@ -383,7 +383,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
       float z0 = (float) axisRng[4];
       float z1 = (float) axisRng[5];
       
-      float[] params = new float[] { x0 < x1 ? x0 : x1, x0 < x1 ? x1 : x0, y0 < y1 ? y0 : y1, y0 < y1 ? y1 : y0};
+      float[] params = new float[] {Math.min(x0, x1), Math.max(x0, x1), Math.min(y0, y1), Math.max(y0, y1)};
       float[] fData = new float[30*30];
       for(int r=0; r<30; r++)
       {
@@ -470,7 +470,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
             if(mode == DisplayMode.LEVELLINES)
             {
                generateContoursIfNecessary(false);
-               List<Point2D> pts = new ArrayList<Point2D>();
+               List<Point2D> pts = new ArrayList<>();
                for(ContourGenerator.Contour c : contours) pts.addAll(c.asPoints());
                parentVP.userUnitsToThousandthInches(pts);
                if(pts.size() > 1)
@@ -613,12 +613,6 @@ public class ContourNode extends FGNPlottableData implements Cloneable
                      at = AffineTransform.getTranslateInstance(corners[0].getX(), corners[0].getY());
                      at.scale((dx<0 ? -1 : 1) * 10.0, (dy<0 ? -1 : 1)*10.0);
                      g2dCopy.drawImage(dstBI, at, null);
-                     /*
-                     at = AffineTransform.getScaleInstance(dx/ds.getDataBreadth(), dy/ds.getDataLength());
-                     AffineTransformOp op = new AffineTransformOp(at, 
-                           smoothed ? AffineTransformOp.TYPE_BICUBIC : AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-                     g2d.drawImage(cachedBI, op, (int) corners[0].getX(), (int) corners[0].getY());
-                     */
                   }
                   
                   ok = isCachedBIValid.get() && (task == null || task.updateProgress());
@@ -632,7 +626,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
             // contour level lines are not drawn if stroke width is 0 or their color is transparent. If neither the 
             // level lines nor contour fill regions are rendered, then we're done!
             boolean strk = (getStrokeWidth() > 0) && (mode==DisplayMode.LEVELLINES || getStrokeColor().getAlpha() != 0);
-            if((!strk) && mode != DisplayMode.FILLEDCONTOURS) return(ok);
+            if((!strk) && mode != DisplayMode.FILLEDCONTOURS) return true;
             
             generateContoursIfNecessary(false);
             
@@ -663,7 +657,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
                for(Point2D p : pts) gp.lineTo(p.getX(), p.getY());
                if(c.isClosed()) gp.closePath();
                
-               Color clr = nanC;
+               Color clr;
                double level = c.getLevel();
                if(!Utilities.isWellDefined(level)) clr = nanC;
                else if(mode != DisplayMode.LEVELLINES && !c.isFillRegion()) clr = getStrokeColor();
@@ -734,17 +728,17 @@ public class ContourNode extends FGNPlottableData implements Cloneable
          
          generateContoursIfNecessary(false);
          
-         List<List<Point2D>> paths = new ArrayList<List<Point2D>>();
-         List<Boolean> closedFlags = new ArrayList<Boolean>();
-         List<Integer> fillRGB = new ArrayList<Integer>();
-         List<Integer> strkRGB = new ArrayList<Integer>();
+         List<List<Point2D>> paths = new ArrayList<>();
+         List<Boolean> closedFlags = new ArrayList<>();
+         List<Integer> fillRGB = new ArrayList<>();
+         List<Integer> strkRGB = new ArrayList<>();
          for(ContourGenerator.Contour c : contours) if(c.isFillRegion() || strk)
          {
             List<Point2D> pts = c.asPoints();
             parentVP.userUnitsToThousandthInches(pts);
             
             paths.add(pts);
-            closedFlags.add(new Boolean(c.isClosed()));
+            closedFlags.add(c.isClosed());
             
             double level = c.getLevel();
             int mappedRGB = Utilities.isWellDefined(level) ? 
@@ -752,13 +746,13 @@ public class ContourNode extends FGNPlottableData implements Cloneable
             
             if(c.isFillRegion())
             {
-               fillRGB.add(new Integer(mappedRGB));
-               strkRGB.add(new Integer(-1));
+               fillRGB.add(mappedRGB);
+               strkRGB.add(-1);
             }
             else
             {
-               fillRGB.add(new Integer(-1));
-               strkRGB.add(new Integer(mode == DisplayMode.LEVELLINES ? mappedRGB : -2));
+               fillRGB.add(-1);
+               strkRGB.add(mode == DisplayMode.LEVELLINES ? mappedRGB : -2);
             }
          }
          
@@ -772,7 +766,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
     * This override ensures that the cloned contour plot node's internal rendering resources are completely independent
     * of the resources allocated to this node.
     */
-   @Override protected Object clone()
+   @Override protected ContourNode clone() throws CloneNotSupportedException
    {
       ContourNode copy = (ContourNode) super.clone();
       copy.rBoundsSelf = null;
@@ -812,7 +806,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
       // in heat map-only mode, there are no contours
       if(mode == DisplayMode.HEATMAP)
       {
-         contours = new ArrayList<ContourGenerator.Contour>();
+         contours = new ArrayList<>();
          return;
       }
       
@@ -880,7 +874,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
       }
       else if(start == end) end = start + 1;
       
-      float[] rng = new float[] { (float)start, (float)end };;
+      float[] rng = new float[] { (float)start, (float)end };
       int[] cmapLUT = cbar.getColorLUT().getLUT();
       cmapLUT[0] = cbar.getColorNaN().getRGB();   // replace LUT index 0 with the NaN color!
 
@@ -893,7 +887,7 @@ public class ContourNode extends FGNPlottableData implements Cloneable
     * 
     * @author sruffner
     */
-   private class Grid implements IDataGrid
+   private static class Grid implements IDataGrid
    {
       /**
        * Construct a data grid object for the specified data set, which must have the {@link Fmt#XYZIMG} format.
@@ -926,7 +920,10 @@ public class ContourNode extends FGNPlottableData implements Cloneable
          return(src.getZ(r*src.getDataBreadth() + c));
       }
       
-      private DataSet src;
-      private double x0, x1, y0, y1;
+      private final DataSet src;
+      private final double x0;
+      private final double x1;
+      private final double y0;
+      private final double y1;
    }
 }

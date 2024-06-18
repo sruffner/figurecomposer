@@ -30,7 +30,7 @@ import com.srscicomp.fc.data.DataSet.Fmt;
  * sample set, excluding any outliers. An <i>outlier</i> is defined as any data value D such that: 
  * <pre>D < Q1 - 1.5*IQR or D > Q3 + 1.5*IQR,</pre> where <i>IQR = Q3-Q1</i> is the <i>interquartile range</i>. 
  * 
- * <p>The only supported data format for the box plot is the raster collection format, {@link DataSet#RASTER1D}. Each
+ * <p>The only supported data format for the box plot is the raster collection format, {@link Fmt#RASTER1D}. Each
  * raster in the collection is treated as a separate sample set, and a box  plot is rendered for each such set, in 
  * accordance with the node's properties. The box plot corresponding to the <i>i</i>th raster in the collection will be 
  * centered at <i>X(i) = x0 + (i-1)*dx (i=1..#rasters)</i>, where <i>x0</i> and <i>dx</i> are the "offset" and 
@@ -128,7 +128,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
    public DisplayMode getMode() { return(mode); }
 
    /**
-    * Set the display mode for this box plot node. If a change is made, {@link #onNodeModified()} is invoked.
+    * Set the display mode for this box plot node. If a change is made, {@link #onNodeModified} is invoked.
     * @param mode The new display mode. Null is rejected.
     * @return False if argument was null; true otherwise.
     */
@@ -178,8 +178,8 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
    public float getOffset() { return(offset); }
    
    /**
-    * Set the box plot offset. If a change is made, {@link #onNodeModified()} is invoked.
-    * @see {@link #getOffset()}
+    * Set the box plot offset. If a change is made, {@link #onNodeModified} is invoked.
+    * @see #getOffset
     * @param ofs The new plot offset, in user units. NaN and +/-infinity are rejected.
     * @return True if new value was accepted.
     */
@@ -188,14 +188,14 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(ofs)) return(false);
       if(offset != ofs)
       {
-         if(doMultiNodeEdit(FGNProperty.X0, new Float(ofs))) return(true);
+         if(doMultiNodeEdit(FGNProperty.X0, ofs)) return(true);
          
-         Float old = new Float(offset);
+         Float old = offset;
          offset = ofs;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.X0);
-            FGNRevEdit.post(this, FGNProperty.X0, new Float(offset), old);
+            FGNRevEdit.post(this, FGNProperty.X0, offset, old);
          }
       }
       return(true);
@@ -206,15 +206,15 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
 
    /**
     * Get the interval separating the midpoints of adjacent box plots.
-    * @see {@link #getOffset()}
+    * @see #getOffset
     * @return The plot separation interval, in user units.
     */
    public float getInterval() { return(interval); }
     
    /**
-    * Set the interval separating adjacent box plots. If a change is made, {@link #onNodeModified()} is invoked.
-    * @see {@link #getOffset()}
-    * @param sep The new separation interval, in user units. NaN and +/-infinity are rejected. Note that 0 is allowed,
+    * Set the interval separating adjacent box plots. If a change is made, {@link #onNodeModified} is invoked.
+    * @see #getOffset
+    * @param intv The new separation interval, in user units. NaN and +/-infinity are rejected. Note that 0 is allowed,
     * but then the individual box plots will overlap entirely.
     * @return True if new value was accepted.
     */
@@ -223,14 +223,14 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
       if(!Utilities.isWellDefined(intv)) return(false);
       if(interval != intv)
       {
-         if(doMultiNodeEdit(FGNProperty.DX, new Float(intv))) return(true);
+         if(doMultiNodeEdit(FGNProperty.DX, intv)) return(true);
          
-         Float old = new Float(interval);
+         Float old = interval;
          interval = intv;
          if(areNotificationsEnabled())
          {
             onNodeModified(FGNProperty.DX);
-            FGNRevEdit.post(this, FGNProperty.DX, new Float(interval), old);
+            FGNRevEdit.post(this, FGNProperty.DX, interval, old);
          }
       }
       return(true);
@@ -259,7 +259,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
    public Measure getBoxWidth() { return(boxWidth); }
 
    /**
-    * Set the width of the box portion of the box plot. If a change occurs, {@link #onNodeModified()} is invoked.
+    * Set the width of the box portion of the box plot. If a change occurs, {@link #onNodeModified} is invoked.
     * 
     * @param m The new box width. A null value is rejected, as is a measure in "user units". Otherwise, the measure is
     * constrained by {@link #BOXWIDTHCONSTRAINTS}. 
@@ -290,7 +290,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
-      boolean ok = false;
+      boolean ok;
       switch(p)
       {
          case MODE : ok = setMode((DisplayMode)propValue); break;
@@ -304,12 +304,12 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
 
    @Override Object getPropertyValue(FGNProperty p)
    {
-      Object value = null;
+      Object value;
       switch(p)
       {
          case MODE : value = getMode(); break;
-         case X0: value = new Float(getOffset()); break;
-         case DX: value = new Float(getInterval()); break;
+         case X0: value = getOffset(); break;
+         case DX: value = getInterval(); break;
          case BARWIDTH: value = getBoxWidth(); break;
          default : value = super.getPropertyValue(p); break;
       }
@@ -331,7 +331,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
    {
       styleSet.putStyle(FGNProperty.MODE, getMode());
       styleSet.putStyle(FGNProperty.BARWIDTH, getBoxWidth());
-      styleSet.putStyle(FGNProperty.LEGEND, new Boolean(getShowInLegend()));
+      styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
    }
 
    @Override protected boolean applyNodeSpecificStyles(FGNStyleSet applied, FGNStyleSet restore)
@@ -404,6 +404,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
       if(ds != null) setDataSet(ds);
    }
 
+   @SuppressWarnings("SuspiciousNameCombination")
    @Override protected boolean recalcDataRange(Object hint)
    {
       boolean needRecalc = hint==null || 
@@ -424,18 +425,17 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
 
       // from the current set of box plot stats, recompute data range.... NOTE that we do NOT account for the width
       // of the individual box plots.
-      if(boxPlotStats != null) for(int i=0; i<boxPlotStats.size(); i++)
+      if(boxPlotStats != null) for(BoxStats bs : boxPlotStats)
       {
-         BoxStats bs = boxPlotStats.get(i);
          if(bs.sampleSize <= 0) continue;
-         
+
          minX = Math.min(minX, bs.xCtr);
          maxX = Math.max(maxX, bs.xCtr);
-         
+
          minY = Math.min(minY, bs.min);
          if(bs.outliers != null && bs.outliers.length > 0) minY = Math.min(minY, bs.outliers[0]);
          maxY = Math.max(maxY, bs.max);
-         if(bs.outliers != null && bs.outliers.length > 0) maxY = Math.max(maxY, bs.outliers[bs.outliers.length-1]);
+         if(bs.outliers != null && bs.outliers.length > 0) maxY = Math.max(maxY, bs.outliers[bs.outliers.length - 1]);
       }
       
       // if in one of the horizontal modes, transpose X and Y
@@ -471,8 +471,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
    @Override public boolean usesSymbols() { return(true); }
    @Override public boolean hasErrorData() { return(true); }
    @Override public boolean useBarInLegend()  { return(true); }
-   @Override public boolean hasDataGroups() { return(false); }
-   
+
    /**
     * Retrieve the component "error bar" node that governs the appearance of the whiskers in this box plot.
     * 
@@ -580,16 +579,16 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
    }
 
    /** The painters which are responsible for rendering the box plot IAW its current state. */
-   private List<Painter> painters = new ArrayList<Painter>();
+   private List<Painter> painters = new ArrayList<>();
    
    /** Vertices outlining box portion(s) of the rendered box plot(s). */
-   private List<Point2D> boxVertices = new ArrayList<Point2D>();
+   private List<Point2D> boxVertices = new ArrayList<>();
    /** Vertices outlining notch fill region(s) across the rendered box plot(s). */
-   private List<Point2D> notchVertices = new ArrayList<Point2D>();
+   private List<Point2D> notchVertices = new ArrayList<>();
    /** Vertices defining all whiskers across the rendered box plots. */
-   private List<Point2D> whiskerVertices = new ArrayList<Point2D>();
+   private List<Point2D> whiskerVertices = new ArrayList<>();
    /** All outlier points across the rendered box plots. */
-   private List<Point2D> outlierVertices = new ArrayList<Point2D>();
+   private List<Point2D> outlierVertices = new ArrayList<>();
    
    /**
     * Create/update the list of painters that render this box plot in its current state.
@@ -598,7 +597,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
     * <ul>
     * <li>A {@link PolylinePainter} that renders the associated violin plot (unless plot size is 0).</li>
     * <li>A {@link PolylinePainter} to render the box portion of each box plot in the non-notched display modes.</li>
-    * <li>A {@link PolyLinePainter} to fill notch of each box plot in the notched display modes.</li>
+    * <li>A {@link PolylinePainter} to fill notch of each box plot in the notched display modes.</li>
     * <li>A {@link PolylinePainter} to stroke the box outline of each box plot in the notched display modes.</li>
     * <li>A {@link LineSegmentPainter} that renders all the box plot whiskers.</li>
     * <li>A {@link ShapePainter} to render any outlier markers.</li>
@@ -611,7 +610,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
     */
    private void updatePainters()
    {
-      if(painters.size() == 0)
+      if(painters.isEmpty())
       {
          // draws the associated violin plot
          PolylinePainter pp = new PolylinePainter(getViolinStyleNode(), null);
@@ -684,7 +683,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
          double d = isV ? graphVP.fromMeasureToMilliInX(boxWidth) : graphVP.fromMeasureToMilliInY(boxWidth);
          halfBoxWidthMI = (float) (d/2.0);
       }
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       
       if(graphVP != null) for(BoxStats bs : boxPlotStats)
       {
@@ -762,7 +761,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
                Point2D p = pts.get(i);
                float delta = halfBoxWidthMI;
                if(i == 0 || i == 1 || i == 6 || i == 11) delta *= 0.75f;
-               if((i > 0 && i < 4) || (i > 8 && i < 12)) delta *= -1f;
+               if((i > 0 && i < 4) || i > 8) delta *= -1f;
                p.setLocation(p.getX() + (isV ? delta : 0), p.getY() + (isV ? 0 : delta));
             }
             boxVertices.addAll(pts);
@@ -806,14 +805,14 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
       
       // the companion violin plot is drawn first
       ViolinVertexProducer producer = new ViolinVertexProducer();
-      List<Point2D> pts = new ArrayList<Point2D>();
+      List<Point2D> pts = new ArrayList<>();
       while(producer.hasNext())
       {
          Point2D p = producer.next();   // the producer reuses the Point2D object
          if(!Utilities.isWellDefined(p)) pts.add(null);
          else pts.add(new Point2D.Double(p.getX(), p.getY()));
       }
-      if(pts.size() > 0)
+      if(!pts.isEmpty())
       {
          psDoc.startElement(getViolinStyleNode());
          psDoc.renderPolygons(pts, true);
@@ -847,7 +846,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
       {
          SymbolNode symbol = getSymbolNode();
          psDoc.startElement(symbol);
-         psDoc.renderMultipleAdornments(outlierVertices.toArray(new Point2D[outlierVertices.size()]), null, 
+         psDoc.renderMultipleAdornments(outlierVertices.toArray(new Point2D[0]), null,
                symbol.getType(), symbol.getSizeInMilliInches(), "");
          psDoc.endElement();
       }
@@ -865,16 +864,16 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
     * This override ensures that the rendering infrastructure for the clone is independent of the box plot node cloned. 
     * The clone will reference the same data set, however!
     */
-   @Override protected Object clone()
+   @Override protected BoxPlotNode clone() throws CloneNotSupportedException
    {
       BoxPlotNode copy = (BoxPlotNode) super.clone();
       copy.rBoundsSelf = null;
-      copy.painters = new ArrayList<Painter>();
+      copy.painters = new ArrayList<>();
       copy.boxPlotStats = null;
-      copy.boxVertices = new ArrayList<Point2D>();
-      copy.notchVertices = new ArrayList<Point2D>();
-      copy.whiskerVertices = new ArrayList<Point2D>();
-      copy.outlierVertices = new ArrayList<Point2D>();
+      copy.boxVertices = new ArrayList<>();
+      copy.notchVertices = new ArrayList<>();
+      copy.whiskerVertices = new ArrayList<>();
+      copy.outlierVertices = new ArrayList<>();
       return(copy);
    }
    
@@ -885,11 +884,10 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
    /** 
     * Helper method computes the current box plot statistics for each sample set in the data source. It also clears
     * the vertex lists for the node's painters, since all vertices must be recomputed whenever the statistics change.
-    * @see {@link #computeBoxVerticesIfNecessary()}
     */
    private void computeBoxPlotStats()
    {
-      boxPlotStats = new ArrayList<BoxStats>();
+      boxPlotStats = new ArrayList<>();
       boxVertices.clear();  // if this list is empty, all vertices are recomputed
 
       DataSet ds = getDataSet();
@@ -1030,7 +1028,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
       
       double[][] kde = null;
       double center;
-      Point2D nextVertex;
+      final Point2D nextVertex;
       int nSetsSoFar;
       int nVertsSoFar;
       boolean fwd;
@@ -1112,10 +1110,10 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
          if(samples == null || samples.length < 3 || boxStats == null) return(null);
          
          double mean = 0;
-         for(int i=0; i<samples.length; i++) mean += samples[i];
+         for(float sample : samples) mean += sample;
          mean /= samples.length;
          double std = 0;
-         for(int i=0; i<samples.length; i++) std += (samples[i]-mean)*(samples[i]-mean);
+         for(float sample : samples) std += (sample - mean) * (sample - mean);
          std = Math.sqrt(std/(samples.length - 1));
          
          double minX = boxStats.min;
@@ -1143,8 +1141,7 @@ public class BoxPlotNode extends FGNPlottableData implements Cloneable
          {
             kde[i][0] = (i==0) ? minX : kde[i-1][0] + dx;
             kde[i][1] = 0;
-            for(int j=0; j<samples.length; j++)
-               kde[i][1] += scale * Math.exp(-0.5*Math.pow((kde[i][0] - samples[j])/bw, 2));
+            for(float sample : samples) kde[i][1] += scale * Math.exp(-0.5 * Math.pow((kde[i][0] - sample) / bw, 2));
             if(kde[i][1] > kdeMax) kdeMax = kde[i][1];
          }
          for(int i=0; i<101; i++) kde[i][1] = kde[i][1] / kdeMax;

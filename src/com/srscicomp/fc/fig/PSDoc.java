@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -111,10 +112,8 @@ public class PSDoc
     * (EPS) document.
 	 * 
 	 * @param psObj The graphic object to be transformed into a Postscript page description.
-	 * @param pgFmt The page layout to be applied to each page. If <code>null</code>, a default layout (letter size, 
+	 * @param pgf The page layout to be applied to each page. If <code>null</code>, a default layout (letter size,
 	 * portrait, 1-in margins) will be supplied.\
-    * @param r The bounding box (bottom-left corner, width, and height) for all marks that will be made in 
-    * rendering the object, in default Postscript coordinates.
 	 * @param eps The output will be tagged as "EPSF-3.0" iff this flag is set.
 	 * @return A <code>PSDoc</code> representing the PS page description, ready to be streamed to file or printer.
 	 * @throws UnsupportedOperationException if the page description could not be generated for any reason, or if the 
@@ -455,7 +454,7 @@ public class PSDoc
     * the prolog variable {@link #DATA0}. Each element of this array is either null (indicating that location is ill-
     * defined) or a 2-element array AR such that AR[0]=x and AR[1]=y. Any ill-defined locations are skipped. The 
     * adornment sizes are assumed to be pre-loaded into an array of length <i>N</i> referenced by the prolog variable 
-    * {@link DATA1}. Each element in the array is the size of a square box enclosing the adornment, in milli-inches. All
+    * {@link #DATA1}. Each element in the array is the size of a square box enclosing the adornment, in milli-inches. All
     * of these elements should be well-defined and non-negative.</p>
     * 
     * <p>This procedure is dependent upon the prolog procedures {@link #DO_ADORN} and {@link #USEFILLCOLOR}, as well as 
@@ -482,7 +481,7 @@ public class PSDoc
     * the prolog variable {@link #DATA0}. Each element of this array is either null (indicating that location is ill-
     * defined) or a 2-element array AR such that AR[0]=x and AR[1]=y. Any ill-defined locations are skipped. The 
     * adornment colors are assumed to be pre-loaded into an array of length <i>N</i> referenced by the prolog variable 
-    * {@link DATA2}. Each element in the array is a 3-element array AR defining the R, G and B components of the desired
+    * {@link #DATA2}. Each element in the array is a 3-element array AR defining the R, G and B components of the desired
     * fill color as they would be supplied to {@link #SETFILLCOLOR}: AR[0] = R, AR[1] = G, AR[2] = B.</p>
     * 
     * <p>This procedure is dependent upon the prolog procedures {@link #DO_ADORN} and {@link #SETFILLCOLOR}, as well as 
@@ -754,9 +753,9 @@ public class PSDoc
 
    /**
     * This prolog procedure paints a single line of "attributed" text that is left-, center-, or right-aligned about the
-    * specified coordinates (x,y). It was specifically introduced to implement {@link #renderAttributedText}() method,
-    * which provides <b>PSDoc</b> support a one-line text label in which font style, text color, underline on/off, and 
-    * superscript/subscript state can vary on a character-by-character basis in the label string.
+    * specified coordinates (x,y). It was specifically introduced to provide <b>PSDoc</b> support for a one-line text
+	 * label in which font style, text color, underline on/off, and superscript/subscript state can vary on a character
+	 * by character basis in the label string.
     * 
     * <p>An attributed text sequence is composed of one or more "text runs", where each run is a styled string defined
     * by a 5-tuple: <i>/fontFace UL SS textRGB (string)</i>, specifying: the composite Postscript font face for the run;
@@ -783,7 +782,7 @@ public class PSDoc
     * This prolog procedure paints a block of attributed text intended to fit in a WxH rectangle with a bottom-left 
     * corner at (0,0).
     * 
-    * <p>{@link #renderTextInBox()} parses the text content into an array T of attributed text run subsequences that 
+    * <p>{@link #renderTextInBox} parses the text content into an array T of attributed text run subsequences that
     * have no whitespace and thus should not be broken across a text line (if possible). Each run subsequence is an 
     * array of 5*N tuples, where N is the number of text runs in the subsequence. See {@link #SHOWTEXTRUNS} for more 
     * information about the attributed text runs. Any linefeed ('\n') in the text ontent is interpreted as a hard 
@@ -808,34 +807,11 @@ public class PSDoc
     * <ul>
     *    <li>F is the font size in user space units.</li>
     *    <li>T is the array of attributed text run subsequences, as described above.</li>
-    *    <li>R, HA, VA, L, W, and H are as described for the {@link #SHOWTEXTINBOX} procedure.</li>
+    *    <li>R, HA, VA, L, W, and H are as described for the {@link #SHOWTEXTRUNS} procedure.</li>
     * </ul>
     * </p>
     */
    private final static String SHOWTEXTRUNSINBOX = "showTextRunsInBox";
-
-	/**
-	 * This prolog procedure finds the maximum of two numeric operands. NO LONGER USED.
-	 * 
-	 * <p>Postscript syntax:  num1 num2 maxN n, where n = max(num1,num2)</p>
-	 */
-	// private final static String MAXNUM = "maxN";
-
-	/**
-	 * This prolog procedure finds the width of the widest string in an array, based on the current font in the 
-	 * graphics state. The method makes no marks on the current page and has no effect on the graphics state.
-	 * 
-    * <p>NO LONGER USED</p>
-    * 
-	 * <p>Postscript syntax:  strArray widest wMax, where:
-	 * <ul>
-	 * 	<li>strArray is an array of strings, eg, "[(100) (10.711) () (abc)]".  It may be an empty array.</li>
-	 * 	<li>wMax is the width of the widest string found, in user space units (thousandth-in in a PSDoc!).  This 
-	 * 	results is left on the operand stack.</li>
-	 * </ul>
-	 * </p>
-	 */
-	// private final static String WIDESTSTRING = "widest";
 
 	/**
 	 * This prolog procedure prepares a composite font that handles all characters supported by <code>PSDoc</code>. The 
@@ -936,7 +912,7 @@ public class PSDoc
 	 * 
 	 * @author sruffner
 	 */
-	private class GraphicsState implements Cloneable
+	private class GraphicsState
 	{
 		/**
 		 * The font face name for the currently selected font in this <code>GraphicsState</code> (e.g., 
@@ -1062,7 +1038,7 @@ public class PSDoc
 			else
 			{
 				this.dashPattern = new int[src.dashPattern.length];
-				for(int i=0; i<src.dashPattern.length; i++) this.dashPattern[i] = src.dashPattern[i];
+            System.arraycopy(src.dashPattern, 0, this.dashPattern, 0, src.dashPattern.length);
 			}
 		}
 
@@ -1088,7 +1064,7 @@ public class PSDoc
 		 */
 		String changeFont(String face, double size) throws IllegalArgumentException
 		{
-			if( face == null || face.length() == 0 ) return( "" );
+			if( face == null || face.isEmpty()) return( "" );
 
 			if( !isRecognizedFontFace(face) )
 				throw new IllegalArgumentException( "Unsupported PS font name" );
@@ -1101,7 +1077,7 @@ public class PSDoc
 				if( !fontName.equals(face) )
 				{
 					// change the font face and make sure it is included in the list of fonts used in the PSDoc.
-					fontName = (face != null) ? face : getStandardFontFace(PSFont.TIMES, false, false);
+					fontName = face;
 					fontsUsed.put( fontName, null );
 				}
 				fontSize = size;
@@ -1197,7 +1173,7 @@ public class PSDoc
                double sum = 0;
                for(int i=0; i<n; i++) 
                {
-                  dashPattern[i] = (pattern[i] < 0) ? 0 : pattern[i];
+                  dashPattern[i] = Math.max(pattern[i], 0);
                   sum += dashPattern[i];
                } 
                if(sum == 0)
@@ -1217,11 +1193,11 @@ public class PSDoc
 
       /**
        * Prepare two Postscript language command strings: the first changes the stroke properties in this current 
-       * graphics state to reflect the stroke specified by the {@link PSTranformable} argument, while the second undoes
+       * graphics state to reflect the stroke specified by the {@link PSTransformable} argument, while the second undoes
        * any changes to restore the stroke properties of this graphics state. <b>NOTE that this graphics state object is
        * NOT altered by this method.</b>
        * 
-       * <p>This method was introduced to support {@link PSDoc#renderStemmedAdornments()}, so that the stems can be
+       * <p>This method was introduced to support {@link PSDoc#renderStemmedAdornments}, so that the stems can be
        * stroked differently from the adornments. Because <i>DataNav</i> PS includes a custom state variable that
        * enables or disables the standard PS stroke operator, it is not sufficient to just use the 'gsave-grestore'
        * pair to preserve and restore the stroking properties.</p>
@@ -1231,18 +1207,7 @@ public class PSDoc
        * if necessary, invoke the {@link PSDoc#ENABLESTROKE} to restore that custom variable that enables or disables
        * stroking. Of course, if the enable state is unchanged, the second command string is simply 'grestore'.</p>
        * 
-       * @param rgb The desired stroke color as a packed RGB integer (0x00RRGGBB).
-       * @param opaque True if desired stroke color is opaque; false if it is fully transparent. No stroking operations 
-       * are performed when stroke color is transparent.
-       * @param w The desired line width in thousandth-inches. If less than or equal to zero, stroking is disabled -- 
-       * since zero stroke width is truly zero in DataNav PS (while in standard PS a zero linewidth corresponds to the 
-       * thinnes line that can be drawn by the PS device).
-       * @param cap The desired line endcap style. If not 0, 1, or 2, 0 (butt-ended) is assumed.
-       * @param join The desired line join style. If not 0, 1, or 2, 0 (mitered join) is assumed.
-       * @param pattern The desired dash pattern. A null, empty, or single-element array indicates a solid, unbroken
-       * stroke. Otherwise, the array elements are interpreted as alternating dash and gap lengths in 0.001in. Only the
-       * first {@link PSDoc#MAX_DASHPATTERNSIZE} elements are considered.
-       * @param offset The desired dash offset, an offset into the dash pattern in milli-inches.
+       * @param pst A Postscript-transformable object.
        * @return A two-element string array. The first element is the command which would update the Postscript 
        * interpreter's graphics state appropriately, while the second element is the command which restores the original
        * stroking state. Both will be empty strings if no changes were necessary.
@@ -1310,7 +1275,7 @@ public class PSDoc
                int n = pattern.length;
                if(n > MAX_DASHPATTERNSIZE) n = MAX_DASHPATTERNSIZE;
                double sum = 0;
-               for(int i=0; i<n; i++) sum += (pattern[i] < 0) ? 0 : pattern[i]; 
+               for(int i=0; i<n; i++) sum += Math.max(pattern[i], 0);
                
                // if all elements are non-positive, then assume a solid line.
                if(sum == 0) sb.append("[] 0 setdash ");
@@ -1326,7 +1291,7 @@ public class PSDoc
          String[] out = new String[] { "", ""};
          if(sb.length() > 0)
          {
-            out[0] = "gsave " + sb.toString();
+            out[0] = "gsave " + sb;
             out[1] = "grestore";
             if(wasStrokingDisabled != isStrokingDisabled)
                out[1] += ((wasStrokingDisabled) ? " 0 " : " 1 ") + ENABLESTROKE;
@@ -1362,17 +1327,18 @@ public class PSDoc
             boolean wasStrokingDisabled = (lineWidth == 0) || !this.isOpaqueStroke;
             this.isOpaqueStroke = isOpaqueStroke;
             boolean isStrokingDisabled = (lineWidth == 0) || !this.isOpaqueStroke;
-            if(isStrokingDisabled && !wasStrokingDisabled) 
-               cmd += "0 " + ENABLESTROKE + " 0 setlinewidth ";
-            else if(wasStrokingDisabled && !isStrokingDisabled)
-               cmd += "1 " + ENABLESTROKE + " " + Utilities.toString(lineWidth,7,3) + " setlinewidth ";
-            else if(!isStrokingDisabled)
-               cmd += Utilities.toString(lineWidth,7,3) + " setlinewidth ";
+				if(isStrokingDisabled != wasStrokingDisabled)
+				{
+					if(isStrokingDisabled)
+						cmd += "0 " + ENABLESTROKE + " 0 setlinewidth ";
+					else
+						cmd += "1 " + ENABLESTROKE + " " + Utilities.toString(lineWidth,7,3) + " setlinewidth ";
+				}
 			}
 			if( textFillColor != rgbFill )
 			{
 				textFillColor = rgbFill;
-				if( cmd.length() > 0 ) cmd += " ";
+				if(!cmd.isEmpty()) cmd += " ";
 				cmd += getRGBColorString(textFillColor) + (isGray(textFillColor) ? " 1 " : " 3 ") + SETFILLCOLOR;
 			}
 			
@@ -1387,7 +1353,7 @@ public class PSDoc
     * names are the keys of the map; the values are <code>null</code>. With this scheme it is easy to avoid duplicating 
     * a face name in the map when we accumulate fonts over multiple pages in a document.
 	 */
-	private HashMap<String, String> fontsUsed = new HashMap<String, String>();
+	private final HashMap<String, String> fontsUsed = new HashMap<>();
 
 	/** The number of printed pages in this <code>PSDoc</code>. */
 	private int nPages = 0;
@@ -1396,7 +1362,7 @@ public class PSDoc
 	private boolean pageStarted = false;
 
 	/** The page layout for each page generated by this <code>PSDoc</code>. */
-	private PageFormat pageLayout = null;
+	private final PageFormat pageLayout;
 
 	/** Flag set when the <code>PSDoc</code> has been completed and is ready to be streamed to a file or printer. */
 	private boolean done = false;
@@ -1405,13 +1371,13 @@ public class PSDoc
 	 * Is this an encapsulated <code>PSDoc</code> (EPS)? If so, only a single printed page can be prepared. A second 
     * call to startPage() will throw an exception.
 	 */
-	private boolean isEPS;
+	private final boolean isEPS;
 
 	/**
 	 * The main body of the Postscript program. Postscript language commands are appended to this buffer by many 
 	 * <code>PSDoc</code> methods. 
 	 */
-	private StringBuffer mainBuf = null;
+	private final StringBuffer mainBuf;
 
 	/**
 	 * The graphics state stack. As the main body of the program is "built", each time the "gsave" command is appended 
@@ -1419,12 +1385,12 @@ public class PSDoc
     * <code>GraphicsState</code> object onto this stack, then pop one off the stack each time a "grestore" command is 
     * appended to the program buffer.
 	 */
-	private Stack<GraphicsState> graphicsStack = null;
+	private final Stack<GraphicsState> graphicsStack;
 
 	/**
 	 * A partial representation of the current graphics state in the <code>PSDoc</code>.
 	 */
-	private GraphicsState currentGraphics = null;
+	private GraphicsState currentGraphics;
 
 	/**
 	 * The current indent level. 
@@ -1446,7 +1412,7 @@ public class PSDoc
 		this.isEPS = isEPS;
       pageLayout = pgFmt;
 		mainBuf = new StringBuffer(500);
-		graphicsStack = new Stack<GraphicsState>();
+		graphicsStack = new Stack<>();
 
 		// init our graphics state to reflect the Postscript interpreter's defaults
 		currentGraphics = new GraphicsState(); 
@@ -1457,7 +1423,7 @@ public class PSDoc
       boundBox = new Rectangle2D.Double(left, bot, pageLayout.getImageableWidth(), pageLayout.getImageableHeight());
       
 		// the Common procset is included in the prolog of all Postscript files generated by PSDoc
-		procSetsUsed = new HashMap<String, String>();
+		procSetsUsed = new HashMap<>();
 		procSetsUsed.put(PROCSET_COMMON, null);
 	}
 
@@ -1479,7 +1445,7 @@ public class PSDoc
     * y-axis increases upward in PS (and <em>DataNav</em>) conventions, this <code>Rectangle2D</code>'s "top left" 
     * corner is really the bottom-left.
     */
-   private Rectangle2D boundBox = null;
+   private Rectangle2D boundBox;
 
    /**
     * Set the rectangle bounding all marks rendered in this <code>PSDoc</code>, in default Postscript coordinates. 
@@ -1536,7 +1502,7 @@ public class PSDoc
 		pageStarted = true;
 
 		// update the store of fonts used in document to include fonts used on this page
-      Map<String, String> pgFonts = new HashMap<String, String>();
+      Map<String, String> pgFonts = new HashMap<>();
 		pst.getAllPSFontFacesUsed(pgFonts, true);
       Set<String> fontFacesOnPage = pgFonts.keySet();
 		for(String face : fontFacesOnPage) fontsUsed.put(face, null);
@@ -1550,21 +1516,21 @@ public class PSDoc
 		appendLine( "%%PageOrientation: " + ori );
 
 		// list font resources used on page.  five fonts per line, and we'll be safely under the line length limit.
-      if(fontFacesOnPage.size() > 0)
+      if(!fontFacesOnPage.isEmpty())
       {
          int i = 0;
-         String line = "%%PageResources: font ";
+         StringBuilder line = new StringBuilder("%%PageResources: font ");
          for(String face : fontFacesOnPage)
          {
-            line += face + " ";
+            line.append(face).append(" ");
             if(i>0 && ((i%5) == 0))
             {
-               appendLine(line);
-               line = "%%+ font ";
+               appendLine(line.toString());
+               line = new StringBuilder("%%+ font ");
             }
             ++i;
          }
-         if(line.length() > "%%+ font ".length()) appendLine(line);
+         if(line.length() > "%%+ font ".length()) appendLine(line.toString());
       }
 
 		// page setup:
@@ -1632,12 +1598,12 @@ public class PSDoc
 	{
 		if( pageStarted )
 		{
-			if( graphicsStack.size() == 0 )
+			if(graphicsStack.isEmpty())
 				throw new UnsupportedOperationException( GSUNFL_EXCP );
 
 			pageStarted = false;
 			appendLine( "pgSave restore" );
-			currentGraphics = (GraphicsState) graphicsStack.pop();
+			currentGraphics = graphicsStack.pop();
 			appendLine( "showpage" );
 			appendLine( "" );
 		}
@@ -1675,7 +1641,7 @@ public class PSDoc
 	}
 
 	/**
-	 * Same as {@link #startElement()}, except that the graphics state is updated IAW a different element, and the
+	 * Same as {@link #startElement}, except that the graphics state is updated IAW a different element, and the
 	 * element comment may be optionally omitted.
 	 * @param element The object to be rendered next into this <code>PSDoc</code>.
 	 * @param elState A different object (could be the same one) defining how the graphics state should be configured.
@@ -1742,7 +1708,7 @@ public class PSDoc
 	 */
 	public void addComment(String comment)
 	{
-		if(comment != null && comment.length() > 0) 
+		if(comment != null && !comment.isEmpty())
 			appendLine( "% " + comment );
 	}
 
@@ -1789,7 +1755,7 @@ public class PSDoc
 	 */
 	void restoreGraphicsState() throws UnsupportedOperationException
 	{
-		if(graphicsStack.size() == 0)
+		if(graphicsStack.isEmpty())
 			throw new UnsupportedOperationException( GSUNFL_EXCP );
 
 		// remember the old text/fill color before restoring
@@ -1799,7 +1765,7 @@ public class PSDoc
       boolean wasStrokingDisabled = (currentGraphics.lineWidth == 0);
 
 		// revert to previous graphics state
-		currentGraphics = (GraphicsState) graphicsStack.pop();
+		currentGraphics = graphicsStack.pop();
 		String cmd = "grestore";
 
 		// PSDoc maintains the current text/fill color -- which is not part of the interpreter's graphics state -- 
@@ -1853,10 +1819,10 @@ public class PSDoc
 	 */
 	private void restoreVMState() throws UnsupportedOperationException
 	{
-		if( graphicsStack.size() == 0 )
+		if(graphicsStack.isEmpty())
 			throw new UnsupportedOperationException( GSUNFL_EXCP );
 
-		currentGraphics = (GraphicsState) graphicsStack.pop();
+		currentGraphics = graphicsStack.pop();
 		appendLine( "restore" );
 	}
 
@@ -1876,7 +1842,7 @@ public class PSDoc
 	 * </ul>
 	 * <p>See the Postscript Language Reference for the details on the available character sets. Since the text string 
 	 * argument is encoded as 16-bit Unicode, <b>PSDoc</b> transforms it into a form that's ready for showing with 
-    * this composite font.  See {@link #unicodeToPostscriptText()}.</p>
+    * this composite font.  See {@link #unicodeToPostscriptText}.</p>
 	 * 
 	 * <p>To vertically center the text about the specified y-coord, it pushes the baseline down by 1/3 the current font 
 	 * size. To align the "top" of the text with the specified y-coord, it pushes the baseline down by 2/3 the font 
@@ -1886,7 +1852,7 @@ public class PSDoc
 	 * <p>As of FC v5.4.0, this method supports rendering "attributed text", in which font style, text color, underline
 	 * on/off, and superscript/subscript state can vary on a character-by-character basis within the text. In FC, 
 	 * attributed text is encoded in a plain text string in a prescribed manner. For details, see the helper method
-	 * {@link #parseAttributedText()}
+	 * {@link #parseAttributedText}
 	 * 
 	 * <p>IMPORTANT:  The Postscript fonts, by default, design their glyphs assuming a user space in which the y-axis 
 	 * increases upward -- which is the default convention in the Postscript interpreter. If the y-axis happens to be 
@@ -1991,7 +1957,7 @@ public class PSDoc
 	      appendLine(cmd);
 
 	      // recover the allocated array and mark end of code fragment with a comment
-	      loadArray(DATA0, (List<String>) null, false);
+	      loadArray(DATA0, null, false);
 	      restoreVMState();
 	      addComment("END renderAttributedText");
 		   
@@ -2007,7 +1973,7 @@ public class PSDoc
 	 * @param y The y-coord of text starting position in user space.
 	 * @param hAlign Desired horizontal alignment.
 	 * @param vAlign Desired vertical alignment.
-	 * @param rgb The desired text color (alpha component ignored). If null, opaque black is assumed
+	 * @param fillC The desired text color (alpha component ignored). If null, opaque black is assumed
 	 * @throws UnsupportedOperationException if graphics state stack overflows or if there's no current page context.
 	 */
 	public void renderText( String text, double x, double y, TextAlign hAlign, TextAlign vAlign, Color fillC)
@@ -2020,13 +1986,13 @@ public class PSDoc
 		// change text color temporarily
 		int rgb = (fillC != null) ? (0x00FFFFFF & fillC.getRGB()) : 0;
 		String cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, rgb, true);
-		if(cmd.length() > 0) appendLine(cmd);
+		if(!cmd.isEmpty()) appendLine(cmd);
 
 		// draw the text
 		renderText(text, x, y, hAlign, vAlign);
 
 		// change back to original text color; if indeed we had to change it
-		if(cmd.length() > 0)
+		if(!cmd.isEmpty())
 			appendLine(currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
 			      oldTextRGB, oldTextOpaque));
 	}
@@ -2039,8 +2005,8 @@ public class PSDoc
     * @param text The text to be painted.
     * @param x The x-coord of text starting position in user space.
     * @param y The y-coord of text starting position in user space.
-    * @param hAlign Desired horizontal alignment.
-    * @param vAlign Desired vertical alignment.
+    * @param ha Desired horizontal alignment.
+    * @param va Desired vertical alignment.
     * @param rot Desired rotation about the text starting position, in degrees. Since user space is always configured 
     * such that the y-axis increases upward, a positive angle yields a counter-clockwise rotation.
     * @param fontSz Desired font size in milli-inches.
@@ -2057,14 +2023,14 @@ public class PSDoc
 	   
 	   saveGraphicsState();
 	   String cmd = currentGraphics.changeFont(currentGraphics.fontName, fontSz);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
 	   translateAndRotate(x, y, rot);
 	   renderText(text, 0, 0, ha, va);
 	   restoreGraphicsState();
 	}
 	
 	/**
-	 * Helper method for {@link #renderText()}. If the specified string is a <i>FypML</i> attributed text sequence, this
+	 * Helper method for {@link #renderText}. If the specified string is a <i>FypML</i> attributed text sequence, this
 	 * method parses it and returns a sequence of string tokens in preparation for rendering via a custom prolog
 	 * procedure.
 	 * 
@@ -2103,7 +2069,7 @@ public class PSDoc
     * <li>Superscript/subscript state: "1" for superscript, "-1" for subscript, and "0" for normal text.</li>
     * <li>Text color: A decimal integer string indicating the packed RGB text color for the text run.</li>
     * <li>The sequence of Unicode characters comprising the text run. This still has to be converted to 
-    * Postscript-compatible text ({@link #unicodeToPostscriptText()}}</li>
+    * Postscript-compatible text ({@link #unicodeToPostscriptText}}</li>
     * </ol>
     * </p>
     * 
@@ -2117,7 +2083,7 @@ public class PSDoc
 	 */
 	private List<String> parseAttributedText(String s)
 	{
-	   List<String> tokens = new ArrayList<String>();
+	   List<String> tokens = new ArrayList<>();
 	   int idx = s.lastIndexOf('|');
       String text = s;
       String[] attrRuns = new String[0];
@@ -2140,73 +2106,65 @@ public class PSDoc
          // parse attributed text into sequence of like-styled runs, with 5 tokens (font, UL, superscript state, text
          // color, and the actual text string) per run.
          int prevStartIdx = -1;
-         for(int i=0; i<attrRuns.length; i++)
+         for(String attrRun : attrRuns)
          {
             // number of ':' separators should be exactly 1
-            String[] parts = attrRuns[i].split(":");
+            String[] parts = attrRun.split(":");
             if(parts.length != 2)
             {
                ok = false;
                break;
             }
-            
+
             // get starting text position for next text run; abort if not an integer, if position is beyond the end
             // of the character sequence, or if text runs are not in ascending order by starting position.
             int start = -1;
             try { start = Integer.parseInt(parts[0]); }
-            catch(NumberFormatException nfe) {}
+				catch(NumberFormatException ignored) {}
             if((start >= s.length()) || (start <= prevStartIdx))
             {
                ok = false;
                break;
             }
-            
+
             // now that we have ending index for the previous text run, prepare its defining tokens. Handle case
             // when first run starts at beginning of char sequence.
             if(start > 0)
             {
                String segment = text.substring((prevStartIdx == -1) ? 0 : prevStartIdx, start);
                prevStartIdx = start;
-               
+
                tokens.add("/" + getStandardFontFace(psFont, currFS.isBold(), currFS.isItalic()) + "C");
                tokens.add(Integer.toString(currUL));
                tokens.add(Integer.toString(currSS));
                tokens.add(Integer.toString(0x00FFFFFF & currTextC.getRGB()));
-               tokens.add(segment); 
-            }
-            else
+               tokens.add(segment);
+            } else
                prevStartIdx = 0;
 
             // update the current values of the changeable attributes IAW the attribute codes for the next run...
             String run = parts[1];
-            if(run.length() > 0)
+            if(!run.isEmpty())
             {
                // text color, if specified, is ALWAYS first. Abort if invalid. Replace translucent color with opaque as
                // we don't support translucency.
                if(UnicodeSubset.HEXDIGITS.contains(run.charAt(0)))
                {
                   boolean hasAlpha = (run.length() >= 8) && UnicodeSubset.HEXDIGITS.containsAll(run.substring(0, 8));
-                  Color c = BkgFill.colorFromHexString(run.substring(hasAlpha ? 2 : 0, hasAlpha ? 8 : 6));
-                  if(c == null)
-                  {
-                     ok = false;
-                     break;
-                  }
-                  currTextC = c;
-               }
-               else if((run.charAt(0) == '-') && (start > 0))
+                  currTextC = BkgFill.colorFromHexString(run.substring(hasAlpha ? 2 : 0, hasAlpha ? 8 : 6));
+               } else if((run.charAt(0) == '-') && (start > 0))
                   currTextC = new Color(currentGraphics.textFillColor);   // restore default text color
 
                if(run.contains("w")) currFS = FontStyle.BOLD;
                else if(run.contains("i")) currFS = FontStyle.ITALIC;
                else if(run.contains("I")) currFS = FontStyle.BOLDITALIC;
                else if(run.contains("p")) currFS = FontStyle.PLAIN;
-               
+
                if(run.contains("U"))
                   currUL = 1;
                else if(run.contains("u"))
-                  currUL = 0; 
-               
+                  currUL = 0;
+
                if(run.contains("S")) currSS = 1;
                else if(run.contains("s")) currSS = -1;
                else if(run.contains("n")) currSS = 0;
@@ -2299,7 +2257,7 @@ public class PSDoc
       // whether or not text content is attributed text, we parse it into a list of attributed text run subsequences.
       // In the plain text case, every subsequence will consist of a single text run and the attributes are the same
       // for every such run...
-      List<List<String>> subsequences = new ArrayList<List<String>>();
+      List<List<String>> subsequences = new ArrayList<>();
       
 
       List<String> runs = parseAttributedText(content);
@@ -2313,7 +2271,7 @@ public class PSDoc
          
          // since this is plain text, every attributed text run will have the same font and text color IAW
          // the current graphics state. No underlining or super/subscript.
-         List<String> runAttrs = new ArrayList<String>();
+         List<String> runAttrs = new ArrayList<>();
          runAttrs.add(String.format("/%sC", currentGraphics.fontName));
          runAttrs.add("0");
          runAttrs.add("0");
@@ -2329,13 +2287,13 @@ public class PSDoc
                subsequences.add(null);
             else if(" ".equals(token))
             {
-               List<String> run = new ArrayList<String>(runAttrs);
+               List<String> run = new ArrayList<>(runAttrs);
                run.add("( )");
                subsequences.add(run);
             }
             else
             {
-               List<String> run = new ArrayList<String>(runAttrs);
+               List<String> run = new ArrayList<>(runAttrs);
                run.add(String.format("(%s)", unicodeToPostscriptText(token)));
                subsequences.add(run);
             }
@@ -2347,7 +2305,7 @@ public class PSDoc
          // we need to break the complete attributed run sequence into subsequences of runs that may not be broken up.
          // Each linefeed character ('\n') or space (' ') found ends the current subsequence. A linefeed is replaced by
          // a null subsequence, and the space by a single-character subsequence.
-         List<String> currSubsequence = new ArrayList<String>();
+         List<String> currSubsequence = new ArrayList<>();
          for(int i=0; i<runs.size(); i+=5)
          {
             String s = runs.get(i+4);  // the original Unicode text for the run
@@ -2356,14 +2314,12 @@ public class PSDoc
             while(tokenizer.hasMoreTokens())
             {
                String token = tokenizer.nextToken();
-               if(token.length() == 0)
-                  continue;
-               else if("\n".equals(token) || " ".equals(token))
+               if("\n".equals(token) || " ".equals(token))
                {
                   if(!currSubsequence.isEmpty())
                   {
                      subsequences.add(currSubsequence);
-                     currSubsequence = new ArrayList<String>();
+                     currSubsequence = new ArrayList<>();
                   }
                   if("\n".equals(token))
                      subsequences.add(null);
@@ -2373,10 +2329,10 @@ public class PSDoc
                      for(int k=0; k<4; k++) currSubsequence.add(runs.get(i+k));
                      currSubsequence.add("( )");
                      subsequences.add(currSubsequence);
-                     currSubsequence = new ArrayList<String>();
+                     currSubsequence = new ArrayList<>();
                   }
                }
-               else
+               else if(!token.isEmpty())
                {
                   for(int k=0; k<4; k++) currSubsequence.add(runs.get(i+k));
                   currSubsequence.add(String.format("(%s)", unicodeToPostscriptText(token)));
@@ -2416,15 +2372,14 @@ public class PSDoc
       includeFunctionInProlog(SHOWTEXTRUNSINBOX);
       
       // % F T R HA VA L W H showTextRunsInBox
-      StringBuilder sb = new StringBuilder();
-      sb.append(Utilities.toString(currentGraphics.fontSize, 7, 3)).append(" ").append(DATA0).append(" ");
-      sb.append(Utilities.toString(rot, 7, 1)).append(" ");
-      sb.append((ha==TextAlign.LEADING) ? "1" : (ha==TextAlign.TRAILING ? "-1" : "0")).append(" ");
-      sb.append((va==TextAlign.LEADING) ? "1" : (va==TextAlign.TRAILING ? "-1" : "0")).append(" ");
-      sb.append(Utilities.toString(currentGraphics.fontSize * lh, 7, 3)).append(" ");
-      sb.append(Utilities.toString(w, 7, 3)).append(" ").append(Utilities.toString(h, 7, 3)).append(" ");
-      sb.append(SHOWTEXTRUNSINBOX);
-      appendLine(sb.toString());
+      String cmd = Utilities.toString(currentGraphics.fontSize, 7, 3) + " " + DATA0 + " " +
+            Utilities.toString(rot, 7, 1) + " " +
+            ((ha == TextAlign.LEADING) ? "1" : (ha == TextAlign.TRAILING ? "-1" : "0")) + " " +
+            ((va == TextAlign.LEADING) ? "1" : (va == TextAlign.TRAILING ? "-1" : "0")) + " " +
+            Utilities.toString(currentGraphics.fontSize * lh, 7, 3) + " " +
+            Utilities.toString(w, 7, 3) + " " + Utilities.toString(h, 7, 3) + " " +
+            SHOWTEXTRUNSINBOX;
+      appendLine(cmd);
 
       // recover the allocated array and mark end of code fragment with a comment
       loadArray(DATA0, (List<List<String>>) null);
@@ -2497,7 +2452,7 @@ public class PSDoc
       boolean opaqStrk = (symbolInfo == null) ? currentGraphics.isOpaqueStroke : !symbolInfo.isPSNoStroke();
       boolean opaqFill = (symbolInfo == null) ? currentGraphics.isOpaqueTextFill : !symbolInfo.isPSNoFill();
       boolean fillSym = symbol != null && symbol.isClosed() && opaqFill;
-      boolean doLabel = (symbolText != null && symbolText.length() > 0 && opaqStrk);
+      boolean doLabel = (symbolText != null && (!symbolText.isEmpty()) && opaqStrk);
       if(doAdorn) doAdorn = ((symSize > 0) && (opaqStrk || fillSym)) || doLabel;
       
 		// abort if there's nothing to render!
@@ -2529,7 +2484,7 @@ public class PSDoc
 		if(!noLine)
 		{
 			includeFunctionInProlog(POLYLINE);  
-			appendLine( Integer.toString(points.length) + " " + POLYLINE );
+			appendLine(points.length + " " + POLYLINE );
 		}
 
 		// if there's a symbol to render, do so at each well-defined point in the polyline by invoking the polyAdorn 
@@ -2548,7 +2503,7 @@ public class PSDoc
 			if(doLabel) cmd += unicodeToPostscriptText(symbolText);
 			cmd += ") " + Utilities.toString(-currentGraphics.fontSize / 3.0, 7, 3) + " ";
 			int fillCode = fillSym ? 1 : 0;
-			cmd += Integer.toString( fillCode ) + " " + Integer.toString( points.length ) + " " + 
+			cmd += fillCode + " " + points.length + " " +
 				Utilities.toString(symSize,7,3) + " /" + adornProc + " " + POLYADORN;
 			appendLine( cmd );
 		}
@@ -2571,7 +2526,7 @@ public class PSDoc
 	 * @param botLeft Bottom-left corner of the rectangle in user space. If ill-defined, method has no effect.
 	 * @param w Width of the rectangle. If non-positive, method has no effect.
 	 * @param h Height of the rectangle. If non-positive, method has no effect.
-	 * @param fill The RGB color with which rectangle is filled (alpha component is ignored). <b>If null, the rectangle
+	 * @param fillC The RGB color with which rectangle is filled (alpha component is ignored). <b>If null, the rectangle
     * is not filled.</b>
 	 */
 	public void renderRect(Point2D botLeft, double w, double h, Color fillC) throws UnsupportedOperationException
@@ -2585,7 +2540,7 @@ public class PSDoc
       // change fill color temporarily 
       String cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
             (fillC != null) ? (0x00FFFFFF & fillC.getRGB()) : 0, fillC != null);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
 
       // now we can stroke and fill rect using current graphics state properties
       renderRect(botLeft, w, h, currentGraphics.lineWidth, currentGraphics.lineWidth > 0, (fillC != null));
@@ -2594,7 +2549,7 @@ public class PSDoc
       // which does not cause anything to be written to the PS document!
       cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
                oldFillRGB, oldFillOpaque);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
 	}
 	
 	/**
@@ -2605,7 +2560,6 @@ public class PSDoc
 	 * @param strkW The desired stroke width (in user units = 0.001in). If non-positive, the rectangle is not stroked.
 	 * @param strkC The stroke color (alpha component ignored). If null, the rectangle is not stroked.
 	 * @param fillC The fill color (alpha component ignored. If null, the rectangle is not filled.
-	 * @throws UnsupportedOperationException
 	 */
 	public void renderRect(Rectangle2D r, double strkW, Color strkC, Color fillC) throws UnsupportedOperationException
 	{
@@ -2627,14 +2581,14 @@ public class PSDoc
       String cmd = currentGraphics.changeColors(
             (strkC != null) ? (0x00FFFFFF & strkC.getRGB()) : 0, strkC != null, 
             (fillC != null) ? (0x00FFFFFF & fillC.getRGB()) : 0, fillC != null);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
       
       // now we can stroke and/or fill rect using current graphics state properties
       renderRect(botLeft, w, h, strkW, (strkC != null), (fillC != null));
 
       // change back to original fill and stroke colors
       cmd = currentGraphics.changeColors(oldStrkRGB, oldStrkOpaque, oldFillRGB, oldFillOpaque);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
 	}
 	
    /**
@@ -2657,7 +2611,7 @@ public class PSDoc
       // change fill color temporarily 
       String cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
             (0x00FFFFFF & fillC.getRGB()), true);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
 
       // now fill (but don't stroke) the rect using current graphics state properties
       renderRect(botLeft, w, h, currentGraphics.lineWidth, false, true);
@@ -2666,7 +2620,7 @@ public class PSDoc
       // which does not cause anything to be written to the PS document!
       cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
                oldFillRGB, oldFillOpaque);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
    }
    
 	/**
@@ -2860,7 +2814,7 @@ public class PSDoc
       int fillRGB = (fillC != null) ? (0x00FFFFFF & fillC.getRGB()) : 0;
       String cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
             fillRGB, (fillC != null));
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
 
       // now we can stroke and fill polygons using current graphics state properties
       renderPolygons(vertices, (fillC != null));
@@ -2869,7 +2823,7 @@ public class PSDoc
       // which does not cause anything to be written to the PS document!
       cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
                oldFillRGB, oldFillOpaque);
-      if(cmd.length() > 0) appendLine(cmd);
+      if(!cmd.isEmpty()) appendLine(cmd);
 	}
 	
 	/**
@@ -2949,7 +2903,7 @@ public class PSDoc
       // polygons are not to be filled, or 1 to fill them w/ the current text/fill color
       includeFunctionInProlog(POLYGONS);
       String cmd = filled ? "1 " : "0 ";
-      cmd += Integer.toString(vertexArray.length) + " " + POLYGONS;
+      cmd += vertexArray.length + " " + POLYGONS;
       appendLine( cmd );
 
       // clear the DATA0 array and "restore" to recover VM allocated to the array
@@ -2996,7 +2950,7 @@ public class PSDoc
 	      throws UnsupportedOperationException
 	{
       // if origin is ill-defined, or if no vertices are provided, or if there's just one, there's nothing to render!
-      if( origin == null || !Utilities.isWellDefined(origin) || vertices == null || vertices.size() < 2 ) 
+      if(!Utilities.isWellDefined(origin) || vertices == null || vertices.size() < 2)
          return;
 
       // nothing to render if wedges/sections are neither stroked nor filled
@@ -3082,7 +3036,7 @@ public class PSDoc
       // wedges are not filled, or 1 if they are filled with the current text/fill color
       includeFunctionInProlog(POLYWEDGES);
       String cmd = filled ? "1 " : "0 ";
-      cmd += Integer.toString(vertexArray.length) + " " + Utilities.toString(origin, 7, 3) + " " + POLYWEDGES;
+      cmd += vertexArray.length + " " + Utilities.toString(origin, 7, 3) + " " + POLYWEDGES;
       appendLine( cmd );
 
       // clear the DATA0 array and "restore" to recover VM allocated to the array
@@ -3122,7 +3076,7 @@ public class PSDoc
        int fillRGB = (fillC != null) ? (0x00FFFFFF & fillC.getRGB()) : 0;
        String cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
              fillRGB, (fillC != null));
-       if(cmd.length() > 0) appendLine(cmd);
+       if(!cmd.isEmpty()) appendLine(cmd);
    
        // now we can stroke and fill polygons using current graphics state properties
        renderConcentricWedges(origin, vertices, baseRad, (fillC != null));
@@ -3131,7 +3085,7 @@ public class PSDoc
        // which does not cause anything to be written to the PS document!
        cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
                 oldFillRGB, oldFillOpaque);
-       if(cmd.length() > 0) appendLine(cmd);
+       if(!cmd.isEmpty()) appendLine(cmd);
    }
    
    /**
@@ -3151,109 +3105,108 @@ public class PSDoc
     */
    public void renderConcentricWedges(Point2D origin, List<Point2D> vertices, Color fillC)
    {
-      // if origin is ill-defined, or if no vertices are provided, or if there's just one, there's nothing to render!
-      if(origin == null || !Utilities.isWellDefined(origin) || vertices == null || vertices.size() < 2)
+		// if origin is ill-defined, or if no vertices are provided, or if there's just one, there's nothing to render!
+      if(!Utilities.isWellDefined(origin) || vertices == null || vertices.size() < 2)
          return;
 
       // nothing to render if wedges/sections are neither stroked nor filled
       boolean stroked = currentGraphics.lineWidth > 0 && currentGraphics.isOpaqueStroke;
       if((fillC == null) && !stroked) return;
-      
-       // remember old text/fill color
-       int oldFillRGB = currentGraphics.textFillColor;
-       boolean oldFillOpaque = currentGraphics.isOpaqueTextFill;
+
+		// remember old text/fill color
+		int oldFillRGB = currentGraphics.textFillColor;
+		boolean oldFillOpaque = currentGraphics.isOpaqueTextFill;
        
-       // change fill color temporarily 
-       int fillRGB = (fillC != null) ? (0x00FFFFFF & fillC.getRGB()) : 0;
-       String cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
-             fillRGB, (fillC != null));
-       if(cmd.length() > 0) appendLine(cmd);
+		// change fill color temporarily
+		int fillRGB = (fillC != null) ? (0x00FFFFFF & fillC.getRGB()) : 0;
+		String cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke,
+				fillRGB, (fillC != null));
+		if(!cmd.isEmpty()) appendLine(cmd);
    
-       // if vertex list has odd number of points, go ahead and remove the last one!
-       if(vertices.size() % 2 != 0) vertices.remove(vertices.size()-1);
+		// if vertex list has odd number of points, go ahead and remove the last one!
+		if(vertices.size() % 2 != 0) vertices.remove(vertices.size()-1);
        
-       // all rendering occurs in the context of a printed page
-       if( !pageStarted ) throw new UnsupportedOperationException( NOPAGE_EXCP );
+		// all rendering occurs in the context of a printed page
+		if( !pageStarted ) throw new UnsupportedOperationException( NOPAGE_EXCP );
 
-       // make sure we have enough room on the graphics state stack.  we need one space for the "save" op issued prior 
-       // to loading the vertex array, and another if we're filling the radial sections/wedges
-       int nStackSaves = (fillC != null) ? 2 : 1;
-       if( graphicsStack.size() + nStackSaves > MAX_GSTATE_DEPTH )
-          throw new UnsupportedOperationException( GSOVFL_EXCP );
+		// make sure we have enough room on the graphics state stack.  we need one space for the "save" op issued prior
+		// to loading the vertex array, and another if we're filling the radial sections/wedges
+		int nStackSaves = (fillC != null) ? 2 : 1;
+		if( graphicsStack.size() + nStackSaves > MAX_GSTATE_DEPTH )
+			throw new UnsupportedOperationException( GSOVFL_EXCP );
 
-       // process vertex list
-       Point2D[] arc = new Point2D[2];
-       int i = 0;
-       while(i < vertices.size())
-       {
-          arc[0] = vertices.get(i);
-          arc[1] = vertices.get(i+1);
-          if(!Utilities.isWellDefined(arc))
-          {
-             vertices.remove(i);
-             vertices.remove(i);
-             continue;
-          }
-          
-          double theta0 = arc[0].getX();
-          double r0 = arc[0].getY();
-          double theta1 = arc[1].getX();
-          double r1 = arc[1].getY();
-          
-          if(r0 < 0.001)
-          {
-             // pie wedge: 2 vertices (r, theta0) and (r, theta1), followed by a null separator
-             arc[0].setLocation(r1, theta0);
-             arc[1].setLocation(r1, theta1);
-             vertices.add(i+2, null);
-             i += 3;
-          }
-          else   
-          {
-             // radial section: 4 vertices followed by a null separator. First pair must define inner arc of section
-             // drawn in one direction (r0, theta0) -> (r0, theta1), while second pair defines the outer arc drawn in
-             // the opposite direction.
-             arc[0].setLocation(r0, theta0);
-             arc[1].setLocation(r0, theta1);
-             vertices.add(i+2, new Point2D.Double(r1, theta1));
-             vertices.add(i+3, new Point2D.Double(r1, theta0));
-             vertices.add(i+4, null);
-             i += 5;
-             
-          }
-       }
-       
-       Point2D[] vertexArray = new Point2D[vertices.size()];
-       for(i=0; i<vertexArray.length; i++) vertexArray[i] = vertices.get(i);
-       
-       // mark start of code fragment with a comment
-       addComment( "renderConcentricWedges" );
+		// process vertex list
+		Point2D[] arc = new Point2D[2];
+		int i = 0;
+		while(i < vertices.size())
+		{
+			arc[0] = vertices.get(i);
+			arc[1] = vertices.get(i+1);
+			if(!Utilities.isWellDefined(arc))
+			{
+				vertices.remove(i);
+				vertices.remove(i);
+				continue;
+			}
 
-       // we need to load the wedge vertices into the prolog's DATA0 array. to recover the VM consumed by this array, we 
-       // encompass everything in a "save"-"restore" pair. Any ill-defined points are set to "null" in the DATA0 array.
-       saveVMState();
-       loadArray( DATA0, vertexArray );
+			double theta0 = arc[0].getX();
+			double r0 = arc[0].getY();
+			double theta1 = arc[1].getX();
+			double r1 = arc[1].getY();
 
-       // invoke the prolog procedure which renders the wedges:  "fillCode n x0 y0 polyWedges", where fillCode=0 if the 
-       // wedges are not filled, or 1 if they are filled with the current text/fill color
-       includeFunctionInProlog(POLYWEDGES);
-       cmd = (fillC != null) ? "1 " : "0 ";
-       cmd += Integer.toString(vertexArray.length) + " " + Utilities.toString(origin, 7, 3) + " " + POLYWEDGES;
-       appendLine( cmd );
+			if(r0 < 0.001)
+			{
+				// pie wedge: 2 vertices (r, theta0) and (r, theta1), followed by a null separator
+				arc[0].setLocation(r1, theta0);
+				arc[1].setLocation(r1, theta1);
+				vertices.add(i+2, null);
+				i += 3;
+			}
+			else
+			{
+				// radial section: 4 vertices followed by a null separator. First pair must define inner arc of section
+				// drawn in one direction (r0, theta0) -> (r0, theta1), while second pair defines the outer arc drawn in
+				// the opposite direction.
+				arc[0].setLocation(r0, theta0);
+				arc[1].setLocation(r0, theta1);
+				vertices.add(i+2, new Point2D.Double(r1, theta1));
+				vertices.add(i+3, new Point2D.Double(r1, theta0));
+				vertices.add(i+4, null);
+				i += 5;
+			}
+		}
 
-       // clear the DATA0 array and "restore" to recover VM allocated to the array
-       loadArray( DATA0, (Point2D[])null );
-       restoreVMState();
+		Point2D[] vertexArray = new Point2D[vertices.size()];
+		for(i=0; i<vertexArray.length; i++) vertexArray[i] = vertices.get(i);
 
-       // mark end of code fragment with a comment 
-       addComment( "END renderConcentricWedges" );
+		// mark start of code fragment with a comment
+		addComment( "renderConcentricWedges" );
 
-   
-       // change back to original fill color. Note that the only thing changing could be the fill color's opaque flag,
-       // which does not cause anything to be written to the PS document!
-       cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke, 
-                oldFillRGB, oldFillOpaque);
-       if(cmd.length() > 0) appendLine(cmd);
+		// we need to load the wedge vertices into the prolog's DATA0 array. to recover the VM consumed by this array, we
+		// encompass everything in a "save"-"restore" pair. Any ill-defined points are set to "null" in the DATA0 array.
+		saveVMState();
+		loadArray( DATA0, vertexArray );
+
+		// invoke the prolog procedure which renders the wedges:  "fillCode n x0 y0 polyWedges", where fillCode=0 if the
+		// wedges are not filled, or 1 if they are filled with the current text/fill color
+		includeFunctionInProlog(POLYWEDGES);
+		cmd = (fillC != null) ? "1 " : "0 ";
+		cmd += vertexArray.length + " " + Utilities.toString(origin, 7, 3) + " " + POLYWEDGES;
+		appendLine( cmd );
+
+		// clear the DATA0 array and "restore" to recover VM allocated to the array
+		loadArray( DATA0, (Point2D[])null );
+		restoreVMState();
+
+		// mark end of code fragment with a comment
+		addComment( "END renderConcentricWedges" );
+
+
+		// change back to original fill color. Note that the only thing changing could be the fill color's opaque flag,
+		// which does not cause anything to be written to the PS document!
+		cmd = currentGraphics.changeColors(currentGraphics.strokeColor, currentGraphics.isOpaqueStroke,
+				 oldFillRGB, oldFillOpaque);
+		if(!cmd.isEmpty()) appendLine(cmd);
    }
    
    /**
@@ -3358,7 +3311,7 @@ public class PSDoc
       // not doubles!
       Point2D[] pts = null;
       int[] rgbAr = null;
-      List<String> fill3 = new ArrayList<String>(100);
+      List<String> fill3 = new ArrayList<>(100);
       int nDone = 0;
       int nFillDone = 0;  // needed when fillInfo is variable in size (fillCode == 3)
       while(nDone < n)
@@ -3404,7 +3357,7 @@ public class PSDoc
          saveVMState();
          loadArray(DATA0, pts);
          if(rgbAr != null) loadArray(DATA1, rgbAr);
-         else if(fill3.size() > 0) loadArray(DATA1, fill3, false);
+         else if(!fill3.isEmpty()) loadArray(DATA1, fill3, false);
 
          // invoke the procedure that renders the mesh
          String cmd = cmdPrefix + " " + nChunk + " " + MESH;
@@ -3438,7 +3391,7 @@ public class PSDoc
 	 */
 	public void renderConcentricCircles(Point2D origin, double[] radii)
 	{
-		if( origin == null || !Utilities.isWellDefined(origin) || radii == null || radii.length == 0 )
+		if(!Utilities.isWellDefined(origin) || radii == null || radii.length == 0)
 			return;
 
 		// nothing to render if circles are not stroked
@@ -3449,7 +3402,7 @@ public class PSDoc
 
 		// process 50 circles at a time using the polyCircles prolog procedure
 		includeFunctionInProlog(POLYCIRCLES);
-		StringBuffer cmdBuf = new StringBuffer(200);
+		StringBuilder cmdBuf = new StringBuilder(200);
 		int i=0;
 		while( i < radii.length )
 		{
@@ -3462,7 +3415,7 @@ public class PSDoc
 			{
 				if( radii[i] > 0 )
 				{
-					cmdBuf.append( Utilities.toString(radii[i],7,3) + " " );
+					cmdBuf.append(Utilities.toString(radii[i], 7, 3)).append(" ");
 					++j;
 				}
 				++i;
@@ -3471,7 +3424,7 @@ public class PSDoc
 			// if at least one circle was included, then finish the command and append it to the document
 			if( j > 0 )
 			{
-				cmdBuf.append( "] " + Utilities.toString(origin,7,3) + " " + POLYCIRCLES );
+				cmdBuf.append("] ").append(Utilities.toString(origin, 7, 3)).append(" ").append(POLYCIRCLES);
 				appendLine( cmdBuf.toString() );
 			}
 		}
@@ -3494,7 +3447,7 @@ public class PSDoc
       throws UnsupportedOperationException
    {
       // if null or empty arguments, there's nothing to render!
-      if(origin == null || !Utilities.isWellDefined(origin) || start == end || radii == null || radii.length == 0) 
+      if(!Utilities.isWellDefined(origin) || start == end || radii == null || radii.length == 0)
          return;
 
       // nothing to render if arcs are not stroked
@@ -3518,7 +3471,7 @@ public class PSDoc
 
       // invoke the prolog procedure which renders the concentric arcs:  "n x0 y0 a0 a1 polyArcs"
       includeFunctionInProlog(POLYARCS);
-      appendLine( Integer.toString(radii.length) + " " + Utilities.toString(origin,7,3) + " " + 
+      appendLine(radii.length + " " + Utilities.toString(origin,7,3) + " " +
          Utilities.toString(start,7,3) + " " + Utilities.toString(end,7,3)+ " " + POLYARCS );
 
       // clear the prolog variables that reference the allocated arrays and "restore" to recover the VM allocated
@@ -3561,7 +3514,7 @@ public class PSDoc
 		throws UnsupportedOperationException
 	{
 		// line is ill-defined, do nothing
-		if( p0 == null || p1 == null || !Utilities.isWellDefined(p0) || !Utilities.isWellDefined(p0) )
+		if(p1 == null || !Utilities.isWellDefined(p0) || !Utilities.isWellDefined(p0))
 			return;
 
 		// length of line is the distance between the endpoints; zero-length lines are not rendered
@@ -3733,6 +3686,8 @@ public class PSDoc
 		double r = isPolar ? pOrigin.distance(pStart) : 0;
 		Point2D p = new Point2D.Double();
 
+		double r2 = r + (isLineup ? 0.5 : -0.5)*endCapSz;
+
 		// if relevant, start path with a lineup or linedown endcap at first endpt
 		String cmd = "newpath ";
 		if( (isTwoSided||isMinusOne) && (isLineup || isLinedn) )
@@ -3743,7 +3698,6 @@ public class PSDoc
 					p.setLocation( pStart.getX(), pStart.getY() + (isLineup ? -0.5 : 0.5)*endCapSz );
 				else
 				{
-					double r2 = r + (isLineup ? 0.5 : -0.5)*endCapSz;
 					double theta = Math.atan2(pStart.getY()-pOrigin.getY(), pStart.getX()-pOrigin.getX());
 					p.setLocation( pOrigin.getX() + r2*Math.cos(theta), pOrigin.getY() + r2*Math.sin(theta));
 				}
@@ -3788,7 +3742,6 @@ public class PSDoc
 					p.setLocation( pEnd.getX(), pEnd.getY() + (isLineup ? -0.5 : 0.5)*endCapSz );
 				else
 				{
-					double r2 = r + (isLineup ? 0.5 : -0.5)*endCapSz;
 					double theta = Math.atan2(pEnd.getY()-pOrigin.getY(), pEnd.getX()-pOrigin.getX());
 					p.setLocation( pOrigin.getX() + r2*Math.cos(theta), pOrigin.getY() + r2*Math.sin(theta));
 				}
@@ -3825,7 +3778,7 @@ public class PSDoc
 			if( currentGraphics.dashPattern == null || currentGraphics.dashPattern.length > 0 )
 			{
 				String cmdDash = currentGraphics.changeStrokeProperties(saveLW, saveLC, saveLJ, SOLIDLINE, 0);
-				if( cmdDash.length() > 0 )
+				if(!cmdDash.isEmpty())
 				{
 					restoreDash = true;
 					cmd += " " + cmdDash;
@@ -3887,7 +3840,7 @@ public class PSDoc
 	 * stroke color rather than the current text/fill color.
 	 * @throws UnsupportedOperationException if graphics state stack overflows or if there's no current page context.
 	 */
-	public void renderMultipleAdornments(Point2D[] pts, double rot[], Marker cap, double capSize, String text)
+	public void renderMultipleAdornments(Point2D[] pts, double[] rot, Marker cap, double capSize, String text)
 	{
 		// abort if no points specified or size of non-null rotation array is not the same as points array size
 		if( pts == null || pts.length == 0 || (rot != null && (pts.length != rot.length)) )
@@ -3901,12 +3854,12 @@ public class PSDoc
       boolean filled = (cap != null) && cap.isClosed() && currentGraphics.isOpaqueTextFill;
       
       // abort if nothing to render!
-      if((!(stroked || filled)) && (text == null || text.length() == 0)) return;
+      if((!(stroked || filled)) && (text == null || text.isEmpty())) return;
       
 		// find the name of the prolog procedure that renders the specified adornment; if there is none, or if the 
 		// cap size is non-positive and there's no text, then draw nothing. 
 		String adornProc = getAdornmentPrologProc( cap );
-		if( adornProc == null  || (capSize <= 0 && (text == null || text.length() == 0)) ) return;
+		if( adornProc == null  || (capSize <= 0 && (text == null || text.isEmpty())) ) return;
 
 		// all rendering occurs in the context of a printed page
 		if( !pageStarted ) throw new UnsupportedOperationException( NOPAGE_EXCP );
@@ -3936,9 +3889,9 @@ public class PSDoc
 		includeFunctionInProlog( (rot!=null) ? POLYROTADORN : POLYADORN );
 		int fillCode = filled ? 1 : 0;
 		String cmd = "() 0 ";
-		if( text != null && text.length()>0 )
+		if( text != null && !text.isEmpty())
 			cmd = "(" + unicodeToPostscriptText(text) + ") " + Utilities.toString(-currentGraphics.fontSize/3.0,7,3) + " ";
-		cmd += fillCode + " " + Integer.toString( pts.length ) + " " + Utilities.toString(capSize,7,3) + 
+		cmd += fillCode + " " + pts.length + " " + Utilities.toString(capSize,7,3) +
 					" /" + adornProc + " " + ((rot!=null) ? POLYROTADORN : POLYADORN);
 		appendLine( cmd );
 
@@ -4009,14 +3962,14 @@ public class PSDoc
          for(int i=0; i<n; i++)
          {
             Double dSz = sizes.get(i);
-            double d = (dSz != null) ? dSz.doubleValue() : 0;
+            double d = (dSz != null) ? dSz : 0;
             adornSizes[i] = (d < 0 || !Utilities.isWellDefined(d)) ? 0 : d;
          }
       }
       else
       {
          Double dSz = sizes.get(0);
-         fixedAdornSz = (dSz != null) ? dSz.doubleValue() : 0;
+         fixedAdornSz = (dSz != null) ? dSz : 0;
          if(fixedAdornSz < 0 || !Utilities.isWellDefined(fixedAdornSz)) fixedAdornSz = 0;
       }
       
@@ -4086,7 +4039,6 @@ public class PSDoc
       
       // find the name of the prolog procedure that renders the specified adornment; if there is none, draw nothing. 
       String adornProc = getAdornmentPrologProc(m);
-      if(adornProc == null) return;
 
       // all rendering occurs in the context of a printed page
       if(!pageStarted) throw new UnsupportedOperationException(NOPAGE_EXCP);
@@ -4111,14 +4063,14 @@ public class PSDoc
       includeFunctionInProlog(POLYSTEMADORN);
       sb.append(stemProc).append(" ").append(doStems ? "1 " : "0 ").append(bfSpec).append(" ");
       sb.append(sizeVaries ? "-1" : Utilities.toString(fixedAdornSz,7,3)).append(" ");
-      sb.append(Integer.toString(n)).append(" /").append(adornProc).append(" ").append(POLYSTEMADORN);
+      sb.append(n).append(" /").append(adornProc).append(" ").append(POLYSTEMADORN);
    
       appendLine(sb.toString());
    
       // clear the prolog data arrays that were loaded and "restore" to recover VM allocated to them
       loadArray(DATA0, (Point2D[])null);
       if(sizeVaries) loadArray(DATA1, (double[])null);
-      if(fillVaries) loadBkgFillArray(DATA2, (List<BkgFill>)null, (List<Double>)null);
+      if(fillVaries) loadBkgFillArray(DATA2, null, null);
       restoreVMState();
 
       // mark end of code fragment with a comment 
@@ -4126,7 +4078,7 @@ public class PSDoc
 	}
 	
    /**
-    * Helper method for {@link #renderStemmedAdornments()}. When the background fill applied to an adornment varies from
+    * Helper method for {@link #renderStemmedAdornments}. When the background fill applied to an adornment varies from
     * location to location, this method is called to allocate a Postscript array object referenced by the specified name
     * and load it with the background fill specifications to be applied in sequence.
     * 
@@ -4155,12 +4107,12 @@ public class PSDoc
     * <p>The array is allocated first, then it is populated 5 elements at a time using the "putInterval" command.</p>
     * 
     * @param name The name assigned to the Postscript array object allocated and loaded here.
-    * @param adornBf The background fill list, as supplied to {@link #renderStemmedAdornments()}. If null or empty, the 
+    * @param adornBf The background fill list, as supplied to {@link #renderStemmedAdornments}. If null or empty, the
     * specified name is defined as a Postscript null object. This is done to recover VM previously allocated to the
     * literal. Otherwise it will contain 1 entry if the applied fill does not change, else N, where N is the number of
     * adornments rendered. Note that when the fill is a gradient but the adornment size changes, it is necessary to
     * specify a different fill spec for each adornment, as the geometry will vary with adornment size.
-    * @param adornSz The adornment size list, as supplied to {@link #renderStemmedAdornments()}. Will contain 1 entry if
+    * @param adornSz The adornment size list, as supplied to {@link #renderStemmedAdornments}. Will contain 1 entry if
     * the adornment size does not change, else N.
     */
    private void loadBkgFillArray(String name, List<BkgFill> adornBf, List<Double> adornSz)
@@ -4168,7 +4120,7 @@ public class PSDoc
       final int PTS_PER_PUT = 5;         // when using putInterval cmd to fill a big array
 
       // if background fill list is null or empty, just set name to the null object  
-      if(adornBf == null || adornBf.size() == 0) 
+      if(adornBf == null || adornBf.isEmpty())
       {
          appendLine( "/" + name + " null def" );
          return;
@@ -4179,7 +4131,7 @@ public class PSDoc
       if(!sizeVaries)
       {
          Double dblSz = adornSz.get(0);
-         sz = (dblSz == null) ? 0 : dblSz.doubleValue();
+         sz = (dblSz == null) ? 0 : dblSz;
          if(sz < 0 || !Utilities.isWellDefined(sz)) sz = 0;
       }
       
@@ -4191,13 +4143,13 @@ public class PSDoc
       // we prepare a sequence of commands in a string buffer, then dump the buffer when we're done
       StringBuilder sb = new StringBuilder( 200 );
       
-      appendLine( "/" + name + " " + Integer.toString(n) + " array def" );
+      appendLine( "/" + name + " " + n + " array def" );
 
       // now populate using a series of "ar index [...] putinterval" commands
       for(int i=0; i<n; i+=PTS_PER_PUT)
       {
          sb.setLength(0);
-         sb.append(name + " " + i + " [ ");
+         sb.append(name).append(" ").append(i).append(" [ ");
          int j=0;
          while(i+j < n && j < PTS_PER_PUT)
          {
@@ -4205,7 +4157,7 @@ public class PSDoc
             if(sizeVaries)
             {
                Double dblSz = adornSz.get(i+j);
-               sz = (dblSz == null) ? 0 : dblSz.doubleValue();
+               sz = (dblSz == null) ? 0 : dblSz;
                if(sz < 0 || !Utilities.isWellDefined(sz)) sz = 0;
             }
             
@@ -4273,7 +4225,7 @@ public class PSDoc
 	      boolean doStroke)
 	{
 	   // abort if no coordinate list specified, no size specified or no adornment symbol was specified
-	   if(m == null || coord == null || coord.size() == 0 || szBox == null || szBox.size() == 0) return;
+	   if(m == null || coord == null || coord.isEmpty() || szBox == null || szBox.isEmpty()) return;
 	   
 	   // if the size and coordinate lists are the same length, then size varies at each location. Otherwise, size is
 	   // constant and is set to the value in the first element of the szBox list.
@@ -4295,14 +4247,14 @@ public class PSDoc
 	      for(int i=0; i<szBox.size(); i++)
 	      {
 	         Double dSz = szBox.get(i);
-	         double d = (dSz != null) ? dSz.doubleValue() : 0;
+	         double d = (dSz != null) ? dSz : 0;
 	         sizes[i] = (d < 0 || !Utilities.isWellDefined(d)) ? 0 : d;
 	      }
 	   }
 	   else
 	   {
 	      Double dSz = szBox.get(0);
-	      fixedSz = (dSz != null) ? dSz.doubleValue() : 0;
+	      fixedSz = (dSz != null) ? dSz : 0;
 	      if(fixedSz < 0 || !Utilities.isWellDefined(fixedSz)) return;
 	   }
 	   
@@ -4314,7 +4266,6 @@ public class PSDoc
       
       // find the name of the prolog procedure that renders the specified adornment; if there is none, draw nothing. 
       String adornProc = getAdornmentPrologProc(m);
-      if(adornProc == null) return;
 
       // all rendering occurs in the context of a printed page
       if(!pageStarted) throw new UnsupportedOperationException(NOPAGE_EXCP);
@@ -4347,27 +4298,27 @@ public class PSDoc
       if(sizeVaries && fillVaries)
       {
          includeFunctionInProlog(POLYSIZEFILLADORN);
-         sb.append(Integer.toString(pts.length)).append(" /").append(adornProc).append(" ");
+         sb.append(pts.length).append(" /").append(adornProc).append(" ");
          sb.append(POLYSIZEFILLADORN);
       }
-      else if(sizeVaries && !fillVaries)
+      else if(sizeVaries)
       {
          includeFunctionInProlog(POLYSIZEADORN);
-         sb.append(fillCode).append(" ").append(Integer.toString(pts.length));
+         sb.append(fillCode).append(" ").append(pts.length);
          sb.append(" /").append(adornProc).append(" ");
          sb.append(POLYSIZEADORN);
       }
       else if(fillVaries)
       {
          includeFunctionInProlog(POLYFILLADORN);
-         sb.append(Integer.toString(pts.length)).append(" ").append(Utilities.toString(fixedSz,7,3));
+         sb.append(pts.length).append(" ").append(Utilities.toString(fixedSz,7,3));
          sb.append(" /").append(adornProc).append(" ");
          sb.append(POLYFILLADORN);
       }
       else
       {
          includeFunctionInProlog(POLYADORN);
-         sb.append("() 0 ").append(fillCode).append(" ").append(Integer.toString(pts.length));
+         sb.append("() 0 ").append(fillCode).append(" ").append(pts.length);
          sb.append(" ").append(Utilities.toString(fixedSz,7,3)).append(" /").append(adornProc).append(" ");
          sb.append(POLYADORN);
       }
@@ -4376,7 +4327,7 @@ public class PSDoc
       // clear the DATA0, DATA1, DATA2 arrays and "restore" to recover VM allocated to the arrays
       loadArray(DATA0, (Point2D[])null);
       if(sizes != null) loadArray(DATA1, (double[])null );
-      if(fillRGB != null) loadColorArray(DATA2, (List<Color>) null);
+      if(fillRGB != null) loadColorArray(DATA2, null);
       restoreVMState();
 
       // re-enable stroking if we temporarily disabled it.
@@ -4419,12 +4370,12 @@ public class PSDoc
 		// find the name of the prolog procedure that renders the specified adornment; if there is none, or if the 
 		// cap size is zero and there's no text label to draw, then nothing is rendered. 
 		String adornProc = getAdornmentPrologProc(cap);
-		if(adornProc == null || (capSize <= 0 && (text == null || text.length() == 0))) return("");
+		if(adornProc == null || (capSize <= 0 && (text == null || text.isEmpty()))) return("");
 		
 		// make sure we'll render something!
 		boolean doFill = capSize > 0 && cap.isClosed() && currentGraphics.isOpaqueTextFill;
 		boolean doStroke = capSize > 0 && currentGraphics.isOpaqueStroke && currentGraphics.lineWidth > 0;
-		boolean doLabel = currentGraphics.isOpaqueStroke && text != null && text.length() > 0;
+		boolean doLabel = currentGraphics.isOpaqueStroke && text != null && !text.isEmpty();
 		if(!(doFill || doStroke || doLabel)) return("");
 
 		// all rendering occurs in the context of a printed page
@@ -4476,7 +4427,7 @@ public class PSDoc
 	public void renderAdornment(Marker cap, double capSize, double x, double y, double rot, String text)
 	{
 		String cmd = doAdornment(cap, capSize, x, y, rot, text);
-		if( cmd.length() > 0 )
+		if(!cmd.isEmpty())
 			appendLine( cmd );
 	}
 
@@ -4518,7 +4469,7 @@ public class PSDoc
       // make sure we'll render something!
       boolean doFill = w > 0 && h > 0 && m.isClosed() && bf != null && !bf.isTransparent();
       boolean doStroke = w > 0 && h > 0 && currentGraphics.isOpaqueStroke && currentGraphics.lineWidth > 0;
-      boolean doLabel = currentGraphics.isOpaqueTextFill && text != null && text.length() > 0;
+      boolean doLabel = currentGraphics.isOpaqueTextFill && text != null && !text.isEmpty();
       if(!(doFill || doStroke || doLabel)) return;
 
       // the gradient fills require a user space with the origin at the bottom-left corner of the adornment -- so (x,y)
@@ -4677,7 +4628,7 @@ public class PSDoc
       // invoke the appropriate prolog procedure: "stroked? filled? n polyFill"
       includeFunctionInProlog(POLYFILL);
       String cmd = 
-         (isStroked ? "1 " : "0 ") + (isFilled ? "1 " : "0 ") + Integer.toString(polyline.length) + " " + POLYFILL;
+         (isStroked ? "1 " : "0 ") + (isFilled ? "1 " : "0 ") + polyline.length + " " + POLYFILL;
       appendLine(cmd);
       
 		// clear the DATA0 array and "restore" to recover VM allocated to it
@@ -4725,20 +4676,20 @@ public class PSDoc
       // if list of closed flags is null or empty, then all polylines are closed
       if(closed == null || closed.isEmpty())
       {
-         closed = new ArrayList<Boolean>();
-         closed.add(new Boolean(true));
+         closed = new ArrayList<>();
+         closed.add(Boolean.TRUE);
       }
       
       // if list of fill colors is null or empty, then NO polylines are filled. Similarly for the list of stroke colors.
       if(fillRGB == null || fillRGB.isEmpty())
       {
-         fillRGB = new ArrayList<Integer>();
-         fillRGB.add(new Integer(-1));
+         fillRGB = new ArrayList<>();
+         fillRGB.add(-1);
       }
       if(strokeRGB == null || strokeRGB.isEmpty())
       {
-         strokeRGB = new ArrayList<Integer>();
-         strokeRGB.add(new Integer(-1));
+         strokeRGB = new ArrayList<>();
+         strokeRGB.add(-1);
       }
       
       // mark start of code fragment with a comment
@@ -4754,16 +4705,15 @@ public class PSDoc
          if(polyline != null && polyline.size() > 2)
          {
             saveVMState();
-            loadArray(DATA0, polyline.toArray(new Point2D[polyline.size()]));
+            loadArray(DATA0, polyline.toArray(new Point2D[0]));
             
             int n = polyline.size();
-            boolean close = closed.get(i<closed.size() ? i : closed.size()-1).booleanValue();
+            boolean close = closed.get(i < closed.size() ? i : closed.size() - 1);
             Integer fillC = fillRGB.get(i<fillRGB.size() ? i : fillRGB.size()-1);
-            if(fillC == null) fillC = new Integer(-1);
+            if(fillC == null) fillC = -1;
             Integer strkC = strokeRGB.get(i<strokeRGB.size() ? i : strokeRGB.size()-1);
-            if(strkC == null) strkC = new Integer(-1);
-            String cmd = strkC.toString() + " " + fillC.toString() + " " + (close ? "1 " : "0 ") + 
-                  Integer.toString(n) + " " + POLYFILLEX;
+            if(strkC == null) strkC = -1;
+            String cmd = strkC + " " + fillC + " " + (close ? "1 " : "0 ") + n + " " + POLYFILLEX;
              appendLine(cmd);
 
             loadArray(DATA0, (Point2D[])null);
@@ -4780,8 +4730,8 @@ public class PSDoc
 	 * 
 	 * @param w The image width (number of samples per image row).
 	 * @param h The image height (number of image rows).
-	 * @param botRight Location of image's bottom left corner in current user space.
-	 * @param topLeft Location of image's top right corner in current user space.
+	 * @param botLeft Location of image's bottom left corner in current user space.
+	 * @param topRight Location of image's top right corner in current user space.
 	 * @param colorLUT The color lookup table to use when translating image data samples to RGB color. 
 	 * @param rgbNaN Packed RGB color assigned to lookup table index 0, to which every ill-defined image datum (infinite
 	 * or NaN) is mapped.
@@ -4789,7 +4739,7 @@ public class PSDoc
 	 * different size. The interpolation algorithm is implementation-independent and may, in fact, not be available on 
 	 * some older Postscript printers. If disabled, the default nearest-neighor interpolation algorithm is used, leading
 	 * to a blocky image when scaled up in size.
-	 * @param provider. This must iterate over <code>w*h</code> image samples. It is assumed that the image is "scanned"
+	 * @param provider This must iterate over <code>w*h</code> image samples. It is assumed that the image is "scanned"
 	 * from left to right and bottom to top. Each sample should be an index into the 8-bit LUT, so sample values are 
 	 * restricted to [0..255]. All ill-defined data (infinite or NaN) must map to LUT index 0, while all well-defined
 	 * data map to LUT indices [1..255].
@@ -4844,7 +4794,7 @@ public class PSDoc
       }
       sb.append("] ").append(CMAPLUT).append("}");
       
-      cmd = "[/Indexed /DeviceRGB 255 " + sb.toString() + "] setcolorspace";
+      cmd = "[/Indexed /DeviceRGB 255 " + sb + "] setcolorspace";
       appendLine(cmd);
       
       // send image command so that it uses image data included in the file itself
@@ -4865,7 +4815,11 @@ public class PSDoc
          encoder.put((byte) (sample & 0x00ff));
          ++nSamples;
       }
-      while(nSamples < w*h) encoder.put((byte)0);  // just in case provider does not provide the entire image!
+      while(nSamples < w*h)   // just in case provider does not provide the entire image!
+		{
+			encoder.put((byte) 0);
+			++nSamples;
+		}
       encoder.terminate();
       
       // append the required ASCII85 end-of-data marker on the next line. Even though the documentation says that all
@@ -4885,8 +4839,8 @@ public class PSDoc
     * Fill a rectangle in user space with a linear color gradient representative of the <i>FypML</i> color lookup table
     * specified (color map + direction). The rectangle is not stroked.
     * 
-    * @param botRight Location of target rectangle's bottom left corner in current user space.
-    * @param topLeft Location of target rectangle's top right corner in current user space.
+    * @param botLeft Location of target rectangle's bottom left corner in current user space.
+    * @param topRight Location of target rectangle's top right corner in current user space.
     * @param colorLUT Color lookup table. If null, defaults to a grayscale LUT from black to white.
     */
 	public void renderColormapGradient(Point2D botLeft, Point2D topRight, ColorLUT colorLUT)
@@ -4959,8 +4913,8 @@ public class PSDoc
     * @param cropRect Rectangle defining the cropped portion of the source image to be rendered, in image space pixels. 
     * A valid crop rectangle (X,Y,W,H) must satisfy: X &ge; 0, Y &ge; 0, W &gt; 0, H &gt; 0, X+W &le; image width, 
     * Y+W &le; image height. If crop rectangle is null or invalid, the entire image is drawn. 
-    * @param botRight Location of image's bottom left corner in current user space.
-    * @param topLeft Location of image's top right corner in current user space.
+    * @param botLeft Location of image's bottom left corner in current user space.
+    * @param topRight Location of image's top right corner in current user space.
     */
    public void renderRGBImage(BufferedImage bi, Rectangle cropRect, Point2D botLeft, Point2D topRight)
    {
@@ -5076,7 +5030,7 @@ public class PSDoc
     * and sizes are always expressed in thousandth-inches, and that a positive y-coord locates a point above the 
     * current origin.</p>
 	 * 
-	 * @param botLeft Bottom-left corner of the new viewport with respect to the current viewport. Any rotation will 
+	 * @param topLeft Bottom-left corner of the new viewport with respect to the current viewport. Any rotation will
     * occur about this point.
 	 * @param w The width of the clipping rectangle in thousandth-inches. Ignored for non-clipping viewports.
 	 * @param h The height of the clipping rectangle in thousandth-inches. Ignored for non-clipping viewports.
@@ -5162,7 +5116,7 @@ public class PSDoc
 	 */
 	public void translateAndRotate(Point2D move, double rotDeg)
 	{
-		if( move == null || !Utilities.isWellDefined(move) ) return;
+		if(!Utilities.isWellDefined(move)) return;
 		translateAndRotate(move.getX(), move.getY(), rotDeg);
 	}
 
@@ -5202,19 +5156,19 @@ public class PSDoc
 		}
 
 		// we prepare a sequence of commands in a string buffer, then dump the buffer when we're done
-		StringBuffer loadBuf = new StringBuffer( 200 );
+		StringBuilder loadBuf = new StringBuilder( 200 );
 		
 		if( pts.length < BIGARRAY )
 		{
 			// for short arrays, allocate and populate the points array object all at once:  "/ar [...] def.
-			loadBuf.append( "/" + name + " [ " );
-			for( int i=0; i<pts.length; i++ )
-			{
-				if(!Utilities.isWellDefined(pts[i]))
-					loadBuf.append( "null " );
-				else 
-					loadBuf.append( "[" + Utilities.toString(pts[i],7,3) + "] " );
-			}
+			loadBuf.append("/").append(name).append(" [ ");
+         for(Point2D pt : pts)
+         {
+            if(!Utilities.isWellDefined(pt))
+               loadBuf.append("null ");
+            else
+               loadBuf.append("[").append(Utilities.toString(pt, 7, 3)).append("] ");
+         }
 			loadBuf.append( "] def" );
 
 			appendLine( loadBuf.toString() );
@@ -5222,20 +5176,20 @@ public class PSDoc
 		else
 		{
 			// for longer arrays, allocate the points array before populating it: "/ar n array def"
-			appendLine( "/" + name + " " + Integer.toString(pts.length) + " array def" );
+			appendLine( "/" + name + " " + pts.length + " array def" );
 
 			// now populate using a series of "ar index [...] putinterval" commands
 			for( int i=0; i<pts.length; i+=PTS_PER_PUT )
 			{
 				loadBuf.delete(0,loadBuf.length());
-				loadBuf.append( name + " " + i + " [ " );
+				loadBuf.append(name).append(" ").append(i).append(" [ ");
 				int j=0;
 				while( i+j < pts.length && j < PTS_PER_PUT )
 				{
 					if(!Utilities.isWellDefined(pts[i+j]))
 						loadBuf.append( "null " );
 					else 
-						loadBuf.append( "[" + Utilities.toString(pts[i+j],7,3) + "] " );
+						loadBuf.append("[").append(Utilities.toString(pts[i + j], 7, 3)).append("] ");
 					++j;
 				}
 				loadBuf.append( "] putinterval" );
@@ -5276,14 +5230,14 @@ public class PSDoc
       }
 
       // we prepare a sequence of commands in a string buffer, then dump the buffer when we're done
-      StringBuffer loadBuf = new StringBuffer( 200 );
+      StringBuilder loadBuf = new StringBuilder( 200 );
 
       if( vals.length < BIGARRAY )
       {
          // for short arrays, allocate and populate the double-valued array all at once:  "/ar [...] def
-         loadBuf.append( "/" + name + " [ " );
-         for( int i=0; i<vals.length; i++ ) 
-            loadBuf.append( Utilities.isWellDefined(vals[i]) ? (Utilities.toString(vals[i],7,3) + " ") : "null " );
+         loadBuf.append("/").append(name).append(" [ ");
+         for(double val : vals)
+            loadBuf.append(Utilities.isWellDefined(val) ? (Utilities.toString(val, 7, 3) + " ") : "null ");
          loadBuf.append( "] def" );
 
          appendLine( loadBuf.toString() );
@@ -5291,13 +5245,13 @@ public class PSDoc
       else
       {
          // for longer arrays, allocate the double-valued array before populating it: "/ar n array def"
-         appendLine( "/" + name + " " + Integer.toString(vals.length) + " array def" );
+         appendLine( "/" + name + " " + vals.length + " array def" );
 
          // now populate using "ar index [...] putinterval"
          for( int i=0; i<vals.length; i+=VALS_PER_PUT )
          {
             loadBuf.delete(0,loadBuf.length());
-            loadBuf.append( name + " " + i + " [ " );
+            loadBuf.append(name).append(" ").append(i).append(" [ ");
             int j=0;
             while( i+j < vals.length && j < VALS_PER_PUT )
             {
@@ -5341,13 +5295,13 @@ public class PSDoc
       }
 
       // we prepare a sequence of commands in a string buffer, then dump the buffer when we're done
-      StringBuffer loadBuf = new StringBuffer( 200 );
+      StringBuilder loadBuf = new StringBuilder( 200 );
 
       if( vals.length < BIGARRAY )
       {
          // for short arrays, allocate and populate the double-valued array all at once:  "/ar [...] def
-         loadBuf.append( "/" + name + " [ " );
-         for( int i=0; i<vals.length; i++ ) loadBuf.append( Integer.toString(vals[i]) ).append(" ");
+         loadBuf.append("/").append(name).append(" [ ");
+         for(int val : vals) loadBuf.append(val).append(" ");
          loadBuf.append( "] def" );
 
          appendLine( loadBuf.toString() );
@@ -5355,17 +5309,17 @@ public class PSDoc
       else
       {
          // for longer arrays, allocate the double-valued array before populating it: "/ar n array def"
-         appendLine( "/" + name + " " + Integer.toString(vals.length) + " array def" );
+         appendLine( "/" + name + " " + vals.length + " array def" );
 
          // now populate using "ar index [...] putinterval"
          for( int i=0; i<vals.length; i+=VALS_PER_PUT )
          {
             loadBuf.delete(0,loadBuf.length());
-            loadBuf.append( name + " " + i + " [ " );
+            loadBuf.append(name).append(" ").append(i).append(" [ ");
             int j=0;
             while( i+j < vals.length && j < VALS_PER_PUT )
             {
-               loadBuf.append(Integer.toString(vals[i+j])).append(" ");
+               loadBuf.append(vals[i + j]).append(" ");
                ++j;
             }
             loadBuf.append( "] putinterval" );
@@ -5400,7 +5354,7 @@ public class PSDoc
       }
 
       // allocate the string array before populating it: "/ar n array def"
-      appendLine( "/" + name + " " + Integer.toString(tokens.size()) + " array def" );
+      appendLine( "/" + name + " " + tokens.size() + " array def" );
 
       // now populate using "ar index [...] putinterval"
       String pre = asStringLiterals ? "(" : "";
@@ -5409,11 +5363,11 @@ public class PSDoc
       for(int i=0; i<tokens.size(); i+=20)
       {
          buf.setLength(0);
-         buf.append(name + " " + i + " [ ");
+         buf.append(name).append(" ").append(i).append(" [ ");
          int j=0;
          while(i+j < tokens.size() && j < 20)
          {
-            buf.append( pre + tokens.get(i+j) + post);
+            buf.append(pre).append(tokens.get(i + j)).append(post);
             ++j;
          }
          buf.append( "] putinterval" );
@@ -5447,11 +5401,11 @@ public class PSDoc
       }
 
       // allocate the string array before populating it: "/ar n array def"
-      appendLine( "/" + name + " " + Integer.toString(arrayTokens.size()) + " array def" );
+      appendLine( "/" + name + " " + arrayTokens.size() + " array def" );
 
       // now populate using "ar index [...] putinterval"
       StringBuilder buf = new StringBuilder();
-      buf.append(name + " " + 0 + " [ ");
+      buf.append(name).append(" ").append(0).append(" [ ");
       int i = 0;
       while(true)
       {
@@ -5462,7 +5416,7 @@ public class PSDoc
          {
             buf.append("[");
             for(String s:arrToken)
-               buf.append(s + " ");
+               buf.append(s).append(" ");
             buf.append("] ");           
          }
 
@@ -5474,7 +5428,7 @@ public class PSDoc
             if(i == arrayTokens.size())
                break;
             buf.setLength(0);
-            buf.append(name + " " + i + " [ ");
+            buf.append(name).append(" ").append(i).append(" [ ");
          }
       }
 	}
@@ -5507,22 +5461,21 @@ public class PSDoc
       final int PTS_PER_PUT = 20;         // when using putInterval cmd to fill a big array
 
       // if color list is null or empty, just set name to the null object  
-      if(rgb == null || rgb.size() == 0) 
+      if(rgb == null || rgb.isEmpty())
       {
          appendLine( "/" + name + " null def" );
          return;
       }
 
       // we prepare a sequence of commands in a string buffer, then dump the buffer when we're done
-      StringBuffer loadBuf = new StringBuffer( 200 );
+      StringBuilder loadBuf = new StringBuilder( 200 );
       
       if(rgb.size() < BIGARRAY)
       {
          // for short arrays, allocate and populate the points array object all at once:  "/ar [...] def.
-         loadBuf.append( "/" + name + " [ " );
-         for(int i=0; i<rgb.size(); i++)
+         loadBuf.append("/").append(name).append(" [ ");
+         for(Color c : rgb)
          {
-            Color c = rgb.get(i);
             if(c == null) loadBuf.append("[0 0 0] ");
             else
             {
@@ -5538,13 +5491,13 @@ public class PSDoc
       else
       {
          // for longer arrays, allocate the colors array before populating it: "/ar n array def"
-         appendLine( "/" + name + " " + Integer.toString(rgb.size()) + " array def" );
+         appendLine( "/" + name + " " + rgb.size() + " array def" );
 
          // now populate using a series of "ar index [...] putinterval" commands
          for(int i=0; i<rgb.size(); i+=PTS_PER_PUT)
          {
             loadBuf.delete(0,loadBuf.length());
-            loadBuf.append(name + " " + i + " [ ");
+            loadBuf.append(name).append(" ").append(i).append(" [ ");
             int j=0;
             while(i+j < rgb.size() && j < PTS_PER_PUT)
             {
@@ -5608,13 +5561,13 @@ public class PSDoc
 				throw new UnsupportedOperationException( "Unable to break line to satisfy line length restriction" );
 
 			String piece = line.substring(0,last);
-			mainBuf.append( piece + NEWLINE );
+			mainBuf.append(piece).append(NEWLINE);
 
 			// if the string to be appended is a comment, then we have to pre-pend "% " before each extra line!
 			line = indentStr + (isComment ? "% " : "") + line.substring(last + 1);
 		}
-		if( line.length() > 0 )
-			mainBuf.append( line + NEWLINE );
+		if(!line.isEmpty())
+			mainBuf.append(line).append(NEWLINE);
 	}
 
 	/**
@@ -5626,14 +5579,14 @@ public class PSDoc
 	{
 		String cmd = "";
 		String s = currentGraphics.changeFont(psObj.getPSFontFace(), psObj.getPSFontSize());
-		if( s.length() > 0 ) cmd += s + " ";
+		if(!s.isEmpty()) cmd += s + " ";
 		s = currentGraphics.changeStrokeProperties(psObj.getPSStrokeWidth(), psObj.getPSStrokeEndcap(), 
 		      psObj.getPSStrokeJoin(), psObj.getPSStrokeDashPattern(), psObj.getPSStrokeDashOffset());
-		if( s.length() > 0 ) cmd += s + " ";
+		if(!s.isEmpty()) cmd += s + " ";
 		s = currentGraphics.changeColors(psObj.getPSStrokeColor(), !psObj.isPSNoStroke(), 
 		      psObj.getPSTextAndFillColor(), !psObj.isPSNoFill());
-		if( s.length() > 0 ) cmd += s;
-		if( cmd.length() > 0 ) appendLine( cmd );
+		if(!s.isEmpty()) cmd += s;
+		if(!cmd.isEmpty()) appendLine( cmd );
 	}
 
 	/**
@@ -5745,27 +5698,27 @@ public class PSDoc
 			{
 				// 7-bit ASCII maps directly, except that tab, linefeed and carriage return are replaced by space char, 
 				// and the grave characters do not map directly. The linefeed is left unchanged, if requested.
-				psCode[1] = (int) c;
+				psCode[1] = c;
 				if( c == 0x0060 ) psCode[1] = 0x00C1;
 				else if( c == 0x0009 || (replaceLF && (c == 0x000A)) || c == 0x000D ) psCode[1] = 0x0020;
 			}
 			else
 			{
 				int i = STD_NONASCII_UNICODE.indexOf(c);
-				if( i >= 0 ) psCode[1] = (int) STD_NONASCII_PS.charAt(i);
+				if( i >= 0 ) psCode[1] = STD_NONASCII_PS.charAt(i);
 			}
 		} 
 		else if(ISOLATIN1ENCODING.contains(c)) 
 		{
 			// ISOLatin1Encoding is used for the contiguous Unicode range 0x00A1-0x007F, and the char codes map directly
 			psCode[0] = 1;
-			psCode[1] = (int) c;
+			psCode[1] = c;
 		} 
 		else if(SYMBOLENCODING.contains(c)) 
 		{
 			psCode[0] = 2;
 			int i = SYMBOL_UNICODE.indexOf(c);
-			if( i >= 0 ) psCode[1] = (int) SYMBOL_PS.charAt(i);
+			if( i >= 0 ) psCode[1] = SYMBOL_PS.charAt(i);
 		} 
 	}
 
@@ -5814,11 +5767,11 @@ public class PSDoc
 	 */
 	private static String unicodeToPostscriptText(String text, boolean replaceLF)
 	{
-		if( text == null || text.length() == 0 ) return( "" );
+		if( text == null || text.isEmpty()) return( "" );
 
 		int currSubFont = 0;
 		int[] psCode = new int[2];											// index0 = subfont, index1 = PS char code
-		StringBuffer buf = new StringBuffer( text.length() );
+		StringBuilder buf = new StringBuilder( text.length() );
 		for( int i=0; i<text.length(); i++ )
 		{
 			// get next character in input string, map it to one of the three subfonts/encodings, and get the PS 
@@ -5831,7 +5784,7 @@ public class PSDoc
 			// if the subfont has changed, append the necessary escape sequence IAW rules for FMapType=3 composite font
 			if( psCode[0] != currSubFont )
 			{
-				buf.append( "\\177\\00" + psCode[0] );
+				buf.append("\\177\\00").append(psCode[0]);
 				currSubFont = psCode[0];
 			}
 
@@ -5847,7 +5800,7 @@ public class PSDoc
 			else
 			{
 				String octal = Integer.toOctalString( psCode[1] );
-				buf.append( "\\000".substring(0, 4-octal.length()) + octal );
+				buf.append("\\000", 0, 4 - octal.length()).append(octal);
 			}
 		}
 
@@ -5859,12 +5812,12 @@ public class PSDoc
     * containing the exact Postscript font names for the plain, italic, bold, and bolditalic (in that order!) typefaces 
     * in the font family identified by the key.
 	 */
-	private static Map<PSFont, String[]> stdFonts = null;
+	private static final Map<PSFont, String[]> stdFonts;
 	
-	private static Map<PSFont, String> stdFontToInstalledFontFamily = null;
+	private static final Map<PSFont, String> stdFontToInstalledFontFamily;
 	static 
 	{
-		stdFonts = new HashMap<PSFont, String[]>();
+		stdFonts = new HashMap<>();
 		stdFonts.put(PSFont.AVANTGARDE, 
 			new String[] {"AvantGarde-Book", "AvantGarde-BookOblique", "AvantGarde-Demi", "AvantGarde-DemiOblique"});
 		stdFonts.put(PSFont.BOOKMAN, 
@@ -5882,7 +5835,7 @@ public class PSDoc
 		stdFonts.put(PSFont.TIMES, 
 			new String[] {"Times-Roman", "Times-Italic", "Times-Bold", "Times-BoldItalic"});
 		
-		stdFontToInstalledFontFamily = new HashMap<PSFont, String>();
+		stdFontToInstalledFontFamily = new HashMap<>();
 		String[] alts = new String[] {"Avant Garde", "Avant Garde Gothic", "Century Gothic"};
 		String fam = null;
 		for(String alt : alts) if(LocalFontEnvironment.isFontInstalled(alt)) {fam = alt; break;}
@@ -5960,15 +5913,12 @@ public class PSDoc
 	 * @param faceName The Postscript font face name to be checked.
 	 * @return <code>True</code> if argument is one of the 32 Latin font faces recognized by <code>PSDoc</code>.
 	 */
-	@SuppressWarnings("rawtypes")
 	public static boolean isRecognizedFontFace(String faceName)
 	{
-		Iterator it = stdFonts.values().iterator();
-		while(it.hasNext())
-		{
-			String[] faces = (String[]) it.next();
-			for(int i=0; i<faces.length; i++) if(faceName.equals(faces[i])) return(true);
-		}
+      for(String[] faces : stdFonts.values())
+      {
+         for(String face : faces) if(faceName.equals(face)) return (true);
+      }
 		return(false);
 	}
 
@@ -5982,8 +5932,8 @@ public class PSDoc
 	 */
 	private static boolean isBasicFont(String faceName)
 	{
-		return(faceName.indexOf(PSFont.TIMES.toString()) >= 0 || faceName.indexOf(PSFont.COURIER.toString()) >= 0 || 
-			(faceName.indexOf(PSFont.HELVETICA.toString()) >= 0 && faceName.indexOf(PSFont.HELVNARROW.toString()) < 0));
+		return(faceName.contains(PSFont.TIMES.toString()) || faceName.contains(PSFont.COURIER.toString()) ||
+			(faceName.contains(PSFont.HELVETICA.toString()) && !faceName.contains(PSFont.HELVNARROW.toString())));
 	}
 
 	/**
@@ -5994,13 +5944,11 @@ public class PSDoc
 	 */
 	private static PSFont getBasePSFont(String faceName)
 	{
-	   Iterator<PSFont> it = stdFonts.keySet().iterator();
-	   while(it.hasNext())
-	   {
-	      PSFont psFont = it.next();
-	      if(Arrays.asList(stdFonts.get(psFont)).contains(faceName))
-	         return psFont;
-	   }
+      for(PSFont psFont : stdFonts.keySet())
+      {
+         if(Arrays.asList(stdFonts.get(psFont)).contains(faceName))
+            return psFont;
+      }
 	   return null;
 	}
 
@@ -6067,27 +6015,21 @@ public class PSDoc
 		{
 			fos.close();
 			throw new UnsupportedOperationException( "PS document incomplete; cannot print!" );
-		} 
-
-		Writer w = new BufferedWriter( new OutputStreamWriter( fos, "us-ascii" ) );
-
-		try
-		{
-			// first, the prolog header, prolog, and document setup sections
-			w.write( getProlog(title, author) );
-
-			// then dump the main buffer -- this may be problematic b/c it could be a VERY BIG STRING
-			w.write( mainBuf.toString() );
-
-			// in the document trailer, we merely pop the dictionary that was pushed onto the dict stack in document setup
-			w.write( NEWLINE + "%%Trailer" + NEWLINE + "end" + NEWLINE + "%%EOF" );
-
-			w.flush();
 		}
-		finally
-		{
-			try {w.close();} catch( IOException ioe ) {}
-		}
+
+      try(Writer w = new BufferedWriter(new OutputStreamWriter(fos, StandardCharsets.US_ASCII)))
+      {
+         // first, the prolog header, prolog, and document setup sections
+         w.write(getProlog(title, author));
+
+         // then dump the main buffer -- this may be problematic b/c it could be a VERY BIG STRING
+         w.write(mainBuf.toString());
+
+         // in the document trailer, we merely pop the dictionary that was pushed onto the dict stack in document setup
+         w.write(NEWLINE + "%%Trailer" + NEWLINE + "end" + NEWLINE + "%%EOF");
+
+         w.flush();
+      }
 	}
 
 	/**
@@ -6107,12 +6049,12 @@ public class PSDoc
 	{
 		if( !done ) throw new UnsupportedOperationException( "PS document incomplete; cannot print!" );
 
-		StringBuffer buf = new StringBuffer(10000);
+      @SuppressWarnings("StringBufferReplaceableByString") StringBuilder buf = new StringBuilder(10000);
 		buf.append( getProlog(null, null) );
 		buf.append( mainBuf );
 		buf.append( NEWLINE + "%%Trailer" + NEWLINE + "end" + NEWLINE + "%%EOF" );
 
-		return( new ByteArrayInputStream( buf.toString().getBytes("us-ascii") ) );
+		return( new ByteArrayInputStream( buf.toString().getBytes(StandardCharsets.US_ASCII) ) );
 	}
 
    /**
@@ -6121,107 +6063,102 @@ public class PSDoc
     * @param title If a non-empty string, this is included in the "%%Title:" header comment.
     * @param author If a non-empty string, this is included in the "%%Creator:" header comment.
     * @return The prolog as a <code>String</code>.
-    * @throws IOException
     */
 	@SuppressWarnings("rawtypes")
 	private String getProlog(String title, String author) throws IOException
 	{
 	   // the title cannot contain any linefeeds, carriage returns or tabs
-	   if(title != null) title = title.replaceAll("(?:\\n|\\r|\\t)", " ");
+	   if(title != null) title = title.replaceAll("[\\n\\r\\t]", " ");
 	   
-		StringBuffer buf = new StringBuffer(1000);
+		StringBuilder buf = new StringBuilder(1000);
 
 		// first, the prolog header comments
-		String bndBox = 	Long.toString( Math.round(boundBox.getX()) ) + " " + 
-								Long.toString( Math.round(boundBox.getY()) ) + " " + 
-								Long.toString( Math.round(boundBox.getX() + boundBox.getWidth()) ) + " " + 
-								Long.toString( Math.round(boundBox.getY() + boundBox.getHeight()) );
+		String bndBox = Math.round(boundBox.getX()) + " " +
+            Math.round(boundBox.getY()) + " " +
+            Math.round(boundBox.getX() + boundBox.getWidth()) + " " +
+            Math.round(boundBox.getY() + boundBox.getHeight());
 		Date now = new Date();
 		String user = null;
-		try{ user = System.getProperty( "user.name" ); } catch( Exception e ) {}
+		try{ user = System.getProperty( "user.name" ); } catch( Exception ignored) {}
 		if( user == null ) user = "Unknown";
 
-		buf.append( 
-			"%!PS-Adobe-3.0" + (isEPS ? " EPSF-3.0" : "") + NEWLINE +
-			"%%BoundingBox: " + bndBox + NEWLINE +
-			"%%Creator: " + ((author==null || author.length()==0) ? "DataNav PS" : author) + NEWLINE +
-			"%%CreationDate: " + now.toString() + NEWLINE +
-			"%%For: " + user + NEWLINE +
-			"%%LanguageLevel: 3" + NEWLINE + 
-			"%%ProofMode: Substitute" + NEWLINE +
-			"%%Pages: " + nPages + NEWLINE +
-			"%%PageOrder: Ascend" + NEWLINE +
-			"%%Title: " + ((title==null || title.length()==0) ? "Untitled" : title) + NEWLINE );
+		buf.append("%!PS-Adobe-3.0").append(isEPS ? " EPSF-3.0" : "").append(NEWLINE)
+				.append("%%BoundingBox: ").append(bndBox).append(NEWLINE)
+				.append("%%Creator: ").append((author == null || author.isEmpty()) ? "DataNav PS" : author).append(NEWLINE)
+				.append("%%CreationDate: ").append(now).append(NEWLINE)
+				.append("%%For: ").append(user).append(NEWLINE)
+				.append("%%LanguageLevel: 3").append(NEWLINE)
+				.append("%%ProofMode: Substitute").append(NEWLINE)
+				.append("%%Pages: ").append(nPages).append(NEWLINE)
+				.append("%%PageOrder: Ascend").append(NEWLINE)
+				.append("%%Title: ").append((title == null || title.isEmpty()) ? "Untitled" : title).append(NEWLINE);
 
 		// document all fonts used in the prolog header
-		if( fontsUsed.size() > 0 )
+		if(!fontsUsed.isEmpty())
 		{
 			// if any fonts are used, we always include the Symbol font since it is always an entry in the composite fonts 
 			// used by PSDoc to render the supported character set
-			String neededFonts = "%%DocumentNeededResources: font Symbol ";
+			StringBuilder neededFonts = new StringBuilder("%%DocumentNeededResources: font Symbol ");
 			Iterator fontIter = fontsUsed.keySet().iterator();
 			int i = 1;
 			while( fontIter.hasNext() )
 			{
 				if( i%5 == 0 ) 
 				{
-					neededFonts += NEWLINE + "%%+ font ";
+					neededFonts.append(NEWLINE + "%%+ font ");
 				}
-				neededFonts += ((String) fontIter.next()) + " ";
+				neededFonts.append(fontIter.next()).append(" ");
 				++i;
 			}
-			buf.append( neededFonts + NEWLINE );
+			buf.append(neededFonts).append(NEWLINE);
 		}
 
 		// document all procedure sets used in the prolog header.  The procset title property keys are formed by 
 		// appending ".title" to the key for the corresponding procset defn property.
 		Properties procSetProps = getProcedureSetProperties();
 		boolean firstLine = true;
-		for( int i=0; i<PROCSET_PRECEDENCE.length; i++ ) 
-		{
-			String setName = PROCSET_PRECEDENCE[i];
-			if( procSetsUsed.containsKey(PROCSET_PRECEDENCE[i]) )
-			{
-				if( firstLine )
-				{
-					buf.append( "%%DocumentSuppliedResources: procset " + procSetProps.getProperty(setName + ".title") + NEWLINE);
-					firstLine = false;
-				} 
-				else
-					buf.append( "%%+ procset " + procSetProps.getProperty(setName + ".title") + NEWLINE );
-			}
-		}
+      for(String setName : PROCSET_PRECEDENCE)
+      {
+         if(procSetsUsed.containsKey(setName))
+         {
+            if(firstLine)
+            {
+               buf.append("%%DocumentSuppliedResources: procset ").append(procSetProps.getProperty(setName + ".title"))
+							.append(NEWLINE);
+               firstLine = false;
+            } else
+               buf.append("%%+ procset ").append(procSetProps.getProperty(setName + ".title")).append(NEWLINE);
+         }
+      }
 
 		buf.append( "%%EndComments" + NEWLINE + NEWLINE );
 
 		// next, dump the prolog itself -- consisting of the defns of all procedure sets used in the script to follow, in 
 		// order of precedence.  Also note that the procset definitions do NOT end in newline, but they begin with one.
 		buf.append( "%%BeginProlog" );
-		for( int i=0; i<PROCSET_PRECEDENCE.length; i++ ) if( procSetsUsed.containsKey(PROCSET_PRECEDENCE[i]) )
-		{
-			buf.append( procSetProps.getProperty(PROCSET_PRECEDENCE[i]) );
-		}
+      for(String s : PROCSET_PRECEDENCE)
+         if(procSetsUsed.containsKey(s))
+         {
+            buf.append(procSetProps.getProperty(s));
+         }
 		buf.append( NEWLINE + "%%EndProlog" + NEWLINE + NEWLINE );
 
 		// in the document setup section, we append "IncludeResource" comments for any font used in the document that is 
 		// among the Level 1 "Standard 13" fonts.  We also make the dictionary used by the procedure sets the current 
 		// dictionary.  This step is essential for EPS documents, which must be isolated from any document in which they 
 		// are included.
-		buf.append(
-			"%%BeginSetup" + NEWLINE +
-			procSetProps.getProperty(PROCSET_DICT) + " begin" + NEWLINE );
-		if( fontsUsed.size() > 0 )
+		buf.append("%%BeginSetup" + NEWLINE).append(procSetProps.getProperty(PROCSET_DICT)).append(" begin")
+				.append(NEWLINE);
+		if(!fontsUsed.isEmpty())
 		{
 			// if any fonts are used, we always include the Symbol font since it is always an entry in the composite fonts 
 			// used by PSDoc to render the supported character set
 			buf.append( "%%IncludeResource: font Symbol" + NEWLINE );
-			Iterator fontIter = fontsUsed.keySet().iterator();
-			while( fontIter.hasNext() )
-			{
-				String fontName = (String) fontIter.next();
-				if( isBasicFont(fontName) )
-					buf.append( "%%IncludeResource: font " + fontName + NEWLINE );
-			}
+         for(String fontName : fontsUsed.keySet())
+         {
+            if(isBasicFont(fontName))
+               buf.append("%%IncludeResource: font ").append(fontName).append(NEWLINE);
+         }
 		}
 		
 		// our strategy for printing in landscape mode is to print a rotated image on portrait paper. This is the most
@@ -6262,7 +6199,7 @@ public class PSDoc
 	 */
 	private String getAdornmentPrologProc(Marker cap)
 	{
-		return((cap != null) ? ("A." + cap.toString()) : null);
+		return((cap != null) ? ("A." + cap) : null);
 	}
 	
 
@@ -6430,10 +6367,10 @@ public class PSDoc
 	 * <p>Note that the names of procedures in the <code>PROCSET_COMMON</code> are not included in this map because this
 	 * procedure set is ALWAYS included in the prolog of any <code>PSDoc</code>.</p>
 	 */
-	private static HashMap<String, String> mapPrologProcToSet = null;
+	private static final HashMap<String, String> mapPrologProcToSet;
 	static
 	{
-		mapPrologProcToSet = new HashMap<String, String>();
+		mapPrologProcToSet = new HashMap<>();
 
 		mapPrologProcToSet.put( "A." + Marker.CIRCLE, PROCSET_ADORN1 );
 		mapPrologProcToSet.put( "A." + Marker.OVAL12, PROCSET_ADORN1 );
@@ -6519,7 +6456,7 @@ public class PSDoc
 	 * 
 	 * @see PSDoc#includeFunctionInProlog(String)
 	 */
-	private Map<String, String> procSetsUsed = null;
+	private final Map<String, String> procSetsUsed;
 
 	/**
 	 * Include the specified prolog procedure in this PSDoc's prolog, if it is not already present.  Since individual 
@@ -6555,7 +6492,7 @@ public class PSDoc
 	 */
 	private void includeFunctionInProlog( String procName )
 	{
-		String setName = (String) mapPrologProcToSet.get(procName);
+		String setName = mapPrologProcToSet.get(procName);
 		if(setName != null)
 			procSetsUsed.put(setName, null);
 
@@ -6573,9 +6510,9 @@ public class PSDoc
 	 * 
 	 * @return A <code>Properties</code> object containing the title and definition of each procedure set that may be 
     * used by <code>PSDoc</code>.
-	 * @throws <code>IOException</code> if unable to load the procedure set info from an internal properties file
+	 * @throws IOException if unable to load the procedure set info from an internal properties file
 	 */
-	private static final Properties getProcedureSetProperties() throws IOException
+	private static Properties getProcedureSetProperties() throws IOException
 	{
 		Properties procSetProps = new Properties();
 		InputStream is = PSDoc.class.getResourceAsStream( PROLOG_RES );
@@ -6595,7 +6532,7 @@ public class PSDoc
 	 * 
 	 * @param 	args	the command-line arguments (NOT USED)
 	 */
-	public static final void main( String[] args )
+	public static void main(String[] args)
 	{
 	   System.out.println("FypML->Postscript utility. Exports all .fyp/.fig files in a chosen directory to Postscript\n"
 	         + "and stores them in a subfolder 'ps' within that directory.\n\n");
@@ -6620,7 +6557,7 @@ public class PSDoc
       File dir = new File(input);
       if(!dir.isDirectory())
       {
-         System.out.println(String.format("---> '%s' is not a valid existing directory. QUITTING!", dir.toString()));
+         System.out.printf("---> '%s' is not a valid existing directory. QUITTING!%n", dir);
          System.exit(0);
       }
       
@@ -6628,13 +6565,19 @@ public class PSDoc
       ok = (!psFolder.exists()) && psFolder.mkdir();
       if(!ok)
       {
-         System.out.println(String.format("---> Unable to create 'ps' subfolder in %s. QUITTING!", dir.toString()));
+         System.out.printf("---> Unable to create 'ps' subfolder in %s. QUITTING!%n", dir);
          System.exit(0);
       }
       
       StringBuffer msgBuf = new StringBuffer();
       System.out.println();
       File[] files = dir.listFiles();
+		if(files == null)
+		{
+			System.out.println("No files found or file system error!");
+			System.exit(1);
+		}
+
       for(File f : files)
       {
          msgBuf.setLength(0);
@@ -6642,14 +6585,14 @@ public class PSDoc
          boolean isFyp = FGModelSchema.isFigureModelXMLFile(f);
          if(isFyp || MatlabFigureImporter.isMatlabFigFile(f))
          {
-            System.out.println(String.format("Exporting %s...", f.getName()));
-            fgm = isFyp ? FGModelSchemaConverter.fromXML(f, msgBuf) : 
+            System.out.printf("Exporting %s...%n", f.getName());
+            fgm = isFyp ? FGModelSchemaConverter.fromXML(f, msgBuf) :
                      MatlabFigureImporter.importMatlabFigureFromFile(f, msgBuf);
             if(fgm == null)
-               System.out.println("---> Failed to open figure: " + msgBuf.toString());
+               System.out.println("---> Failed to open figure: " + msgBuf);
          }
          if(fgm == null) continue;
-         
+
          int dot = f.getName().lastIndexOf('.');
          String fname = f.getName().substring(0, dot) + ".ps";
          File dst = new File(psFolder, fname);
@@ -6664,13 +6607,13 @@ public class PSDoc
             Point2D figBotLeft = fig.getPrintLocationMI();
             Rectangle2D bb = new Rectangle2D.Double(
                   psPageFmt.getImageableX() + figBotLeft.getX() * MILLI_IN2PT,
-                  psPageFmt.getHeight() - psPageFmt.getImageableY() - psPageFmt.getImageableHeight() + 
+                  psPageFmt.getHeight() - psPageFmt.getImageableY() - psPageFmt.getImageableHeight() +
                      figBotLeft.getY()*MILLI_IN2PT,
                   fig.getWidthMI() * MILLI_IN2PT, fig.getHeightMI() * MILLI_IN2PT);
             psDoc.setBoundingBox(bb);
-            
+
             String title = "Figure Composer figure ";
-            if(fig.getTitle().length() > 0) title += " (" + fig.getTitle() + ")";
+            if(!fig.getTitle().isEmpty()) title += " (" + fig.getTitle() + ")";
             String author = FCWorkspace.getApplicationTitle() + " " + FCWorkspace.getApplicationVersion();
             psDoc.printToFile(dst, title, author);
          }
