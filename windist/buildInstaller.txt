@@ -1,0 +1,126 @@
+This document describes the sequence of manual steps that must be taken to build the self-extracting installer, 
+FigureComposerSetup.exe, that will install the Java application FigureComposer on a Windows system (XP or later).
+
+FigureComposer is really a Java Swing application, but I use the WinRun4J package to wrap it as a Win32 executable 
+(*.exe) to improve integration of the application with the Windows desktop. I then use the InnoSetup compiler to build 
+a self-extracting installer that will install the application, the required Java archive files (JARs), and a folder of 
+relevant Matlab support functions such as matfig2fyp(). In addition, the installer will make necessary changes in the
+Windows registry to associate the .fyp file extension with FigureComposer -- so that, e.g., users can start the 
+application by double-clicking any .fyp file in Explorer.
+
+The WinRun4J and InnoSetup tools only run on Windows. Since I do all of my Java development in IntelliJ (previously I
+used Eclipse) on a Mac OS X workstation, I looked into the possibility of automating the installer build as an Ant task.
+This would require installing and running an SSH daemon on the Windows machine so that the Ant task running on the Mac
+machine could send the necessary commands. The additional complexity was not worth the effort. Instead, after preparing
+the relevant JARs on the Mac side, I move over to the Windows machine and run through the manual tasks listed here.
+
+In late 2017, with access to a Windows 10 64-bit machine, I updated the installer build to support installing a 32-bit
+or 64-bit version of FigureComposer.exe. This requires two different WinRun4J wrappers, one for 32-bit and one for 
+64-bit mode. The installer script was updated to install the 32-bit .exe on a 32-bit system and the 64-bit .exe on a
+64-bit system; it does NOT give the option to install the 32-bit .exe on 64-bit Windows. Implicit here is the assumption 
+that the user installs the 64-bit JRE on 64-bit Windows. At the same time, I upgraded to the latest versions of WinRun4J
+and InnoSetup. Note that InnoSetup remains a 32-bit application, but the self-instracting installer it generates can 
+still do a 64-bit installation.
+
+In May 2019, I found a rebuild of the WinRun4J wrapper that fixes the path issues introduced with the Java 9 release. I
+updated FC32.exe and FC64.exe to use these newer 32-bit and 64-bit versions of the WinRun4J wrapper, which are found
+here: https://github.com/dcgoodridge/winrun4j9.
+
+Relevant directory structure: 
+$INST_MAC = $MAPPED_DRIVE\projects\idea-java\figurecomposer\windist
+   This directory on the networked Mac OSX workstation contains the JARs and various resources needed to do the build.
+   Most of the resources (icons, splash screen images, license files, third-party JARs). Most of the files don't
+   change much. What does change with each release are the FC-specific JARs: common.jar, figurecomposer.jar,
+   hhmi-ms-common.jar, hhmi-ms-datanav.jar (the last two JARs are part of the Matlab support package).
+
+$INST_HOME = C:\FCInstaller
+   This is the directory on the Windows 10 64-bit workstation in which the installer is actually built.
+
+$INST_HOME\code : All of the JARs required in the classpath for FigureComposer are placed here, including third-party 
+   JARS for the JMatIO and iText APIs. In addition, the directory contains all of the files that are part of the 
+   Matlab support package (*.m, hhmi-ms-*.jar, iText*.jar), some license files, and a README file (fc_readme.txt). Only
+   update the files that change; typically, only the FC-specific JARs get updated.
+
+$INST_HOME\FC32.exe, FC64.exe : The 32-bit and 64-bit EXE wrappers for the FigureComposer application. These are copies 
+   of WinRun4J.exe and WinRun4J.exe, respectively, except that the resources bundled in the EXE are tailored to FC.
+
+$INST_HOME\FCApp.ico, FCSplash.jpg : Icon set and splash screen image for FigureComposer. FCApp.ico also serves as the 
+  file icon for the .fyp file type.
+$INST_HOME\FC.ini : An INI file with key settings that the EXE wrappers require: Java classpath, the main class, minimum 
+  Java version, VM arguments, etc. The settings are described in the WinRun4J documentation. It should never require any 
+  changes -- unless you decide to change the identity of the main class or the minimum required Java runtime version.
+
+$INST_HOME\FCSetup.iss : The InnoSetup script that is used to compile the self-extracting installer for FigureComposer. 
+   This script was the result of a lot of trial-and-error! Each time you build an installer for a new application 
+   version, the only settings you should have to change in the script is 'AppVersion' and 'AppVerName' -- and 
+   'AppCopyright' with each passing year!
+
+$INST_HOME\FCSetup.ico : The application icon for the installer.
+
+$INST_HOME\buildInstaller.txt : This file.
+
+$INST_HOME\FigureComposerSetup.exe : The installer constructed by running the InnoSetup compiler on the script file 
+   FCSetup.iss, respectively. This needs to be copied back to the Mac, where it is zipped and archived, ready for 
+   uploading to the online user's guide.
+
+
+STEPS REQUIRED TO BUILD INSTALLER FOR A NEW VERSION:
+
+1) On Mac OSX side in IntelliJ, run the Ant build target that prepares the contents of $INST_MAC for the new release.
+After writing the contents, the build target "pauses" while the following steps are completed on the Windows side.
+
+2) Copy the following files from $INST_MAC to $INST_HOME\code: *.jar, *.fyp, fc_readme.txt, *-LICENSE.txt. No need
+to copy files that haven't changed! Remove files that are no longer used.
+
+3) If any of the other resources in $INST_MAC have changed (unlikely), copy them into $INST_HOME.
+
+4) If the application icon, splash screen image, or INI file were modified in any way (this will be a rare event), open
+a command prompt on the Windows machine, navigate to $INST_HOME, and use these commands to update the 32-bit and 64-bit
+EXE wrappers:
+
+   rcedit /N FC32.exe FC.ini                     rcedit64 /N FC64.exe FC.ini
+   rcedit /I FC32.exe FCApp.ico                  rcedit64 /I FC64.exe FCApp.ico
+   rcedit /S FC32.exe FCSplash.jpg               rcedit64 /S FC64.exe FCSplash.jpg
+
+To clear all resources and start over, use: rcedit /C FC32.exe or rcedit64 /C FC64.exe.
+
+The simple resource editors RCEDIT.EXE and RCEDIT64.EXE are located in the same directory; they come as part of the 
+WinRun4J package (freeware).
+
+5) Every time the application version number (N.M.r) changes, you'll need to update the VersionInfo resource in
+FC32.EXE and FC64.EXE. For this task, simply open each .EXE file in Visual Studio 2017, edit the VersionInfo resource,
+and save the changes. If the .EXE lacks VersionInfo, you can add it via Edit|Add Resource...
+
+NOTE: Windows caches in the registry the "FileDescription" string from the VersionInfo resource. Among other things, 
+this string appears in the "Open With" menu and the "Open With" dialog. If you should change the string and then install
+the revised apps in the same location, you'll still see the old, cached version. You have to search the registry to 
+figure out where it's cached (it's different for different versions of Windows), and remove the relevant entry.
+
+NOTE: You may be able to use Visual Studio to edit all of the resources in FC32.EXE and FC64.EXE, eliminating the need 
+for the RCEDIT/RCEDIT64 tools.
+
+Recommended content for the VersionInfo resource:
+
+FileVersion (binary): 5.x.x.0
+ProductVersion (binary): 5.x.x.0
+CompanyName: Duke University/Lisberger Lab
+FileDescription: FigureComposer 
+FileVersion (string): 5.x.x
+InternalName: FigureComposer
+LegalCopyright: Copyright 2003-2024 Duke University/Lisberger Lab
+OriginalFilename: FigureComposer 
+Product: FigureComposer 
+ProductVersion (string) 5.x.x
+
+6) Double-click on FCSetup.iss to start the InnoSetup Compiler. Update 'AppVersion', 'AppVerName', and 'AppCopyright' 
+settings in the script file as needed, then build the installer executable via Build->Compile. This will create the 
+installer at $INST_HOME\FigureComposerSetup.exe.
+
+7) Copy the installer executable FigureComposerSetup.exe back into $INST_MAC. Then resume the Ant task in IntelliJ on
+the Mac side that zips this file for archiving the release and uploading it for distribution via the online user's
+guide.
+
+
+saruffner
+7/31/2013
+(last updated: 06/19/2024)
