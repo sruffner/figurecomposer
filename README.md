@@ -1,13 +1,13 @@
+
+**_NOTE: I am no longer actively developing FC. I have made this repo available for anyone in the neuroscience community
+that continues to use the application and might wish to fork the repo to adapt the program for their own use._**
+---
 # FigureComposer
 
 **FigureComposer** is a standalone Java application for preparing, revising and reviewing detailed scientific figures 
 intended for journal publication. It is a mature application that has been used by members of Stephen G.
 Lisberger's laboratory at Duke University since 2007, as well as some others in the neuroscience commmunity.
 
----
-**_NOTE: I am no longer actively developing FC. I have made this repo available for anyone in the neuroscience community
-that continues to use the application and might wish to fork the repo to adapt the program for their own use._**
----
 
 ## User Guide
 An [online user's guide](https://sites.google.com/a/srscicomp.com/figure-composer/introduction) provides a thorough 
