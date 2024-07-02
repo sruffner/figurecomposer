@@ -1,3 +1,9 @@
+FigureComposer makes use of a modified version of the JMatIO Library by Wojciech Gradkowski. The
+modified version lacks the ability to write MAT files, skips over any Matlab function handles
+and Matlab arrays of the "opaque" class. It also contains a number of fixes to issues encountered
+while trying to reading in Matlab FIG files (which are really just special MAT files).
+
+********* COPYRIGHT/LICENSE for ORIGINAL JMatIO library is reproduced below this line. ***********
 Copyright (c) 2006, Wojciech Gradkowski
 All rights reserved.
 

@@ -518,7 +518,19 @@ end;
          if(isfield(hgs.properties, props{i}))
             jObj.putProperty(props{i}, hgs.properties.(props{i}));
          elseif(ishandle(hgs.handle) && isprop(hgs.handle, props{i}))
-            jObj.putProperty(props{i}, get(hgs.handle, props{i}));
+            % try to get property value using get() function. As of Matlab2020a, most graphic properties that are
+            % "on"/"off" are returned as the enumeration matlab.lang.OnOffSwitchState, which cannot be converted to
+            # Java Object but is a logical value.
+            propObj = get(hgs.handle), props{i});
+            if(isjava(propObj))
+               jObj.putProperty(props{i}, propObj));
+            elseif(islogical(propObj))
+               if(propObj == true)
+                  jObj.putProperty(props{i}, 'on');
+               else
+                  jObj.putProperty(props{i}, 'off');
+               end;
+            end;
          end;
       end;
       

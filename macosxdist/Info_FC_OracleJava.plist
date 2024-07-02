@@ -25,7 +25,7 @@
     <key>NSHumanReadableCopyright</key>
     <string>EXP_COPYRIGHT</string>
     <key>JVMVersion</key>
-    <string>1.8+</string>
+    <string>11+</string>
     <key>JVMMainClassName</key>
     <string>com.srscicomp.fc.ui.FigureComposer</string>
     <key>JVMOptions</key>

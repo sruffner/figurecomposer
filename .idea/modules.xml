@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/common/common.iml" filepath="$PROJECT_DIR$/common/common.iml" />
       <module fileurl="file://$PROJECT_DIR$/figurecomposer.iml" filepath="$PROJECT_DIR$/figurecomposer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/jmatio/jmatio.iml" filepath="$PROJECT_DIR$/jmatio/jmatio.iml" />
     </modules>
   </component>
 </project>

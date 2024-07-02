@@ -25,56 +25,55 @@
 
 	<!-- This target saves the current state of the src directories for the common and figurecomposer projects. -->
 	<target name="source" depends="init">
-		<delete failonerror="false">
-			<fileset dir="${rel.dir}" includes="src-common.jar,src-figurecomposer.jar"/>
+        <delete failonerror="false">
+			<fileset dir="${rel.dir}" includes="src-common.jar,src-jmatio.jar,src-figurecomposer.jar"/>
 		</delete>
-      <jar destfile="${rel.dir}${FS}src-common.jar" basedir="common${FS}${src.dir}" duplicate="fail"/>
-      <jar destfile="${rel.dir}${FS}src-figurecomposer.jar" basedir="${src.dir}" duplicate="fail"/>
+        <jar destfile="${rel.dir}${FS}src-common.jar" basedir="common${FS}${src.dir}" duplicate="fail"/>
+        <jar destfile="${rel.dir}${FS}src-jmatio.jar" basedir="jmatio${FS}${src.dir}" duplicate="fail"/>
+        <jar destfile="${rel.dir}${FS}src-figurecomposer.jar" basedir="${src.dir}" duplicate="fail"/>
 	</target>
 	
 	<!-- This target compiles the class files in the build directories into several different JARs:
-	     1) common.jar: All class files in the common project. FigureComposer depends on this project.
-	     2) figurecomposer.jar: Class files needed to run FigureComposer, other than what's in common.jar and the 
-	     third-party packages. Includes a manifest that specifies the main class for FigureComposer, a class path (which 
-	     assumes the other JARs lie in the same directory), and the location of the splash screen image within the JAR.
+	     1) common.jar: All class files in the common module.
+	     2) jmatio.jar: All class files in the jmatio module, a tailored build of the JMatIO libary.
+	     3) figurecomposer.jar: Class files needed to run FigureComposer, other than what's in the common and jmatio
+	     modules, plus the third-party iTextPDF JAR. Includes a manifest that specifies the main class for
+	     FigureComposer, a class path (which assumes the other JARs lie in the same directory), and the location of the
+	     splash screen image within the JAR.
 	     3) hhmi-ms-datanav.jar: The FC-specific classes required by the various Matlab utilities distributed with 
 	     FigureComposer. This is a compilation of a selection of classes from the figurecomposer project. We have kept
 	     the name that was used with the DataNav project, which is now defunct.
 	-->
 	<target name="mkjars" depends="init">
-      <delete failonerror="false">
-         <fileset dir="${rel.dir}" includes="common.jar,figurecomposer.jar,hhmi-ms-datanav.jar"/>
-      </delete>
-		
-     <jar destfile="${rel.dir}${FS}hhmi-ms-datanav.jar" duplicate="fail">
-         <fileset dir="${build.dir}${FS}figurecomposer"
-            includes="${pkgroot}data${FS}**,${pkgroot}fypml${FS}**,${pkgroot}fig${FS}**,${pkgroot}matlab${FS}**"
-         />
-      </jar>
+        <delete failonerror="false">
+            <fileset dir="${rel.dir}" includes="common.jar,jmatio.jar,figurecomposer.jar,hhmi-ms-datanav.jar"/>
+        </delete>
+        <jar destfile="${rel.dir}${FS}hhmi-ms-datanav.jar" duplicate="fail">
+            <fileset dir="${build.dir}${FS}figurecomposer" includes="${pkgroot}data${FS}**,${pkgroot}fypml${FS}**,
+            ${pkgroot}fig${FS}**,${pkgroot}matlab${FS}**"/>
+        </jar>
 		
 		<jar destfile="${rel.dir}${FS}common.jar" basedir="${build.dir}${FS}common" duplicate="fail"/>
-		
-      <jar destfile="${rel.dir}${FS}figurecomposer.jar" duplicate="fail">
-         <manifest>
-            <attribute name="Class-Path" value="common.jar jmatio.jar itextpdf-5.5.0.jar"/>
-            <attribute name="Main-Class" value="com.srscicomp.fc.ui.FigureComposer"/>
-            <attribute name="SplashScreen-Image" value="com/srscicomp/fc/resources/fcSplash.png"/>
-         </manifest>
-         <fileset dir="${build.dir}${FS}figurecomposer"/>
-      </jar>
-      
-	</target>
+        <jar destfile="${rel.dir}${FS}jmatio.jar" basedir="${build.dir}${FS}jmatio" duplicate="fail"/>
+        <jar destfile="${rel.dir}${FS}figurecomposer.jar" duplicate="fail">
+            <manifest>
+                <attribute name="Class-Path" value="common.jar jmatio.jar itextpdf-5.5.0.jar"/>
+                <attribute name="Main-Class" value="com.srscicomp.fc.ui.FigureComposer"/>
+                <attribute name="SplashScreen-Image" value="com/srscicomp/fc/resources/fcSplash.png"/>
+            </manifest>
+            <fileset dir="${build.dir}${FS}figurecomposer"/>
+        </jar>
+    </target>
 
    <!-- This target prepares the Mac OSX-specific distribution ZIPs for FigureComposer.
         Each distribution ZIP contains the FigureComposer app bundle, plus a regular folder with Matlab support files.
         The OSX bundle directory structure is built from scratch and populated with the necessary source code JARs, plus
         other resource files maintained in {osx.dir}. The Info.plist file that's copied to {bundle}/Contents is updated 
         with the current app version number and copyright line. The app bundle directory and the Matlab support folder
-        are zipped into a single file in the release directory. The ZIP is also copied to the directory that collects 
-        distribution ZIPs for uploading to the online user guide.
+        are zipped into a single file in the release directory.
         
         The bundle structure and Info.plist file follow the Oracle-specified format, and the Info.plist
-        is set up to require Java 8 or greater. We now use a BASH-based script, universalJavaApplicationStub, as the
+        is set up to require Java 11 or greater. We now use a BASH-based script, universalJavaApplicationStub, as the
         launcher. It finds a suitable installed JRE, processes the Info.plist, and launches the app. However, to satisfy
         Apple security requirements so that FC can access protected folders like the user's Desktop, the launcher must
         be a binary. The makers of ujAppStub have compiled two versions of the launcher script, one compatiable with
@@ -95,113 +94,109 @@
 		
 		<!-- Oracle Java-compatible app bundle for FigureComposer. -->
 		<mkdir dir="${fc.bundle}${FS}Contents${FS}Java"/>
-      <copy todir="${fc.bundle}${FS}Contents${FS}Java" preservelastmodified="true">
-         <fileset dir="${support.dir}" includes="jmatio.jar,jmatio-LICENSE.txt"/>
-         <fileset dir="${support.dir}" includes="itextpdf-5.5.0.jar,itextpdf-agpl.txt"/>
-         <fileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar"/>
-      </copy>
-      <mkdir dir="${fc.bundle}${FS}Contents${FS}MacOS"/>
-      <copy file="${osx.dir}${FS}ujAppStub.LICENSE" todir="${fc.bundle}${FS}Contents${FS}MacOS"
-            preservelastmodified="true"/>
-      <mkdir dir="${fc.bundle}${FS}Contents${FS}PlugIns"/>
-      <mkdir dir="${fc.bundle}${FS}Contents${FS}Resources"/>
-      <copy todir="${fc.bundle}${FS}Contents${FS}Resources" preservelastmodified="true">
-         <fileset dir="${osx.dir}" includes="FCApp.icns,fcSplash.png"/>
-      </copy>
+        <copy todir="${fc.bundle}${FS}Contents${FS}Java" preservelastmodified="true">
+            <fileset dir="${support.dir}" includes="jmatio-LICENSE.txt"/>
+            <fileset dir="${support.dir}" includes="itextpdf-5.5.0.jar,itextpdf-agpl.txt"/>
+            <fileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar,jmatio.jar"/>
+        </copy>
+        <mkdir dir="${fc.bundle}${FS}Contents${FS}MacOS"/>
+        <copy file="${osx.dir}${FS}ujAppStub.LICENSE" todir="${fc.bundle}${FS}Contents${FS}MacOS"
+              preservelastmodified="true"/>
+        <mkdir dir="${fc.bundle}${FS}Contents${FS}PlugIns"/>
+        <mkdir dir="${fc.bundle}${FS}Contents${FS}Resources"/>
+        <copy todir="${fc.bundle}${FS}Contents${FS}Resources" preservelastmodified="true">
+            <fileset dir="${osx.dir}" includes="FCApp.icns,fcSplash.png"/>
+        </copy>
 		<copy file="${osx.dir}${FS}PkgInfo" todir="${fc.bundle}${FS}Contents"/>
-      <copy file="${osx.dir}${FS}Info_FC_OracleJava.plist" tofile="${fc.bundle}${FS}Contents${FS}Info.plist"/>
-      <replaceregexp file="${fc.bundle}${FS}Contents${FS}Info.plist" 
-      	match="EXP_VERSION" replace="${fc.major}.${fc.minor}.${fc.revision}"
-      />
-      <replaceregexp file="${fc.bundle}${FS}Contents${FS}Info.plist" 
-         match="EXP_COPYRIGHT" replace="Copyright 2003-2022 Duke University/Lisberger Lab, All Rights Reserved."
-      />
+        <copy file="${osx.dir}${FS}Info_FC_OracleJava.plist" tofile="${fc.bundle}${FS}Contents${FS}Info.plist"/>
+        <replaceregexp file="${fc.bundle}${FS}Contents${FS}Info.plist"
+                       match="EXP_VERSION" replace="${fc.major}.${fc.minor}.${fc.revision}"/>
+        <replaceregexp file="${fc.bundle}${FS}Contents${FS}Info.plist"
+                       match="EXP_COPYRIGHT" replace="Copyright 2003-2024 Duke University/Lisberger Lab, All Rights Reserved."/>
 
-      <!-- Build ZIP for app bundle that uses the BASH launcher. -->
-      <copy file="${osx.dir}${FS}ujAppStub_bash_v320.txt" 
+        <!-- Build ZIP for app bundle that uses the BASH launcher. -->
+        <copy file="${osx.dir}${FS}ujAppStub_bash_v320.txt"
+              tofile="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" preservelastmodified="true"/>
+        <zip destfile="${rel.dir}${FS}FigureComposer_mac_${fc.version}.zip">
+            <zipfileset dir="${osx.dir}"
+                includes="FigureComposer.app${FS}**" excludes="**${FS}*universalJavaApplicationStub*" prefix="FigureComposer"/>
+            <zipfileset file="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub"
+                fullpath="FigureComposer${FS}FigureComposer.app${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub"
+                filemode="755"/>
+            <zipfileset file="${osx.dir}${FS}readme.txt" fullpath="FigureComposer${FS}readme-oraclejava.txt"/>
+            <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
+            <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
+            <zipfileset dir="${support.dir}"
+                includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
+                itextpdf-5.5.0.jar,itextpdf-agpl.txt" prefix="FigureComposer${FS}matlab"/>
+         </zip>
+
+        <!-- Build ZIP for app bundle that uses the binary launcher targeting OS X Catalina. -->
+        <copy file="${osx.dir}${FS}ujAppStub_v320_catalina"
             tofile="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" preservelastmodified="true"/>
-      <zip destfile="${rel.dir}${FS}FigureComposer_mac_${fc.version}.zip">
-         <zipfileset dir="${osx.dir}" 
-            includes="FigureComposer.app${FS}**" excludes="**${FS}*universalJavaApplicationStub*" prefix="FigureComposer"/>
-         <zipfileset file="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" 
-            fullpath="FigureComposer${FS}FigureComposer.app${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" 
-            filemode="755"/>
-         <zipfileset file="${osx.dir}${FS}readme.txt" fullpath="FigureComposer${FS}readme-oraclejava.txt"/>
-         <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
-         <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
-         <zipfileset dir="${support.dir}"
-            includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
-            itextpdf-5.5.0.jar,itextpdf-agpl.txt" 
-            prefix="FigureComposer${FS}matlab"/>
-      </zip>
+        <zip destfile="${rel.dir}${FS}FigureComposer_mac_catalina_${fc.version}.zip">
+            <zipfileset dir="${osx.dir}"
+                includes="FigureComposer.app${FS}**" excludes="**${FS}*universalJavaApplicationStub*"
+                prefix="FigureComposer"/>
+            <zipfileset file="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub"
+                fullpath="FigureComposer${FS}FigureComposer.app${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub"
+                filemode="755"/>
+            <zipfileset file="${osx.dir}${FS}readme.txt" fullpath="FigureComposer${FS}readme-oraclejava.txt"/>
+            <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
+            <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
+            <zipfileset dir="${support.dir}"
+                includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
+                itextpdf-5.5.0.jar,itextpdf-agpl.txt"
+                prefix="FigureComposer${FS}matlab"/>
+        </zip>
 
-      <!-- Build ZIP for app bundle that uses the binary launcher targeting OS X Catalina. -->
-      <copy file="${osx.dir}${FS}ujAppStub_v320_catalina" 
+        <!-- Build ZIP for app bundle that uses the binary launcher targeting OS X Big Sur. -->
+        <copy file="${osx.dir}${FS}ujAppStub_v320_bigsur"
             tofile="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" preservelastmodified="true"/>
-      <zip destfile="${rel.dir}${FS}FigureComposer_mac_catalina_${fc.version}.zip">
-         <zipfileset dir="${osx.dir}" 
-            includes="FigureComposer.app${FS}**" excludes="**${FS}*universalJavaApplicationStub*" prefix="FigureComposer"/>
-         <zipfileset file="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" 
-            fullpath="FigureComposer${FS}FigureComposer.app${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" 
-            filemode="755"/>
-         <zipfileset file="${osx.dir}${FS}readme.txt" fullpath="FigureComposer${FS}readme-oraclejava.txt"/>
-         <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
-         <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
-         <zipfileset dir="${support.dir}"
-            includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
-            itextpdf-5.5.0.jar,itextpdf-agpl.txt" 
-            prefix="FigureComposer${FS}matlab"/>
-      </zip>
+        <zip destfile="${rel.dir}${FS}FigureComposer_mac_bigsur_${fc.version}.zip">
+            <zipfileset dir="${osx.dir}"
+                includes="FigureComposer.app${FS}**" excludes="**${FS}*universalJavaApplicationStub*"
+                prefix="FigureComposer"/>
+            <zipfileset file="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub"
+                fullpath="FigureComposer${FS}FigureComposer.app${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub"
+                filemode="755"/>
+            <zipfileset file="${osx.dir}${FS}readme.txt" fullpath="FigureComposer${FS}readme-oraclejava.txt"/>
+            <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
+            <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
+            <zipfileset dir="${support.dir}"
+                includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
+                itextpdf-5.5.0.jar,itextpdf-agpl.txt"
+                prefix="FigureComposer${FS}matlab"/>
+        </zip>
 
-      <!-- Build ZIP for app bundle that uses the binary launcher targeting OS X Big Sur. -->
-      <copy file="${osx.dir}${FS}ujAppStub_v320_bigsur" 
-            tofile="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" preservelastmodified="true"/>
-      <zip destfile="${rel.dir}${FS}FigureComposer_mac_bigsur_${fc.version}.zip">
-         <zipfileset dir="${osx.dir}" 
-            includes="FigureComposer.app${FS}**" excludes="**${FS}*universalJavaApplicationStub*" prefix="FigureComposer"/>
-         <zipfileset file="${fc.bundle}${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" 
-            fullpath="FigureComposer${FS}FigureComposer.app${FS}Contents${FS}MacOS${FS}universalJavaApplicationStub" 
-            filemode="755"/>
-         <zipfileset file="${osx.dir}${FS}readme.txt" fullpath="FigureComposer${FS}readme-oraclejava.txt"/>
-         <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
-         <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
-         <zipfileset dir="${support.dir}"
-            includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
-            itextpdf-5.5.0.jar,itextpdf-agpl.txt" 
-            prefix="FigureComposer${FS}matlab"/>
-      </zip>
-
-      <!-- Delete temporary bundle directory. -->
-      <delete includeemptydirs="true" failonerror="false">
-         <fileset dir="${fc.bundle}"/>
-      </delete>
-
+        <!-- Delete temporary bundle directory. -->
+        <delete includeemptydirs="true" failonerror="false">
+            <fileset dir="${fc.bundle}"/>
+        </delete>
 	</target>
 		
-   <!-- This target prepares the FigureComposer distribution for Linux. The distribution ZIP file contains all of the 
-        JARs required to run FigureComposer, plus a folder containing the Matlab support package. The ZIP is placed in 
-        the release directory.
+    <!-- This target prepares the FigureComposer distribution for Linux. The distribution ZIP file contains all of the
+         JARs required to run FigureComposer, plus a folder containing the Matlab support package. The ZIP is placed in
+         the release directory.
         
-        There's no support for desktop integration of FC in Linux. To launch it, open a terminal window, navigate to the
-        folder to which the distribution ZIP was unzipped, then enter the 'java -jar ...' command to run the program (of
-        course, this presumes that a Java 8 JRE is available on the Linux command path). As a convenience, the 
-        installation directory includes a simple shell script for launching FigureComposer: launchFC.
-   -->
-	<target name="linux" depends="init,mkjars">
-      <delete failonerror="false">
-         <fileset dir="${rel.dir}" includes="*_linux_*.zip"/>
-      </delete>
-		
-      <zip destfile="${rel.dir}${FS}FigureComposer_linux_${fc.version}.zip">
-         <zipfileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar" prefix="FigureComposer"/>
-         <zipfileset dir="${support.dir}" includes="jmat*.*,itext*.*,launchFC" prefix="FigureComposer"/>
-         <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
-         <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
-         <zipfileset dir="${support.dir}" 
-         	includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
-            itextpdf-5.5.0.jar,itextpdf-agpl.txt" 
-         	prefix="FigureComposer${FS}matlab"/>
-      </zip>
+         There's no support for desktop integration of FC in Linux. To launch it, open a terminal window, navigate to
+         the folder to which the distribution ZIP was unzipped, then enter the 'java -jar ...' command to run the
+         program (of course, this presumes that a Java 8 JRE is available on the Linux command path). As a convenience,
+         the installation directory includes a simple shell script for launching FigureComposer: launchFC.
+    -->
+    <target name="linux" depends="init,mkjars">
+        <delete failonerror="false">
+            <fileset dir="${rel.dir}" includes="*_linux_*.zip"/>
+        </delete>
+        <zip destfile="${rel.dir}${FS}FigureComposer_linux_${fc.version}.zip">
+            <zipfileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar,jmatio.jar" prefix="FigureComposer"/>
+            <zipfileset dir="${support.dir}" includes="jmat*.*,itext*.*,launchFC" prefix="FigureComposer"/>
+            <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
+            <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
+            <zipfileset dir="${support.dir}"
+         	    includes="dn_rasterplot.m,*datanavsrc.m,put2fyp.m,putdata2fyp.m,matfig2fyp.m,savefigasis.m,
+                itextpdf-5.5.0.jar,itextpdf-agpl.txt" prefix="FigureComposer${FS}matlab"/>
+        </zip>
 	</target>
 
 	<!-- This target prepares the FigureComposer distribution for Windows (7 or later). Unlike the other distributions, 
@@ -224,7 +219,7 @@
            that gets put in the Matlab support package: "hhmi-ms-common.jar". The elaborate name avoids a name collision
            with a JAR that comes with the Matlab installation. -->
         <copy todir="${winstaller.dir}" preservelastmodified="true" overwrite="true">
-            <fileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar,hhmi-ms-datanav.jar"/>
+            <fileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar,jmatio.jar,hhmi-ms-datanav.jar"/>
         </copy>
 		<copy file="${rel.dir}${FS}common.jar" tofile="${winstaller.dir}${FS}hhmi-ms-common.jar" 
 		      preservelastmodified="true" overwrite="true" />
