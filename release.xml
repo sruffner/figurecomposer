@@ -98,6 +98,7 @@
             <fileset dir="${support.dir}" includes="jmatio-LICENSE.txt"/>
             <fileset dir="${support.dir}" includes="itextpdf-5.5.0.jar,itextpdf-agpl.txt"/>
             <fileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar,jmatio.jar"/>
+            <fileset dir="." includes="LICENSE"/>
         </copy>
         <mkdir dir="${fc.bundle}${FS}Contents${FS}MacOS"/>
         <copy file="${osx.dir}${FS}ujAppStub.LICENSE" todir="${fc.bundle}${FS}Contents${FS}MacOS"
@@ -110,7 +111,7 @@
 		<copy file="${osx.dir}${FS}PkgInfo" todir="${fc.bundle}${FS}Contents"/>
         <copy file="${osx.dir}${FS}Info_FC_OracleJava.plist" tofile="${fc.bundle}${FS}Contents${FS}Info.plist"/>
         <replaceregexp file="${fc.bundle}${FS}Contents${FS}Info.plist"
-                       match="EXP_VERSION" replace="${fc.major}.${fc.minor}.${fc.revision}"/>
+                       match="EXP_VERSION" replace="${fc.version}"/>
         <replaceregexp file="${fc.bundle}${FS}Contents${FS}Info.plist"
                        match="EXP_COPYRIGHT" replace="Copyright 2003-2024 Duke University/Lisberger Lab, All Rights Reserved."/>
 
@@ -190,6 +191,7 @@
         </delete>
         <zip destfile="${rel.dir}${FS}FigureComposer_linux_${fc.version}.zip">
             <zipfileset dir="${rel.dir}" includes="figurecomposer.jar,common.jar,jmatio.jar" prefix="FigureComposer"/>
+            <zipfileset dir="." includes="LICENSE"/>
             <zipfileset dir="${support.dir}" includes="jmat*.*,itext*.*,launchFC" prefix="FigureComposer"/>
             <zipfileset file="${rel.dir}${FS}common.jar" fullpath="FigureComposer${FS}matlab${FS}hhmi-ms-common.jar"/>
             <zipfileset file="${rel.dir}${FS}hhmi-ms-datanav.jar" prefix="FigureComposer${FS}matlab"/>
@@ -227,6 +229,7 @@
 		<!-- Copy selected supporting files (Matlab scripts, third-party JARs, etc.) if they've changed. -->
 		<copy todir="${winstaller.dir}" preservelastmodified="true">
 			<fileset dir="${support.dir}" includes="*.m,*.txt,*.jar"/>
+            <fileset dir="." includes="LICENSE"/>
 		</copy>
 		
 		<echo>
@@ -237,7 +240,7 @@
 
         <!-- Remove the JAR file and supporting files added to the Windows installer directory. -->
         <delete failonerror="false">
-            <fileset dir="${winstaller.dir}" includes="*.m, *.jar, itext*.*, jmatio*.*"/>
+            <fileset dir="${winstaller.dir}" includes="*.m, *.jar, itext*.*, jmatio*.*,LICENSE"/>
         </delete>
 
         <!-- Fail if installer EXE was not built. -->
