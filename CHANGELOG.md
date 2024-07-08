@@ -1,37 +1,39 @@
 # Changelog
 
-**FigureComposer** development began in Dec 2003 and the first useful version (1.0.1) was released in Dec 2006.
+**Figure Composer** development began in Dec 2003 and the first useful version (1.0.1) was released in Dec 2006.
 Other major version releases came in Jul 2007 (2.0), May 2008 (3.0), Jan 2013 (4.0), and Apr 2016 (5.0). Originally 
 named after and based upon Stephen G. Lisberger's **Phyplot** application, it was for many years part of the larger
 **DataNav** application suite, which intended to provide a mechanism for archiving and sharing experimental 
-neuroscience data sets. **DataNav** was ultimately abandoned, and **FigureComposer** has been a standalone application 
+neuroscience data sets. **DataNav** was ultimately abandoned, and **Figure Composer** has been a standalone application 
 since Nov 2017 (5.1).
 
-This file documents changes in the **FigureComposer** code base since it was moved to a GitHub repository in June 
+This file documents changes in the **Figure Composer** code base since it was moved to a GitHub repository in June 
 2024, after version 5.4.5 was released. A complete version history is 
 [available](https://sites.google.com/a/srscicomp.com/figure-composer/version-history) on the **FigureComposer** website.
 
 ## v5.5.0 (TBD)
-Addressing issues encountered while generating _FypML_ figures in Matlab R2024a, or when importing FIG files into FC 
+- Created `figurecomposer` IntelliJ IDEA project with `figurecomposer` and `common` modules, copying all code, resource 
+and supporting files from original Eclipse projects.
+- Extensive minor changes throughout codebase to make it JDK11-compliant and fix all issues identified by IntelliJ IDEA.
+As of this release, FC users must have a Java 11 runtime in order to use **Figure Composer**. Furthermore, if they use
+the Matlab script `matfig2fyp()` and its supporting JARs, they must configure Matlab to use a Java 11-compliant JRE like
+[Amazon Corretto 11](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/what-is-corretto-11.html) rather than 
+the default bundled Java 8 runtime.
+- Addressed issues encountered while generating _FypML_ figures in Matlab R2024a, or when importing FIG files into FC 
 that were created by R2024a:
-- As of Matlab R2020a, most graphic properties that are "on"/"off" are returned as the enumeration 
-`matlab.lang.OnOffSwitchState`, which cannot be converted to a Java object. Modified `matfig2fyp.m` to detect attributes
-of this kind and convert the value to either "on" (true) or "off" (false).
-- Incorporated JMatIO library source code as a module in the `figurecomposer` project, instead of building it as a 
-separate project. The original library has been modified several times in order to successfully read in Matlab FIG files
-over the years:
-    - (2013) Modified `MatFileReader` to ignore `MLArray` types `mxFUNCTION_CLASS` and `mxOPAQUE_CLASS`. The original 
-    library code raised exceptions when trying to process test FIG files containing these array types. Since FC's
-    FIG-to-FypML import engine doesn't need this content, the library was modified to skip over these array types and 
-    report them as empty. Added method to check whether a given file is a Level 5 Matlab FIG file.
-    - (27feb2020) Removed any classes related to writing a MAT file, as FC does not need this functionality. Removed
-    dependence on a JDK internal (not allowed in JDK9+), and changed default memory policy to use a direct byte buffer
-    rather than memory mapping. 
-    - (02jul2024) Mods to handle UTF16/32-encoded fields in the FIG file. 
-    - (02jul2024) Ignore `java.io.EOFException` when decompressing any compressed content (`MatDataTypes.miCOMPRESSED`) 
-    in the FIG file. 
-
-## v5.4.6 (19 Jun 2024 - NOT published)
-- Created figurecomposer IntelliJ IDEA project with figurecomposer and common modules, copying all code, resource and 
-supporting files from original Eclipse projects.
-- Extensive minor changes throughout code base to make JDK11-compliant and fix all issues identified by IntelliJ IDEA.
+  - As of Matlab R2020a, most graphic properties that are "on"/"off" are returned as the enumeration 
+  `matlab.lang.OnOffSwitchState`, which cannot be converted to a Java object. Modified `matfig2fyp.m` to detect 
+  attributes of this kind and convert the value to either "on" (true) or "off" (false).
+  - Incorporated JMatIO library source code as a module in the `figurecomposer` project, instead of building it as a 
+  separate project. The original library has been modified several times in order to successfully read in Matlab FIG 
+  files over the years:
+      - (2013) Modified `MatFileReader` to ignore `MLArray` types `mxFUNCTION_CLASS` and `mxOPAQUE_CLASS`. The original 
+      library code raised exceptions when trying to process test FIG files containing these array types. Since FC's
+      FIG-to-FypML import engine doesn't need this content, the library was modified to skip over these array types and 
+      report them as empty. Added method to check whether a given file is a Level 5 Matlab FIG file.
+      - (27feb2020) Removed any classes related to writing a MAT file, as FC does not need this functionality. Removed
+      dependence on a JDK internal (not allowed in JDK9+), and changed default memory policy to use a direct byte buffer
+      rather than memory mapping. 
+      - (02jul2024) Mods to handle UTF16/32-encoded fields in the FIG file. 
+      - (02jul2024) Ignore `java.io.EOFException` when decompressing any compressed content (`MatDataTypes.miCOMPRESSED`) 
+      in the FIG file. 
