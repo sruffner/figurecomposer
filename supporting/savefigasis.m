@@ -34,6 +34,9 @@ function savefigasis(figHandle, dst)
 %  cannot process that object, it would not have access to the label string. As a workaround SAVEFIGASIS stores the
 %  label string in the "UserData" field, unless that field is already set to something else.
 %
+%  -- For bubblechart objects (R2020b or later), the "UserData" field is set to 1x4 vector [bubblesize_min 
+%  bubblesize_max bubblelim_min bubblelim_max]. Otherwise this information is not available to FigureComposer.
+%
 % H is the handle of the figure to be saved, and F is a character string specifying the path to which figure should be 
 % saved. If the filename does not end in the '.fig' extension, that extension will be added automatically.
 %
@@ -54,16 +57,16 @@ function savefigasis(figHandle, dst)
 nArgs = nargin;
 if(nArgs ~= 2)
    error('Invalid number of arguments');
-end;
+end
 
 if(~ishandle(figHandle) || ~ischar(dst))
    error('Missing or bad argument');
-end;
+end
 
 fig = handle2struct(figHandle);
 if(~strcmp(fig.type, 'figure'))
    error('Argument not a Matlab figure handle graphics object');
-end;
+end
 
 % for each 'axes' or 'scribe.colorbar' child of the root figure, ensure 'XLimMode', etc are set to 'manual'
 for i=1:length(fig.children)
@@ -87,16 +90,29 @@ for i=1:length(fig.children)
          userData = get(child.handle, 'UserData');
          if(isobject(labelObj) && isempty(userData))
             set(child.handle, 'UserData', labelObj.String);
-         end;
-      end;
-   else if(strcmp(child.type, 'matlab.graphics.axis.PolarAxes'))
+         end
+      end
+   elseif(strcmp(child.type, 'matlab.graphics.axis.PolarAxes'))
       titleObj = get(child.handle, 'Title');
       userData = get(child.handle, 'UserData');
       if(isobject(titleObj) && isempty(userData))
          set(child.handle, 'UserData', {titleObj.String, titleObj.Color});
-      end;
-   end;
-end;
+      end
+   end
+
+   % save bubble size and limit info in 'UserData' of each bubblechart object (R2020b or later)
+   if((strcmp(child.type, 'axes') || strcmp(child.type, 'matlab.graphics.axes.PolarAxes')) && ...
+         ~verLessThan('matlab', '9.9.0'))
+      set(figHandle, 'currentaxes', child.handle);
+      bubbleinfo = [bubblesize bubblelim];
+      for j=1:length(child.children)
+         chart = child.children(j);
+         if(strcmp(chart.type, 'bubblechart'))
+            set(chart.handle, 'UserData', bubbleinfo);
+         end
+      end
+   end
+end
 
 % now save the figure to a FIG file. Make sure we don't use V7.3 (HDF)
 % format, which FigureComposer cannot read.

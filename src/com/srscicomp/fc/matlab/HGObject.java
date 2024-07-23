@@ -598,6 +598,18 @@ public class HGObject
     *    different from the Matlab version. If neither are N-vectors, then the extracted data set is a 3D XYZSET.</li>
     *    </ul>
     * </li>
+    * <li>Plot object type = "bubblechart": Matlab introduced this chart object in R2020b as a better way to generate
+    * bubble plots. The data set extraction is very similar to that for "specgraph.scattergroup", except that:
+    *    <ol>
+    *       <li><b>SizeData</b> is preferred over <b>CData</b> as the Z-coordinate data when both are N-vectors.</li>
+    *       <li>If the HG object tree was prepared via matfig2fyp() or savefigasis(), each "bubblechart" object will
+    *       have a 4x1 vector [D1 D2 L1 L2] containing the bubble size diameter range [D1 D2] in points and the range
+    *       restriction [L1 L2] on data in the SizeData vector (from the Matlab bubblesize() and bubblelim() methods,
+    *       respectively. The Z-coordinate data in SizeData is range-restricted to [L1 L2].</li>
+    *    </ol>
+    * Note that we CANNOT reproduce the appearance of a bubblechart entirely because of the way the FypML scatter and
+    * scatter3d nodes use the Z-coordinate data to determine the symbol size at each data point.
+    * </li>
     * <li>Plot object type = "specgraph.scattergroup", coalesced: If a Matlab 'axes' contains multiple scatter groups 
     * in which the same symbol (size and appearance identical) is drawn at each scatter point, then these scatter groups
     * are coalesced into a single object, with the 'XData' and 'YData' vectors (and 'ZData' vectors for the 3D case) 
@@ -689,7 +701,7 @@ public class HGObject
             type.equals("specgraph.barseries") || type.equals("specgraph.areaseries") ||
             type.equals("specgraph.stairseries") || type.equals("specgraph.stemseries") || 
             type.equals("graph3d.surfaceplot") || type.equals("specgraph.contourgroup") ||
-            type.equals("histogram") || (type.equals("patch") && isPieChart)))
+            type.equals("bubblechart") || type.equals("histogram") || (type.equals("patch") && isPieChart)))
          return(null);
 
       // do NOT support specgraph.barseries or specgraph.contourgroup in a FypML polar plot
@@ -1190,7 +1202,8 @@ public class HGObject
             ds = DataSet.createDataSet(id, Fmt.XYZSET, null, nPts, 3, fData);
          }
       }
-      else if(type.equals("specgraph.scattergroup") || type.equals("specgraph.stemseries"))
+      else if(type.equals("specgraph.scattergroup") || type.equals("specgraph.stemseries") ||
+            type.equals("bubblechart"))
       {
          // get the X-coordinate data
          double[] xData = getDoubleVectorFromProperty(getProperty("XData"));
@@ -1208,17 +1221,19 @@ public class HGObject
          if(zData != null && zData.length != xData.length)
             throw new IllegalStateException("3D scatter/stem plot object's XData and ZData are not the same length!");
 
-         // for scatter plot, check SizeData and CData properties. If either or both are N-vectors, then they represent
-         // an additional dimension of the data set, either Z- or W-coordinate data. CData is preferred over SizeData
-         // if both are N-vectors, unless N=3 and CData can be interpreted as an RGB color spec.
+         // for scatter/bubble plot, check SizeData and CData properties. If either or both are N-vectors, then they
+         // represent an additional dimension of the data set, either Z- or W-coordinate data. If both are N-vectors,
+         // CData is preferred over SizeData when converting a "specgraph.scattergroup" object, unless N=3 and CData
+         // can be interpreted as an RGB color spec. When converting a "bubblechart" object, SizeData is always
+         // preferred over CData.
          double[] wData = null;
-         if(type.equals("specgraph.scattergroup"))
+         if(type.equals("specgraph.scattergroup") || type.equals("bubblechart"))
          {
             double[] cData = getDoubleVectorFromProperty(getProperty("CData"));
             double[] szData = getDoubleVectorFromProperty(getProperty("SizeData"));
             boolean isSpecialCase = xData.length == 3 && szData != null && szData.length == 3 &&
                   (MatlabUtilities.processColorSpec(getProperty("CData")) != null);
-            if(cData != null && cData.length == xData.length && !isSpecialCase)
+            if((cData != null) && (cData.length == xData.length) && (!isSpecialCase) && !type.equals("bubblechart"))
             {
                if(zData == null) zData = cData;
                else wData = cData;
@@ -1227,6 +1242,18 @@ public class HGObject
             {
                if(szData != null && szData.length == xData.length)
                {
+                  // HG "UserData" property: Bubble size range in points [D1 D2] = bubblesize()) and in data units
+                  // [L1 L2] = bubblelim(). These are axes-level properties that are not accessible from the output of
+                  // handle2struct(). As a hack-around, both matfig2fyp() and savefigais() store this info in 'UserData'
+                  // as a 4x1 vector [D1 D2 L1 L2]. If present, we use [L1 L2] to range-restrict SizeData conetents.
+                  double[] limits = HGObject.getDoubleVectorFromProperty(getProperty("UserData"));
+                  if(limits != null && limits.length == 4 && limits[0] < limits[1] && limits[2] < limits[3])
+                  {
+                     for(int i=0;i<szData.length; i++)
+                     {
+                        szData[i] = Utilities.rangeRestrict(limits[2], limits[3], szData[i]);
+                     }
+                  }
                   if(zData == null) zData = szData;
                   else wData = szData;
                }
@@ -1268,7 +1295,8 @@ public class HGObject
          
          // if the "scattergroup" is in a polar graph, convert data to polar coordinates. However, if the HG parent is
          // a true "polaraxes", the data is already in polar coordinates -- except that we have to convert the theta
-         // coordinate from radians to degrees...
+         // coordinate from radians to degrees. Note that a "bubblechart" in a polar conteext is always contained in a
+         // true "polaraxes" object.
          if(isPolarPlot && !isTruePolarAxes) for(int i=0; i<nrows; i++)
          {
             double x = fData[ncols*i];

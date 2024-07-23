@@ -333,11 +333,11 @@ public class MatlabFigureImporter
    private static final String[] AXESKIDS = new String[] {
       "graph2d.lineseries", "specgraph.errorbarseries", "specgraph.scattergroup", "histogram", "specgraph.stairseries", 
       "specgraph.barseries", "specgraph.baseline", "specgraph.areaseries", "specgraph.stemseries", 
-      "graph3d.surfaceplot", "specgraph.contourgroup", "patch", "surface", "image", "line", "text"
+      "graph3d.surfaceplot", "specgraph.contourgroup", "patch", "surface", "image", "line", "text", "bubblechart"
    };
    /** These Handle Graphic object types will be parsed if they are children of a "polaraxes" object. */
    private static final String[] POLARAXESKIDS = new String[] {
-      "graph2d.lineseries", "specgraph.scattergroup", "histogram", "text"
+      "graph2d.lineseries", "specgraph.scattergroup", "histogram", "text", "bubblechart"
    };
    /** These Handle Graphic object types will be parsed if they are children of a "scribe.colorbar" object. */
    private static final String[] COLORBARKIDS = new String[] {"text"};
@@ -525,6 +525,9 @@ public class MatlabFigureImporter
          break;
       case "specgraph.scattergroup":
          relevantProps = SCATTERPROPS;
+         break;
+      case "bubblechart":
+         relevantProps = BUBBLERPROPS;
          break;
       case "specgraph.stemseries":
          relevantProps = STEMPROPS;
@@ -733,6 +736,11 @@ public class MatlabFigureImporter
    private static final String[] SCATTERPROPS = new String[] {
       "CData", "DisplayName", "LineWidth", "Marker", "MarkerEdgeAlpha", "MarkerEdgeColor", 
       "MarkerFaceAlpha", "MarkerFaceColor", "SizeData", "XData", "YData", "ZData"
+   };
+   /** Imported properties of a Matlab "bubblechart" object. */
+   private static final String[] BUBBLERPROPS = new String[] {
+         "CData", "DisplayName", "LineWidth", "MarkerEdgeAlpha", "MarkerEdgeColor",
+         "MarkerFaceAlpha", "MarkerFaceColor", "SizeData", "XData", "YData", "ZData", "UserData"
    };
    /** Imported properties of a Matlab "specgraph.stemseries" object. */
    private static final String[] STEMPROPS = new String[] {

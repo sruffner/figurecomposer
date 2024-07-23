@@ -149,6 +149,10 @@ function res = matfig2fyp(figHandle, dst, varargin)
 %       in any direction, have a theta axis range less than 360 deg, etc) as Matlab's 'PolarAxes' object, and it handles
 %       the rendering of the polar grid and grid labels automatically. As of FC 5.1.2, any Matlab polar plot --
 %       whether 'axes' or 'PolarAxes', and including pie graphs -- is converted to a FypML 'pgraph' element.
+%    -- As of FC 5.5.0, any Matlab bubblechart (introduced in R2020b) is converted to a FypML 'scatter' or 'scatter3d'
+%       element. However, FypML computes individual bubbles sizes from the Z-coordinate data in a fundamentally
+%       different way from Matlab (there's no notion of the bubble size limits defined in Matlab, other than a max
+%       symbol size), so it cannot fully reproduce the bubblechart's appearance.
 % As of FC 5.0, there is limited support for converting 3D Matlab graphs to FypML:
 %    -- Unlike FypML, Matlab does not have a separate entity like 'axes3d' to present a 3D plot; instead,
 %       the 'axes' object is configured for a 3D view whenever it is created by a 3D plotting function like scatter3(),
@@ -233,50 +237,50 @@ if(nArgs == 1)
    if(verLessThan('matlab', '8.4.0'))
       if(~(ishghandle(axesH) && strcmpi('axes', get(axesH, 'type'))))
          error('Bad axes handle');
-      end;
+      end
       figHandle = get(axesH, 'parent');
    else
       if(~(isgraphics(axesH, 'axes') || isgraphics(axesH, 'polaraxes')))
          error('Bad axes handle');
-      end;
+      end
       figHandle = get(axesH, 'parent');
       axStruct = handle2struct(axesH);
       axesH = axStruct.handle;
-   end;
+   end
 elseif(nArgs < 2 || nArgs > 5)
    error('Invalid number of arguments');
-end;
+end
 
 if(~wantGraph)
    if(~ishandle(figHandle) || ~ischar(dst))
       error('Missing or bad argument');
-   end;
-end;
+   end
+end
 
 confirm = true;
 if(nArgs >= 3)
    confirm = varargin{1};
    if(~(isscalar(confirm) && islogical(confirm)))
       error('Arg 3 invalid -- must be a logical scalar');
-   end;
-end;
+   end
+end
 
 labelOfs = 0;
 if(nArgs >= 4)
    labelOfs = varargin{2};
    if(~(isscalar(labelOfs) && isnumeric(labelOfs)))
       error('Arg 4 invalid -- must be a numeric scalar');
-   end;
-end;
+   end
+end
 
 if(nArgs == 5 && islogical(varargin{3}))
    dbgDump = varargin{3};
-end;
+end
 
 fig = handle2struct(figHandle);
 if(~strcmp(fig.type, 'figure'))
    error('Argument not a Matlab figure handle graphics object');
-end;
+end
 
 % make sure filename ends in '.fyp'. Tack it on otherwise. (Skip this step if we're just extracting a graph)
 if(~wantGraph)
@@ -288,14 +292,14 @@ if(~wantGraph)
       jExt = jDst.substring(jDst.length()-4);
       if(~jExt.equalsIgnoreCase('.fyp'))
          jDst = java.lang.String([dst '.fyp']);
-      end;
-   end;
+      end
+   end
 
    jFile = java.io.File(jDst);
    if(~isjava(jFile.getParentFile()) || ~jFile.getParentFile().isDirectory())
       error('FypML file path not valid.');
-   end;
-end;
+   end
+end
 
 % construct tree of HGObjects representing the Matlab figure...
 jFig = com.srscicomp.fc.matlab.HGObject(fig.type, fig.handle, []);
@@ -318,31 +322,31 @@ while(~isempty(hgStructs))
       [hgKids, jKids] = addRelevantChildren(hgs, jObj);
       if(isempty(hgKids))
          jObj.afterChildrenAdded();
-      end;
-   end;
+      end
+   end
    
    % if we added some kids, push them onto the stack in front of the parent. Otherwise, pop the parent off the stack.
    if(isempty(hgKids))
-      if(length(hgStructs) == 1)
+      if(isscalar(hgStructs))
          hgStructs = []; jHGObjects = [];
       else
          hgStructs = hgStructs(1:end-1);
          jHGObjects = jHGObjects(1:end-1);
-      end;
+      end
    else
       for n=1:length(hgKids)
          hgStructs = cat(1, hgStructs, hgKids(n));
          jHGObjects = cat(1, jHGObjects, jKids(n));
-      end;
-   end;
-end;
+      end
+   end
+end
 
 % INTERNAL USE ONLY : We're just extracting a particular 2D or 3D graph from figure. Return that graph if conversion to
 % FypML was successful. Else return null. Note that the extracted graph will not be in a figure model.
 if(wantGraph)
    res = javaMethod('extractGraphFromMatFig', 'com.srscicomp.fc.matlab.MatlabUtilities', jFig, axesH);
    return;
-end;
+end
 
 % convert to FypML figure
 jBuf = java.lang.StringBuffer;
@@ -354,25 +358,25 @@ if(dbgDump)
    jWriter.write(jBuf.toString());
    jWriter.flush();
    jWriter.close();
-end;
+end
 
 if(~isjava(jFGM))
    error(['Unable to convert Matlab figure to valid FypML figure. ', char(jBuf.toString())]);
-end;
+end
 
 % raise confirmation dialog, unless user chose not to.
 ok = true;
 if(confirm)
    ok = javaMethodEDT('raiseConfirmSaveDialog', 'com.srscicomp.fc.matlab.DNFigureSaveDlg', jFGM, jFile);
-end;
+end
 
 % if confirmed, save the converted figure to file.
 if(ok)
    emsg = javaMethod('toXML', 'com.srscicomp.fc.fig.FGModelSchemaConverter', jFGM, jFile);
    if(isjava(emsg))
       error(['Error saving FypML figure to file: ', char(emsg)]);
-   end;
-end;
+   end
+end
 
 
    %=== processProperties(hgs, jObj) ==================================================================================
@@ -385,13 +389,13 @@ end;
       % figure properties
       if(strcmp(hgs.type, 'figure'))
          props = {'Colormap', 'Name', 'PaperUnits', 'PaperPosition'};
-      end;
+      end
       
       % scribe.legend properties
       if(strcmp(hgs.type, 'scribe.legend'))
          props = {'TextColor', 'Position', 'Units', 'NumColumns', 'String', 'Color', 'Box', 'LineWidth'};
          props = cat(2, props, {'FontName', 'FontSize', 'FontUnits', 'FontWeight', 'FontAngle'});
-      end;
+      end
       
       % scribe.colorbar properties. Note: This object was modified substantially for Matlab 2014b (v8.4.0).
       if(strcmp(hgs.type, 'scribe.colorbar'))
@@ -400,8 +404,8 @@ end;
             props = cat(2, props, {'FontUnits','TickDir','TickLength','Visible','XColor','YColor','XTick','YTick'});
          else
             props = cat(2, props, {'TickDirection', 'TickLength', 'Ticks', 'Color', 'Visible', 'Limits'});
-         end;
-      end;
+         end
+      end
 
       % axes properties
       if(strcmp(hgs.type, 'axes'))
@@ -418,7 +422,7 @@ end;
          props = cat(2, props, {'View', 'CameraUpVector', 'Projection'});
          props = cat(2, props, {'Color', 'Box', 'BoxStyle', 'ZLim', 'ZScale', 'ZGrid'});
          props = cat(2, props, {'ZTick', 'ZMinorTick', 'ZTickLabelMode', 'ZTickLabel'});
-      end;
+      end
       
        % polaraxes properties
       if(strcmp(hgs.type, 'matlab.graphics.axis.PolarAxes'))
@@ -428,62 +432,68 @@ end;
          props = cat(2, props, {'RTickLabelMode', 'ThetaAxisUnits', 'ThetaColor', 'ThetaDir', 'ThetaGrid', 'ThetaLim'});
          props = cat(2, props, {'ThetaTick', 'ThetaTickLabel', 'ThetaTickLabelMode', 'ThetaZeroLocation'});
          props = cat(2, props, {'TitleFontWeight', 'TitleFontSizeMultiplier', 'Units', 'Visible'});
-      end;
+      end
       
       % graph2d.lineseries and specgraph.stairseries properties
       if(strcmp(hgs.type, 'graph2d.lineseries') || strcmp(hgs.type, 'specgraph.stairseries'))
          props = {'Color', 'DisplayName', 'LineStyle', 'LineWidth', 'Marker', 'MarkerEdgeColor'};
          props = cat(2, props, {'MarkerFaceColor', 'MarkerSize', 'XDataMode', 'XData', 'YData', 'ZData'});
-      end;
+      end
       
       % specgraph.errorbarseries properties
       if(strcmp(hgs.type, 'specgraph.errorbarseries'))
          props = {'CapSize', 'Color', 'DisplayName', 'LData', 'LineStyle', 'LineWidth', 'Marker', 'MarkerEdgeColor'};
          props = cat(2, props, {'MarkerFaceColor', 'MarkerSize', 'UData', 'XDataMode', 'XData', 'XNegativeDelta'});
         props = cat(2, props, {'XPositiveDelta', 'YData', 'YNegativeDelta', 'YPositiveDelta'});
-      end;
+      end
       
       % specgraph.scattergroup properties
       if(strcmp(hgs.type, 'specgraph.scattergroup'))
          props = {'CData', 'DisplayName', 'LineWidth', 'Marker', 'MarkerEdgeAlpha', 'MarkerEdgeColor'};
          props = cat(2, props, {'MarkerFaceAlpha', 'MarkerFaceColor', 'SizeData', 'XData', 'YData', 'ZData'});
-      end;
+      end
       
+      % bubblechart properties
+      if(strcmp(hgs.type, 'bubblechart'))
+         props = {'CData', 'DisplayName', 'LineWidth', 'MarkerEdgeAlpha', 'MarkerEdgeColor'};
+         props = cat(2, props, {'MarkerFaceAlpha', 'MarkerFaceColor', 'SizeData', 'XData', 'YData', 'ZData'});
+      end
+
       % specgraph.stemseries properties
       if(strcmp(hgs.type, 'specgraph.stemseries'))
          props = {'BaseValue', 'Color', 'DisplayName', 'LineWidth', 'LineStyle', 'Marker', 'MarkerEdgeColor'};
          props = cat(2, props, {'MarkerFaceColor', 'MarkerSize', 'XData', 'YData', 'ZData'});
-      end;
+      end
       
       % specgraph.barseries properties
       if(strcmp(hgs.type, 'specgraph.barseries'))
          props = {'BarLayout', 'BarWidth', 'BaseValue', 'CDataMapping', 'DisplayName', 'EdgeAlpha', 'EdgeColor'};
          props = cat(2, props, {'FaceAlpha', 'FaceColor', 'Horizontal', 'LineWidth', 'LineStyle'});
          props = cat(2, props, {'XDataMode', 'XData', 'YData'});
-      end;
+      end
       
       % specgraph.baseline properties
       if(strcmp(hgs.type, 'specgraph.baseline'))
          props = {'BaseValue', 'Color', 'LineStyle', 'LineWidth', 'Visible'};
-      end;
+      end
       
       % specgraph.areaseries properties
       if(strcmp(hgs.type, 'specgraph.areaseries'))
          props = {'BaseValue', 'CDataMapping', 'DisplayName', 'EdgeAlpha', 'EdgeColor', 'FaceAlpha', 'FaceColor'};
          props = cat(2, props, {'LineWidth', 'LineStyle', 'XDataMode', 'XData', 'YData', 'YCoords'});
-      end;
+      end
       
       % patch properties
       if(strcmp(hgs.type, 'patch'))
          props = {'CDataMapping', 'DisplayName', 'EdgeColor', 'FaceColor', 'FaceAlpha', 'Faces', 'FaceVertexCData'};
          props = cat(2, props, {'LineStyle', 'LineWidth', 'UserData', 'Vertices'});
-      end;
+      end
       
       % histogram properties
       if(strcmp(hgs.type, 'histogram'))
          props = {'BinEdges', 'BinWidth', 'Data', 'DisplayName', 'DisplayStyle', 'EdgeColor', 'EdgeAlpha'};
          props = cat(2, props, {'FaceColor', 'FaceAlpha', 'LineWidth', 'LineStyle', 'Normalization', 'Orientation', 'Visible'});
-      end;
+      end
       
       % Imported properties of a Matlab "surface", "image" or "graph3d.surfaceplot" object. In a 2D graph container, the
       % first two objects will be converted to a FypML contour node in the heatmap display mode. In a 3D graph, the 
@@ -494,24 +504,24 @@ end;
       if(strcmp(hgs.type, 'surface') || strcmp(hgs.type, 'image') || strcmp(hgs.type, 'graph3d.surfaceplot'))
          props = {'CData', 'CDataMapping', 'DisplayName', 'EdgeAlpha', 'EdgeColor', 'FaceAlpha', 'FaceColor'};
          props = cat(2, props, {'LineStyle', 'LineWidth', 'XData', 'YData', 'ZData'});
-      end;
+      end
       
       % specgraph.contourgroup properties
       if(strcmp(hgs.type, 'specgraph.contourgroup'))
          props = {'DisplayName', 'Fill', 'LevelList', 'LineColor', 'LineWidth', 'LineStyle', 'XData', 'YData', 'ZData'};
-      end;
+      end
 
       % line properties
       if(strcmp(hgs.type, 'line'))
          props = {'Color', 'DisplayName', 'LineStyle', 'LineWidth', 'Marker', 'MarkerEdgeColor'};
          props = cat(2, props, {'MarkerFaceColor', 'MarkerSize', 'XData', 'YData'});
-      end;
+      end
       
       % text properties
       if(strcmp(hgs.type, 'text'))
          props = {'Color', 'DisplayName', 'FontAngle', 'FontName', 'FontSize', 'FontUnits', 'FontWeight'};
          props = cat(2, props, {'HorizontalAlignment', 'Position', 'Rotation', 'String', 'Units', 'VerticalAlignment'});
-      end;
+      end
       
       
       for i=1:length(props)
@@ -520,26 +530,26 @@ end;
          elseif(ishandle(hgs.handle) && isprop(hgs.handle, props{i}))
             % try to get property value using get() function. As of Matlab2020a, most graphic properties that are
             % "on"/"off" are returned as the enumeration matlab.lang.OnOffSwitchState, which cannot be converted to
-            # Java Object but is a logical value.
-            propObj = get(hgs.handle), props{i});
+            % Java Object but is a logical value.
+            propObj = get(hgs.handle, props{i});
             if(isjava(propObj))
-               jObj.putProperty(props{i}, propObj));
+               jObj.putProperty(props{i}, propObj);
             elseif(islogical(propObj))
                if(propObj == true)
                   jObj.putProperty(props{i}, 'on');
                else
                   jObj.putProperty(props{i}, 'off');
-               end;
-            end;
-         end;
-      end;
+               end
+            end
+         end
+      end
       
       % if a figure contains just one axes, 'Position' may not be specified. In this case, simply set this
       % property manually to [0.15 0.15 0.7 0.7] so that the axes fills up most of the figure
       if(strcmp(hgs.type, 'axes') && ~isfield(hgs.properties, 'Position'))
          jObj.putProperty('Position', [0.15 0.15 0.7 0.7]);
          jObj.putProperty('Units', 'normalized');
-      end;
+      end
       
       % special case: In Matlab 2014b and above, the 'Label' property of a 'scribe.colorbar' object is a Matlab
       % Text object T with the label string in T.String. Matlab objects CANNOT be converted to a Java counterpart, so
@@ -548,8 +558,8 @@ end;
          cbLabel = get(hgs.handle, 'Label');
          if(isobject(cbLabel))
             jObj.putProperty('Label_Str', cbLabel.String);
-         end;
-      end;
+         end
+      end
       
       % special case: In Matlab 2014b and above, the title and axis labels for an 'axes' object may be found in the
       % following properties of an 'axes': 'Title', 'XLabel', 'YLabel', and 'ZLabel'. Each of these is a Matlab Text 
@@ -559,20 +569,20 @@ end;
          mLabel = get(hgs.handle, 'XLabel');
          if(isobject(mLabel))
             jObj.putProperty('XLabel_Str', mLabel.String);
-         end;
+         end
          mLabel = get(hgs.handle, 'YLabel');
          if(isobject(mLabel))
             jObj.putProperty('YLabel_Str', mLabel.String);
-         end;
+         end
          mLabel = get(hgs.handle, 'ZLabel');
          if(isobject(mLabel))
             jObj.putProperty('ZLabel_Str', mLabel.String);
-         end;
+         end
          mLabel = get(hgs.handle, 'Title');
          if(isobject(mLabel))
             jObj.putProperty('Title_Str', mLabel.String);
-         end;
-      end;
+         end
+      end
       
       % special case: The 'polaraxes' object (first introduced in Matlab 2016a) uses a Matlab Text object for the 
       % plot's title. We extract the title string and color from this object and store them as fake properties.
@@ -581,8 +591,8 @@ end;
          if(isobject(mLabel))
             jObj.putProperty('Title_Str', mLabel.String);
             jObj.putProperty('Title_Color', mLabel.Color);
-         end;
-      end;
+         end
+      end
       
       % special case: For an 'axes', the handles of its associated 'scribe.legend' and 'scribe.colorbar' objects, if 
       % any, are buried in the property 'ApplicationData', in the fields 'LegendPeerHandle' and 'ColorbarPeerHandle',
@@ -593,14 +603,14 @@ end;
       if(strcmp(hgs.type, 'axes') && isfield(hgs.properties, 'ApplicationData'))
          if(isfield(hgs.properties.ApplicationData, 'LegendPeerHandle'))
             jObj.putProperty('LegendPeerHandle', hgs.properties.ApplicationData.LegendPeerHandle);
-         end;
+         end
          if(isfield(hgs.properties.ApplicationData, 'ColorbarPeerHandle'))
             jObj.putProperty('ColorbarPeerHandle', hgs.properties.ApplicationData.ColorbarPeerHandle);
-         end;
+         end
          if(isfield(hgs.properties.ApplicationData, 'LayoutPeers'))
             jObj.putProperty('LayoutPeers', hgs.properties.ApplicationData.LayoutPeers);
-         end;
-      end;
+         end
+      end
       
       % special case: For the 'polaraxes' object, the handles of any associated legend and colorbar objects are stored
       % instead in ApplicationData.LayoutPeers, a vector. If it's there, we store it directly as a property of the
@@ -608,8 +618,8 @@ end;
       if(strcmp(hgs.type, 'matlab.graphics.axis.PolarAxes') && isfield(hgs.properties, 'ApplicationData'))
          if(isfield(hgs.properties.ApplicationData, 'LayoutPeers'))
             jObj.putProperty('LayoutPeers', hgs.properties.ApplicationData.LayoutPeers);
-         end;
-      end;
+         end
+      end
       
       % special case: For selected plot objects, if the object is included in a 'scribe.legend' associated with the 
       % parent axes, then the plot object's 'ApplicationData' property will have a double-valued field called 
@@ -624,8 +634,8 @@ end;
       if(isfield(hgs.properties, 'ApplicationData') && isData)
          if(isfield(hgs.properties.ApplicationData, 'legend_texthandle'))
             jObj.putProperty('legend_texthandle', hgs.properties.ApplicationData.legend_texthandle);
-         end;
-      end;
+         end
+      end
    end
    %=== end of nested function processProperties(hgs, jObj) ===========================================================
    
@@ -642,8 +652,9 @@ end;
          childTypes = cat(2, childTypes, {'specgraph.barseries', 'specgraph.baseline', 'specgraph.areaseries'});
          childTypes = cat(2, childTypes, {'specgraph.stairseries', 'specgraph.stemseries', 'graph3d.surfaceplot'});
          childTypes = cat(2, childTypes, {'specgraph.contourgroup', 'patch', 'surface', 'image', 'line', 'text'});
+         childTypes = cat(2, childTypes, {'bubblechart'});
       elseif(strcmp(hgs.type, 'matlab.graphics.axis.PolarAxes'))
-         childTypes = {'graph2d.lineseries', 'histogram', 'specgraph.scattergroup', 'text'};
+         childTypes = {'graph2d.lineseries', 'histogram', 'specgraph.scattergroup', 'bubblechart', 'text'};
       elseif(strcmp(hgs.type, 'specgraph.barseries') || strcmp(hgs.type, 'specgraph.areaseries') || ...
                strcmp(hgs.type, 'specgraph.contourgroup'))
          childTypes = {'patch'};
@@ -651,13 +662,13 @@ end;
          childTypes = {'text'};
       else
          childTypes = {};
-      end;
+      end
       
       hgKids = [];
       jKids = [];
       if(isempty(childTypes))
          return;
-      end;
+      end
       
       for i=1:length(hgs.children)
          hgChild = hgs.children(i);
@@ -667,11 +678,11 @@ end;
             if(strcmp(hgChild.type, childTypes{j}))
                relevant = true;
                break;
-            end;
-         end;
+            end
+         end
          if(~relevant)
             continue;
-         end;
+         end
          
          % create the Java object that will represent the Handle Graphics object
          % NOTE: For 'axes' (and 'scribe.colorbar', which is really a specialized 'axes'), the 'special' field holds the
@@ -687,20 +698,28 @@ end;
                   idx = hgChild.special(j);
                   if(idx > 0 && idx <= length(hgChild.children))
                      labelHandles(j) = hgChild.children(idx).handle;
-                  end;
-               end;
-            end;
-         end;
+                  end
+               end
+            end
+         end
          jChild = com.srscicomp.fc.matlab.HGObject(hgChild.type, hgChild.handle, labelHandles);
          
          processProperties(hgChild, jChild);
          
+         % special case: Put [bubblesize bubblelim] in 'UserData' field for every 'bubblechart' in an axes or polaraxes
+         if(strcmp(hgChild.type, 'bubblechart') && (strcmp(hgs.type, 'axes') || ...
+               strcmp(hgs.type, 'matlab.graphics.axis.PolarAxes')))
+            set(fig.handle, 'currentaxes', hgs.handle);
+            bubbleinfo = [bubblesize bubblelim];
+            jChild.putProperty('UserData', bubbleinfo);
+         end
+
          % add child object parent. Also add and its Matlab HG structure counterpart to the list of objects to be
          % added to the stack of objects to be processed (these could, in turn, have child objects)
          jObj.addChild(jChild);
          hgKids = cat(1, hgKids, hgChild);
          jKids = cat(1, jKids, jChild);
-      end;
+      end
       
    end
    %=== end of nested function addRelevantChildren(hgs, jObj) =========================================================

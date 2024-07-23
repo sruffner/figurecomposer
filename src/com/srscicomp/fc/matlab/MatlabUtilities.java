@@ -16,42 +16,7 @@ import com.srscicomp.common.util.NeverOccursException;
 import com.srscicomp.common.util.Utilities;
 import com.srscicomp.fc.data.DataSet;
 import com.srscicomp.fc.data.DataSet.Fmt;
-import com.srscicomp.fc.fig.AreaChartNode;
-import com.srscicomp.fc.fig.Axis3DNode;
-import com.srscicomp.fc.fig.AxisNode;
-import com.srscicomp.fc.fig.BarPlotNode;
-import com.srscicomp.fc.fig.ColorBarNode;
-import com.srscicomp.fc.fig.ColorMap;
-import com.srscicomp.fc.fig.ColorLUT;
-import com.srscicomp.fc.fig.ContourNode;
-import com.srscicomp.fc.fig.ErrorBarNode;
-import com.srscicomp.fc.fig.FGNGraph;
-import com.srscicomp.fc.fig.FGNPlottable;
-import com.srscicomp.fc.fig.FGNPreferences;
-import com.srscicomp.fc.fig.FGNodeType;
-import com.srscicomp.fc.fig.FGraphicModel;
-import com.srscicomp.fc.fig.FGraphicNode;
-import com.srscicomp.fc.fig.FigureNode;
-import com.srscicomp.fc.fig.Graph3DNode;
-import com.srscicomp.fc.fig.GraphNode;
-import com.srscicomp.fc.fig.GridLineNode;
-import com.srscicomp.fc.fig.LabelNode;
-import com.srscicomp.fc.fig.LegendNode;
-import com.srscicomp.fc.fig.LineNode;
-import com.srscicomp.fc.fig.LogTickPattern;
-import com.srscicomp.fc.fig.Measure;
-import com.srscicomp.fc.fig.PieChartNode;
-import com.srscicomp.fc.fig.PolarAxisNode;
-import com.srscicomp.fc.fig.PolarPlotNode;
-import com.srscicomp.fc.fig.RasterNode;
-import com.srscicomp.fc.fig.Scatter3DNode;
-import com.srscicomp.fc.fig.ScatterPlotNode;
-import com.srscicomp.fc.fig.StrokePattern;
-import com.srscicomp.fc.fig.SurfaceNode;
-import com.srscicomp.fc.fig.SymbolNode;
-import com.srscicomp.fc.fig.TickSetNode;
-import com.srscicomp.fc.fig.Ticks3DNode;
-import com.srscicomp.fc.fig.TraceNode;
+import com.srscicomp.fc.fig.*;
 import com.srscicomp.fc.fig.TickSetNode.LabelFormat;
 import com.srscicomp.fc.fig.TickSetNode.Orientation;
 import com.srscicomp.fc.fig.TraceNode.DisplayMode;
@@ -1197,6 +1162,8 @@ public class MatlabUtilities
             addErrorBarTraceToGraph(graph, hgChild);
          else if(hgChild.getType().equals("specgraph.scattergroup"))
             addScatterGroupToGraph(graph, hgChild, false);
+         else if(hgChild.getType().equals("bubblechart"))
+            addBubbleChartToGraph(graph, hgChild, false);
          else if(hgChild.getType().equals("specgraph.barseries"))
             addBarPlotToGraph(graph, hgChild, matCM, cLim);
          else if(hgChild.getType().equals("specgraph.stemseries"))
@@ -2047,6 +2014,8 @@ public class MatlabUtilities
          HGObject hgChild = hgAxes.getChildAt(i);
          if(hgChild.getType().equals("specgraph.scattergroup"))
             addScatterGroupToGraph(g3, hgChild, false);
+         else if(hgChild.getType().equals("bubblechart"))
+            addBubbleChartToGraph(g3, hgChild, false);
          else if(hgChild.getType().equals("specgraph.stemseries") || hgChild.getType().equals("graph2d.lineseries"))
             addStemOrLinePlotToGraph(g3, hgChild);
          else if(hgChild.getType().equals("graph3d.surfaceplot"))
@@ -2258,9 +2227,9 @@ public class MatlabUtilities
          r = graph.getLocalToGlobalTransform().createTransformedShape(r).getBounds2D();
          
          // the FypML legend's BL corner corresponds to the left endpoint of the bottom-most legend entry, but for the
-         // the Matlab legend, its the BL corner of the legend's bounding box. Adjust.
+         // the Matlab legend, its the UL corner of the legend's bounding box. Adjust.
          pos[0] += 0.33 * legend.getFontSizeInPoints() / 72.0;
-         pos[1] += 0.5 * vGapPts / 72.0;
+         pos[1] -= (pos[3] - 0.5 * vGapPts / 72.0);
          
          // BL corner of legend WRT BL corner of graph bounding box, as % of graph dim (coords could be negative!)
          xPct = (pos[0]*1000.0 - r.getX()) / r.getWidth();
@@ -4133,6 +4102,243 @@ public class MatlabUtilities
       spn.getSymbolNode().setFillColor(markerFillC);
    }
 
+   /**
+    * Append a FypML 2D or 3D scatter plot node that replicates a Matlab Handle Graphics "bubblechart" object, which
+    * was introduced in R2020b.
+    *
+    * <p>It is possible to create bubble plots in Matlab using the scatter() function, which creates an HG
+    * "specgraph.scattergroup" object. So many of the details here are similar to {@link #addScatterGroupToGraph(
+    * FGNGraph, HGObject, boolean)}, with the following exceptions:
+    * <ol>
+    *    <li>A "bubblechart" lacks a "Marker" property. The "bubbles" are always circular.</li>
+    *    <li>Matlab lets you set the translucency of the bubble fill even if the fill color is different for each
+    *    bubble. You can also specify a different alpha component for each bubble. This is not supported in FypML. It
+    *    does support a translucent fill color if all bubbles have the same fill color.</li>
+    *    <li>Sizing of the bubbles in a Matlab bubblechart is very different from how the marker symbols are sized in a
+    *    Matlab scatter plot, as detailed below.</li>
+    * </ol>
+    * </p>
+    *
+    * <p><b>Sizing the bubbles.</b> The size of each bubble in a Matab bubblechart depends on: the value of the chart
+    * object's SizeData property, and the current bubble diameter range [D1 D2] and bubble size limits [L2 L2] for the
+    * parent axes. D1 < D2 are in typographical points and are set by the bubblesize() method; the default is [3 50].
+    * L1 < L2 are set by the bubblelim() method. They are limits on the content of the SizeData vector S for <b>ANY</b>
+    * bubblechart child of the axes; any S[i] less than L1 maps to L1, and any S[i] > L2 maps to L2. The bubble size
+    * limits default to [min(SizeData) max(SizeData)], and are updated each time a bubblechart is added or removed from
+    * the axes, unless they've been manually set with bubblelim().</p>
+    * <p>This is very different from a Matlab scatter plot and cannot be fully reproduced in FypML. Our conversion
+    * strategy:
+    * <ul>
+    *    <li>If SizeData is a scalar and CData is a color spec, then all bubbles have the same size = D2 and the same
+    *    color -- so the FypML scatter plot will use the "scatter" display mode with a symbol size of 50pt (Matlab's
+    *    default value for D2).</li>
+    *    <li>If SizeData is a vector, then the display mode will be "sizeBubble" if CData is a single color spec or
+    *    "colorSizeBubble" if CData is also a vector, and SizeData serves as the Z-coordinate data for the FypML scatter
+    *    node (or the W-coordinate data for the FypML scatter3d node). Each bubble's diameter D[i] = M * Z[i] / max(Z),
+    *    where M is the scatter plot node's maximum symbol size.</li>
+    *    <li>When SizeData and CData are both vectors with the same length as XData/YData, both the size and color of
+    *    the bubbles vary in the Matlab bubblechart -- <b>but the values in the two arrays need not be linearly related,
+    *    so it is impossible for the FypML scatter plot in the "colorSizeBubble" display mode to reproduce the
+    *    appearance of the bubblechart.</b>.</li>
+    *    <li>The conversion of the HG tree to a list of Matlab structures does not preserve the values reported by
+    *    bubblesize() and bubblelim(). To address this limitation, both matfig2fyp() and savefigasis() will store the
+    *    bubble size range [D1 D2] and limits [L1 L2] as a 4x1 vector [D1 D2 L1 L2] in the 'UserData' field of each
+    *    bubblechart object. This method will check for that vector and, if present, use D2 as the scatter plot node's
+    *    maximum symbol size, and use [L1 L2] to restrict the contents of the SizeData array.</li>
+    * </ul>
+    * Obviously, the FypML scatter/scatter3d node cannot fully reproduce the Matlab bubblechart -- first because we
+    * may not have access to the bubble diameter range and size limits, and also because FC has no "minimum" symbol
+    * size. Also,unlike Matlab's bubblechart, the FypML scatter/scatter3d node cannot separately specify the sizes and
+    * colors of the bubbles when SizeData and CData are both vectors. In this scenario, the bubble sizes should be at
+    * least similar to the original bubblechart, but the bubble fill colors will be off.
+    * </p>
+    *
+    * @param graph The parent graph container in the FypML figure being constructed. For the 2D case, this is an
+    * instance of {@link GraphNode} or {@link PolarPlotNode}; for 3D, it will be a {@link Graph3DNode}.
+    * @param bubbleObj The HG "bubblechart" object defining the bubble plot -- including raw data!
+    * @param isTruePolarAxes True if the parent HG object is a "polaraxes" rather than an "axes" object. This will be
+    * the case for Matlab's polarbubblechart() function.
+    */
+   private static void addBubbleChartToGraph(FGNGraph graph, HGObject bubbleObj, boolean isTruePolarAxes)
+   {
+      boolean is2D = !graph.is3D();
+
+      // HG "DisplayName" property maps to the scatter plot node's "title" property. Also, whenever "DisplayName" is
+      // defined and not an empty string, we assume that the original plot object was included in any legend associated
+      // with the axes -- so we set the node's "showInLegend" attribute.
+      boolean showInLegend = false;
+      String title = "";
+      Object nameProp = bubbleObj.getProperty("DisplayName");
+      if(nameProp != null && (nameProp.getClass().equals(String.class) || nameProp.getClass().equals(Character.class)))
+      {
+         title = processSpecialCharacters(nameProp.toString().trim());
+         if(!title.isEmpty()) showInLegend = true;
+      }
+
+      // extract the data set from the bubblechart object
+      boolean isPolar = graph.isPolar();
+      DataSet ds = bubbleObj.extractDataSetFromPlotObject(title, isPolar, isTruePolarAxes);
+      if(ds == null) return;
+
+      // select the display mode. For 2D data in a 2D scatter plot or 3D data in a 3D scatter plot, only the "scatter"
+      // mode makes sense. Otherwise, we check the CData and SizeData properties. If both are N-vectors where N =
+      // length(XData), then choose "colorSizeBubble". If only one is a vector, then choose "sizeBubble" or
+      // "colorBubble" as appropriate.
+      int n = ds.getDataLength();
+      double[] szData = HGObject.getDoubleVectorFromProperty(bubbleObj.getProperty("SizeData"));
+      double[] cData = HGObject.getDoubleVectorFromProperty(bubbleObj.getProperty("CData"));
+      ScatterPlotNode.DisplayMode dispMode = ScatterPlotNode.DisplayMode.SCATTER;
+      if((is2D && ds.getFormat() == Fmt.XYZSET) || ((!is2D) && ds.getFormat() == Fmt.XYZWSET))
+      {
+         boolean szVaries = szData != null && szData.length > 1 && szData.length == n;
+         boolean clrVaries = cData != null && cData.length > 1 && cData.length == n;
+
+         if(szVaries)
+            dispMode = clrVaries ? ScatterPlotNode.DisplayMode.COLORSIZEBUBBLE : ScatterPlotNode.DisplayMode.SIZEBUBBLE;
+         else if(clrVaries) dispMode = ScatterPlotNode.DisplayMode.COLORBUBBLE;
+      }
+
+      // For a "bubblechart", all bubbles are circles.
+      Marker mark = Marker.CIRCLE;
+
+      // HG "MarkerEdgeColor" property sets the stroke color for the bubbles. A Matlab "bubblechart" can use a
+      // different color for each bubble, in which case MarkerEdgeColor='flat' and CData will be an N-vector (color map
+      // indices) or Nx3 matrix (color specs). FypML does not support this use case -- we use transparent black in this
+      // scenario. Similarly if MarkerEdgeColor is "none". If it is a color spec, we use that color.
+      Color strokeC = null;
+      Object prop = bubbleObj.getProperty("MarkerEdgeColor");
+      if(prop != null)
+      {
+         Color c = processColorSpec(prop);
+         if(c != null) strokeC = c;
+         else if("none".equals(prop)) strokeC = TRANSPARENTBLACK;
+      }
+      if(strokeC == null)
+      {
+         if(dispMode == ScatterPlotNode.DisplayMode.COLORBUBBLE ||
+               dispMode == ScatterPlotNode.DisplayMode.COLORSIZEBUBBLE)
+            strokeC = TRANSPARENTBLACK;
+         else
+         {
+            strokeC = processColorSpec(bubbleObj.getProperty("CData"));
+            if(strokeC == null) strokeC = Color.BLACK;
+         }
+      }
+
+      // HG "MarkerEdgeAlpha" property sets the alpha component of the bubble stroke color. Value should be a scalar
+      // in [0..1] (default is 1, fully opaque), or 'flat'. In the latter case, the alpha component is different for
+      // each bubble and is specified in the "AlphaData" property; not supported in FypML. Ignored if "MarkerEdgeColor"
+      // is "none".
+      if(strokeC.getAlpha() > 0)
+      {
+         prop = bubbleObj.getProperty("MarkerEdgeAlpha");
+         if(prop != null && prop.getClass().equals(Double.class))
+         {
+            int alpha = Utilities.rangeRestrict(0, 255, (int) (255.0* (Double) prop));
+            if(alpha < 255) strokeC = new Color(strokeC.getRed(), strokeC.getGreen(), strokeC.getBlue(), alpha);
+         }
+      }
+
+      // HG "LineWidth" property gives the stroke width with which each bubble is stroked. Stroking style is always
+      // solid. NOTE: If stroke color is transparent, we ignore "LineWidth" and set the stroke width to 0. This improves
+      // rendering speed significantly in FC when there are many scatter points.
+      Measure strokeW = strokeC.getAlpha()==0 ? new Measure(0, Measure.Unit.PT) : processLineWidth(bubbleObj);
+      StrokePattern sp = StrokePattern.SOLID;
+
+      // HG "MarkerFaceColor" and "MarkerFaceAlpha" properties select the common fill color for the bubbles when the
+      // display mode is NEITHER "colorBubble" nor "colorSizeBubble". It can be a Matlab color spec, OR the strings
+      // "none" (transparent fill), "auto" (set to same color as HG "axes" or "figure"), or "flat" (the color specified
+      // in 'CData'; this is the default). "none" ==> transparent black; "auto" ==> inherited; "flat" ==> Use
+      // CData only if that property is a color spec, else use transparent black. "MarkerFaceAlpha" specifies the alpha
+      // component for the marker fill color; it should be a scalar between 0 (transparent) and 1 (opaque), or 'flat'
+      // (not supported). The default alpha is 0.6.
+      Color fillC = null;
+      if(dispMode!=ScatterPlotNode.DisplayMode.COLORBUBBLE && dispMode!=ScatterPlotNode.DisplayMode.COLORSIZEBUBBLE)
+      {
+         prop = bubbleObj.getProperty("MarkerFaceColor");
+         if("none".equals(prop))
+            fillC = TRANSPARENTBLACK;
+         else if(!"auto".equals(prop))
+         {
+            fillC = processColorSpec((prop==null || "flat".equals(prop)) ? bubbleObj.getProperty("CData") : prop);
+            if(fillC == null) fillC = TRANSPARENTBLACK;
+            else
+            {
+               prop = bubbleObj.getProperty("MarkerFaceAlpha");
+               int alpha = (int) (0.6 * 255);   // the Matlab default
+               if(prop != null && prop.getClass().equals(Double.class))
+                  alpha = Utilities.rangeRestrict(0,255, (int) (255* (Double) prop));
+               if(alpha < 255) fillC = new Color(fillC.getRed(), fillC.getGreen(), fillC.getBlue(), alpha);
+            }
+         }
+      }
+
+      // HG "UserData" property: Bubble size range in points [D1 D2] = bubblesize()) and in data units [L1 L2] =
+      // bubblelim(). These are axes-level properties that are not accessible from the output of handle2struct(). As a
+      // hack-around, both matfig2fyp() and savefigais() store this info in 'UserData' as a 4x1 vector [D1 D2 L1 L2].
+      double[] limits = HGObject.getDoubleVectorFromProperty(bubbleObj.getProperty("UserData"));
+      if(limits == null || limits.length != 4 || limits[0] >= limits[1] || limits[2] >= limits[3])
+         limits = null;
+
+      // the maximum symbol size for the FypML scatter plot is set to the maximum bubble diameter, if provided via
+      // the "UserData" property (see above). If not, assume 50pt.
+      Measure markSz = new Measure((limits == null) ? 50 : limits[1], Measure.Unit.PT);
+      markSz = ScatterPlotNode.MAXSYMSIZECONSTRAINTS.constrain(markSz);
+
+      // we can now append the scatter plot node as a child of the graph. The node type depends on whether the graph
+      // container is 2D or 3D.
+      FGNodeType childType = is2D ? FGNodeType.SCATTER : FGNodeType.SCATTER3D;
+      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, childType, -1))
+         throw new NeverOccursException("Failed to insert new scatter plot node into FypML graph container.");
+
+      FGraphicNode child = graph.getChildAt(graph.getChildCount()-1);
+      if(is2D)
+      {
+         ScatterPlotNode spn = (ScatterPlotNode) child;
+         spn.setMode(dispMode);
+         spn.setDataSet(ds);
+         spn.setShowInLegend(showInLegend);
+         spn.setTitle(title);
+         spn.setSymbol(mark);
+         spn.setMaxSymbolSize(markSz);
+         spn.setMeasuredStrokeWidth(strokeW);
+         spn.setStrokePattern(sp);
+         spn.setStrokeColor(strokeC);
+         spn.setFillColor(fillC);
+      }
+      else
+      {
+         Scatter3DNode spn = (Scatter3DNode) child;
+
+         Scatter3DNode.DisplayMode dm3 = null;
+         switch(dispMode)
+         {
+         case SCATTER : dm3 = Scatter3DNode.DisplayMode.SCATTER; break;
+         case SIZEBUBBLE : dm3 = Scatter3DNode.DisplayMode.SIZEBUBBLE; break;
+         case COLORBUBBLE : dm3 = Scatter3DNode.DisplayMode.COLORBUBBLE; break;
+         case COLORSIZEBUBBLE : dm3 = Scatter3DNode.DisplayMode.COLORSIZEBUBBLE; break;
+         }
+         spn.setMode(dm3);
+
+         spn.setDataSet(ds);
+         spn.setShowInLegend(showInLegend);
+         spn.setTitle(title);
+
+         // the default bkg fill for 3D scatter plot is a gradient fill. Don't expect that in a Matlab 3D scatter.
+         if(fillC == null) fillC = spn.getFillColor();
+         spn.setBackgroundFill(BkgFill.createSolidFill(fillC));
+
+         // unlike the 2D case, the 3D scatter plot has a component SymbolNode for specifying the symbol properties.
+         // Also, the 3D scatter plot's stroke width must be zero, or you get a stem plot..
+         spn.setMeasuredStrokeWidth(new Measure(0, Measure.Unit.IN));
+         spn.getSymbolNode().setType(mark);
+         spn.getSymbolNode().setSize(markSz);
+         spn.getSymbolNode().setMeasuredStrokeWidth(strokeW);
+         spn.getSymbolNode().setStrokePattern(sp);
+         spn.getSymbolNode().setStrokeColor(strokeC);
+      }
+   }
+
 
    /**                    
     * Append a <i>FypML</i> bar plot node to the graph to render the a Matlab bar plot, as represented by the 
@@ -5830,7 +6036,8 @@ public class MatlabUtilities
     * @param hgAxes The HG "axes" or "polaraxes" begin converted to a FypML 2D or 3D graph.
     * @param textObj The HG "text" object defining the properties of the text label to be added to the graph.
     * @param isTitle True if the text object corresponds to the graph's title. The corresponding text label is treated
-    * specially: it is always positioned at (50%, 105%) and centered horizontally.
+    * specially: it is always positioned at (50%, 105%) and centered horizontally. Furthermore, if the text object has
+    * more than one line of text, then a {@link TextBoxNode} is added insteaad.
     */
    private static void addTextLabelToGraph(FGraphicNode graph, HGObject hgAxes, HGObject textObj, boolean isTitle)
    {
@@ -5850,7 +6057,31 @@ public class MatlabUtilities
          if(pos.length < 2) pos = null;
       }
       if(pos == null) return;
-      
+
+      // HG "Color" property specifies the text/fill color for the LabelNode
+      Color textC = MatlabUtilities.processColorSpec(textObj.getProperty("Color"));
+
+      // special case: a multi-line graph title. Use a FypML text box since a text label is a one-liner.
+      if(isTitle && (labelStr.indexOf('\n') > 0))
+      {
+         if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TEXTBOX, -1))
+            throw new NeverOccursException("Failed to insert new text box into FypML 2D or 3D graph container.");
+
+         TextBoxNode tbox = (TextBoxNode) graph.getChildAt(graph.getChildCount()-1);
+         tbox.setTitle(labelStr);
+         setFontProperties(tbox, textObj);
+         if(textC != null) tbox.setFillColor(textC);
+
+         tbox.setXY(new Measure(0, Measure.Unit.PCT), new Measure(105, Measure.Unit.PCT));
+         tbox.setMeasuredStrokeWidth(new Measure(0, Measure.Unit.PT));
+         tbox.setWidth(graph.getWidth());
+         tbox.setHeight(new Measure(0.5, Measure.Unit.IN));
+         tbox.setClip(false);
+         tbox.setHorizontalAlignment(TextAlign.CENTERED);
+         tbox.setVerticalAlignment(TextAlign.TRAILING);
+         return;
+      }
+
       // append the text label node to the graph container and set its label string and font-related properties
       if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.LABEL, -1))
          throw new NeverOccursException("Failed to insert new text label into FypML 2D or 3D graph container.");
@@ -5858,11 +6089,8 @@ public class MatlabUtilities
       LabelNode label = (LabelNode) graph.getChildAt(graph.getChildCount()-1);
       label.setTitle(labelStr);
       setFontProperties(label, textObj);
-      
-      // HG "Color" property specifies the text/fill color for the LabelNode
-      Color c = MatlabUtilities.processColorSpec(textObj.getProperty("Color"));
-      if(c != null) label.setFillColor(c);
-      
+      if(textC != null) label.setFillColor(textC);
+
       // the 'text' object specially identified as the graph title is treated differently. It is always located at the
       // top of the graph's data window, centered horizontally.
       if(isTitle)
@@ -6387,6 +6615,9 @@ public class MatlabUtilities
             break;
          case "specgraph.scattergroup":
             addScatterGroupToGraph(pgraph, hgChild, true);
+            break;
+         case "bubblechart":
+            addBubbleChartToGraph(pgraph, hgChild, true);
             break;
          case "histogram":
             addHistogramToGraph(pgraph, hgChild, true);
