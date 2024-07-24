@@ -163,7 +163,7 @@ class FGNScatter3DEditor extends FGNEditor implements ActionListener, PropertyCh
 
       // the "Symbols" tab panel contains an embedded editor for the node's component symbol node, plus the background
       // fill picker widget.
-      symbolEditor = new FGNSymbolCard(true, true);
+      symbolEditor = new FGNSymbolCard(true, true, true);
       bkgFillPicker = new BkgFillPicker(50, 50);
       bkgFillPicker.setToolTipText("Background fill");
       bkgFillPicker.addPropertyChangeListener(BkgFillPicker.BKGFILL_PROPERTY, this);

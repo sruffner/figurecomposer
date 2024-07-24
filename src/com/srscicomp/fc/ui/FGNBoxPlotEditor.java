@@ -101,7 +101,7 @@ class FGNBoxPlotEditor extends FGNEditor implements TabStripModel, ActionListene
       // (governs appearance of outlier symbols), and violin style node (appearance of companion violin plot).
       drawStyleEditor = new DrawStyleEditor(false, false);
       whiskerCard = new FGNEBarCard();
-      outlierCard = new FGNSymbolCard(true, false);
+      outlierCard = new FGNSymbolCard(true, false, false);
       violinCard = new ViolinCard();
       
       

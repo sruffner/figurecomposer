@@ -696,7 +696,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
    }
    
    /** The version number for <i>DataNav</i>'s current XML schema. */
-	private final static int CURRENTSCHEMAVERSION = 26;
+	private final static int CURRENTSCHEMAVERSION = 27;
 
 	/**
 	 * This is essentially a factory method that returns the specific implementation of {@link 
@@ -736,6 +736,7 @@ public class FGModelSchema implements ISimpleXMLContentProvider
       else if(version == 24) schema = new Schema24();
       else if(version == 25) schema = new Schema25();
       else if(version == 26) schema = new Schema26();
+      else if(version == 27) schema = new Schema27();
 		
 		return(schema);
 	}
@@ -1095,7 +1096,15 @@ public class FGModelSchema implements ISimpleXMLContentProvider
    public final static String DEFAULT_VIOLIN_SIZE = Schema26.DEFAULT_VIOLIN_SIZE;
    /** (V>=20) Default value for the "width" and "height" attributes of a "shape" element (replaced "size" attr). */
    public final static String DEFAULT_SHAPE_DIM = Schema20.DEFAULT_SHAPE_DIM;
-   
+
+   /**
+    * (V>=27) The "minSize" attribute defines the minimum size of a symbol rendered in a "scatter" or "scatter3d"
+    * element -- relevant only if symbol size varies from one data point to the next.
+    */
+   public final static String A_MINSIZE = Schema27.A_MINSIZE;
+   /** (V>=27) Default value for the "minSize" attribute. */
+   public final static String DEFAULT_MINSIZE = Schema27.DEFAULT_MINSIZE;
+
    /** (V>=7) The "primary" attribute indicates the graph axis to which a calibration bar is attached. */
    public final static String A_PRIMARY = Schema7.A_PRIMARY;
    /** (V>=7) Default value for calibration bar's "primary" flag attribute (when not explicitly specified). */

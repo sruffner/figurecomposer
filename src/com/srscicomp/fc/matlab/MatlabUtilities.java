@@ -4280,10 +4280,13 @@ public class MatlabUtilities
       if(limits == null || limits.length != 4 || limits[0] >= limits[1] || limits[2] >= limits[3])
          limits = null;
 
-      // the maximum symbol size for the FypML scatter plot is set to the maximum bubble diameter, if provided via
-      // the "UserData" property (see above). If not, assume 50pt.
-      Measure markSz = new Measure((limits == null) ? 50 : limits[1], Measure.Unit.PT);
-      markSz = ScatterPlotNode.MAXSYMSIZECONSTRAINTS.constrain(markSz);
+      // the minimum and maximum symbol sizes for the FypML scatter plot are set IAW the bubblesize() range, if
+      // provided via the "UserData" property (see above). If not, assume the Matlab defaults: [3pt 50pt].
+      Measure maxSz = new Measure((limits == null) ? 50 : limits[1], Measure.Unit.PT);
+      Measure minSz = new Measure((limits == null) ? 3 : limits[0], Measure.Unit.PT);
+      Measure.Constraints c = is2D ? ScatterPlotNode.MAXSYMSIZECONSTRAINTS : SymbolNode.SYMBOLSIZECONSTRAINTS;
+      maxSz = c.constrain(maxSz);
+      minSz = c.constrain(minSz);
 
       // we can now append the scatter plot node as a child of the graph. The node type depends on whether the graph
       // container is 2D or 3D.
@@ -4300,7 +4303,8 @@ public class MatlabUtilities
          spn.setShowInLegend(showInLegend);
          spn.setTitle(title);
          spn.setSymbol(mark);
-         spn.setMaxSymbolSize(markSz);
+         spn.setMaxSymbolSize(maxSz);
+         spn.setMinSymbolSize(minSz);
          spn.setMeasuredStrokeWidth(strokeW);
          spn.setStrokePattern(sp);
          spn.setStrokeColor(strokeC);
@@ -4328,11 +4332,12 @@ public class MatlabUtilities
          if(fillC == null) fillC = spn.getFillColor();
          spn.setBackgroundFill(BkgFill.createSolidFill(fillC));
 
-         // unlike the 2D case, the 3D scatter plot has a component SymbolNode for specifying the symbol properties.
-         // Also, the 3D scatter plot's stroke width must be zero, or you get a stem plot..
+         // unlike the 2D case, the 3D scatter plot has a component SymbolNode for specifying the symbol properties,
+         // except for minimum symbol size. Also, the 3D scatter plot's stroke width is zero, or you get a stem plot.
          spn.setMeasuredStrokeWidth(new Measure(0, Measure.Unit.IN));
+         spn.setMaxSymbolSize(maxSz);
+         spn.setMinSymbolSize(minSz);
          spn.getSymbolNode().setType(mark);
-         spn.getSymbolNode().setSize(markSz);
          spn.getSymbolNode().setMeasuredStrokeWidth(strokeW);
          spn.getSymbolNode().setStrokePattern(sp);
          spn.getSymbolNode().setStrokeColor(strokeC);

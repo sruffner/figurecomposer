@@ -33,7 +33,7 @@ public enum FGNProperty
    DGSLICE("data group slice displaced flag"), DEPTH("depth"), PSCALE("projection scale"), ELEVATE("elevation angle"),
    RANGE("range"), MESHLIMIT("mesh size limit"), LEVELS("contour level list"), STEMMED("stemmed"),
    PROJSZ("projected dot size"), PROJC("projected dot color"), BOXC("box background color"), GRIDONTOP("grid on top"),
-   PDIVS("polar grid divisions"), ANGLE("reference angle");
+   PDIVS("polar grid divisions"), ANGLE("reference angle"), MINSIZE("minimum size");
    
    private final String niceName;
    

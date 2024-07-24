@@ -45,3 +45,6 @@ that were created by R2024a:
   - If a _Matlab_ `axes` has a multi-line title, it is now translated to a _FypML_ `textbox` node so that the multiple
   text lines are preserved.
   - Tweaked positioning of a graph legend.
+- Added `minSize` attribute to the `scatter` and `scatter3d` elements, specifying a minimum symbol size for the scatter
+plot. Defaults to '0in' so that existing figures are unaffected. Specifying a nonzero minimum size ensures that a symbol
+is rendered at each point n the scatter plot. **_Schema version = 27_**.

@@ -35,10 +35,11 @@ import com.srscicomp.fc.data.DataSet.Fmt;
  * 
  * <p>The scatter plot supports two data formats for its underlying data set source: {@link Fmt#PTSET} for 2D
  * scatter plots and {@link Fmt#XYZSET} for 3D bubble plots. It does not render standard deviation data. Other
- * than the data source, the key defining attributes for the scatter plot node are: display mode M, symbol size S, 
- * symbol type, fill color C, and stroke properties. The stroke properties determine how the individual marker symbols 
- * in the scatter/bubble plot are stroked. There are no text attributes associated with this presentation node. The
- * display mode and data source format will determine how the individual points in the source set are rendered:
+ * than the data source, the key defining attributes for the scatter plot node are: display mode M, minimum and maximum
+ * symbol sizes 0 <= L < S, symbol type, fill color C, and stroke properties. The stroke properties determine how the
+ * individual marker symbols in the scatter/bubble plot are stroked. There are no text attributes associated with this
+ * presentation node. The display mode and data source format will determine how the individual points in the source set
+ * are rendered:
  * <ul>
  * <li>M = "scatter". A typical scatter plot. A marker symbol of constant size S and fill color C is drawn at each 
  * well-defined point (X,Y) in the data source. Note that this mode simply ignores Z-coordinate data if the data source
@@ -47,10 +48,9 @@ import com.srscicomp.fc.data.DataSet.Fmt;
  * line fitting the 2D data (again, Z-coordinate data is ignored). <i>The regression line segment will not be drawn if 
  * the parent graph is polar</i>.</li>
  * <li>M = "sizeBubble". A bubble plot in which the size of each marker symbol varies proportional to the Z-coordinate:
- * <i>size = S*|Z|/Zam</i>, where Zam is the maximum observed absolute value of Z over the set. Thus, symbol size S is 
- * really the maximum symbol size for a size-relative bubble plot, and the scatter plot is really intended for Z data
- * that is all of the same sign. If the underlying data source is not 3D, then all markers have the same size S. All are
- * filled with color C.</li>
+ * <i>size = max(L, S*|Z|/Zam)</i>, where Zam is the maximum observed absolute value of Z over the set. Note that the
+ * scatter plot is really intended for Z data that is all of the same sign. If the underlying data source is not 3D,
+ * then all markers have the same size S. All are filled with color C.</li>
  * <li>M = "colorBubble". A bubble plot in which all marker symbols drawn are size S, but the fill color depends on the
  * Z-coordinate AND the current state of the parent graph's "color axis". An integer color index I is computed from the
  * color axis range [Z0..Z1] and the Z-coordinate value, and this index selects a color from the 256-element color map
@@ -76,7 +76,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
 {
    /**
     * Construct a scatter plot node initially configured to display an empty 2D point set as a typical fixed-symbol, X-Y
-    * scatter plot, using 0.1-in circle symbol It will make no marks in the parent graph. All styling attributes are 
+    * scatter plot, using 0.1-in circle symbol. It will make no marks in the parent graph. All styling attributes are
     * initially implicit (inherited); no font-related styles are associated with this node. It has no title initially.
     * The component {@link ScatterLineStyleNode} is initially configured with a zero stroke width and a fill color with
     * zero alpha.
@@ -88,6 +88,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       mode = DisplayMode.SCATTER;
       symbol = Marker.CIRCLE;
       size = new Measure(0.1, Measure.Unit.IN);
+      minSize = new Measure(0, Measure.Unit.IN);
       addComponentNode(new ScatterLineStyleNode());
    }
 
@@ -225,7 +226,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
    }
 
    /**
-    * Constraints on a scatter plot node's maximum marker symbol size: must use non-relative units (in, cm, mm or pt); 
+    * Constraints on a scatter plot node's marker symbol size: must use non-relative units (in, cm, mm or pt);
     * limited to 4 significant and 3 fractional digits; and must lie in [0 .. 2] inches.
     */
    public final static Measure.Constraints MAXSYMSIZECONSTRAINTS = new Measure.Constraints(0, 2000.0, 4, 3);
@@ -237,25 +238,29 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
     * Get the maximum marker symbol size for the scatter plot. 
     * <p>In bubble plots in which the symbol size is proportional to the Z-coordinate of a 3D point (X,Y,Z), this
     * symbol size will correspond to the maximum observed Z-coordinate value, <i>Zmax</i>, over the data set. For any
-    * other value Z, the symbol is drawn at size S*Z/Zmax, where S is this maximum marker symbol size. If the display 
-    * mode is such that all symbols are drawn at the same size, then all are drawn at this size.</p>
+    * other value Z, the symbol is drawn at size max(L, S*Z/Zmax), where S is this maximum marker symbol size and L is
+    * the minimum marker symbol size. If the display mode is such that all symbols are drawn at the same size, then all
+    * are drawn at this size.</p>
     * 
     * @return The maximum marker symbol size, with associated units of measure (only physical units allowed).
+    * @see #getMinSymbolSize()
     */
    public Measure getMaxSymbolSize() { return(size); }
 
    /**
     * Set the maximum marker symbol size for this scatter plot. If a change is made, {@link #onNodeModified} is
-    * invoked. See {@link #getMaxSymbolSize} for a discussion of how this property affects the plot rendering in
-    * different display modes.
+    * invoked.
     * 
-    * @param m The new size. It is constrained to satisfy {@link #MAXSYMSIZECONSTRAINTS}. A null value is rejected.
+    * @param m The new size. It is constrained to satisfy {@link #MAXSYMSIZECONSTRAINTS}. A null value is rejected, as
+    * is a value less than or equal to the current minimum symbol size.
     * @return True if successful; false if value was rejected.
+    * @see #getMaxSymbolSize()
     */
    public boolean setMaxSymbolSize(Measure m)
    {
       if(m == null) return(false);
       m = MAXSYMSIZECONSTRAINTS.constrain(m);
+      if(m.toMilliInches() <= minSize.toMilliInches()) return(false);
 
       boolean changed = (size != m) && !Measure.equal(size, m);
       if(changed)
@@ -275,6 +280,51 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       return(true);
    }
 
+   /** Minimum marker symbol size. */
+   private Measure minSize;
+
+   /**
+    * Get the minimum marker symbol size for the scatter plot.
+    *
+    * @return The minimum marker symbol size, with associated units of measure (only physical units allowed).
+    * @see #getMaxSymbolSize()
+    */
+   public Measure getMinSymbolSize() { return(minSize); }
+
+   /**
+    * Set the minimum marker symbol size for this scatter plot. If a change is made, {@link #onNodeModified} is
+    * invoked.
+    *
+    * @param m The new size. It is constrained to satisfy {@link #MAXSYMSIZECONSTRAINTS}. A null value is rejected, as
+    * is a value greater than or equal to the maximum symbol size.
+    * @return True if successful; false if value was rejected.
+    * @see #getMaxSymbolSize()
+    */
+   public boolean setMinSymbolSize(Measure m)
+   {
+      if(m == null) return(false);
+      m = MAXSYMSIZECONSTRAINTS.constrain(m);
+      if(m.toMilliInches() >= size.toMilliInches()) return(false);
+
+      boolean changed = (minSize != m) && !Measure.equal(minSize, m);
+      if(changed)
+      {
+         if(doMultiNodeEdit(FGNProperty.MINSIZE, m)) return(true);
+
+         Measure oldSize = minSize;
+         minSize = m;
+         if(this.areNotificationsEnabled())
+         {
+            if(oldSize.toMilliInches() != minSize.toMilliInches())
+               onNodeModified(FGNProperty.MINSIZE);
+            String desc = "Set scatter plot min symbol size to: " + minSize.toString();
+            FGNRevEdit.post(this, FGNProperty.MINSIZE, minSize, oldSize, desc);
+         }
+      }
+      return(true);
+   }
+
+
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
       boolean ok;
@@ -283,6 +333,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          case MODE : ok = setMode((DisplayMode)propValue); break;
          case TYPE: ok = setSymbol((Marker)propValue); break;
          case SIZE: ok = setMaxSymbolSize((Measure)propValue); break;
+         case MINSIZE: ok = setMinSymbolSize((Measure)propValue); break;
          default : ok = super.setPropertyValue(p, propValue); break;
       }
       return(ok);
@@ -296,6 +347,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          case MODE : value = getMode(); break;
          case TYPE: value = getSymbol(); break;
          case SIZE: value = getMaxSymbolSize(); break;
+         case MINSIZE: value = getMinSymbolSize(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -310,13 +362,14 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
 
    /**
     * The node-specific properties exported in a scatter plot node's style set include the display mode, the marker
-    * symbol type, the maximum symbol size, and the include-in-legend flag.
+    * symbol type, the minimum and maximum symbol sizes, and the include-in-legend flag.
     */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
       styleSet.putStyle(FGNProperty.MODE, getMode());
       styleSet.putStyle(FGNProperty.TYPE, getSymbol());
       styleSet.putStyle(FGNProperty.SIZE, getMaxSymbolSize());
+      styleSet.putStyle(FGNProperty.MINSIZE, getMinSymbolSize());
       styleSet.putStyle(FGNProperty.LEGEND, getShowInLegend());
    }
 
@@ -339,15 +392,25 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          changed = true;
       }
       else restore.removeStyle(FGNProperty.TYPE);
-      
+
       Measure sz = (Measure) applied.getCheckedStyle(FGNProperty.SIZE, getNodeType(), Measure.class);
-      if(sz != null && !sz.equals(restore.getStyle(FGNProperty.SIZE)))
+      if(sz != null && (!sz.equals(restore.getStyle(FGNProperty.SIZE))) &&
+            (MAXSYMSIZECONSTRAINTS.constrain(sz).toMilliInches() > minSize.toMilliInches()))
       {
          size = MAXSYMSIZECONSTRAINTS.constrain(sz);
          changed = true;
       }
       else restore.removeStyle(FGNProperty.SIZE);
-      
+
+      sz = (Measure) applied.getCheckedStyle(FGNProperty.MINSIZE, getNodeType(), Measure.class);
+      if(sz != null && (!sz.equals(restore.getStyle(FGNProperty.MINSIZE))) &&
+            (MAXSYMSIZECONSTRAINTS.constrain(sz).toMilliInches() < size.toMilliInches()))
+      {
+         minSize = MAXSYMSIZECONSTRAINTS.constrain(sz);
+         changed = true;
+      }
+      else restore.removeStyle(FGNProperty.MINSIZE);
+
       Boolean b = (Boolean) applied.getCheckedStyle(FGNProperty.LEGEND, null, Boolean.class);
       if(b != null && !b.equals(restore.getStyle(FGNProperty.LEGEND)))
       {
@@ -540,7 +603,8 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
     * Does this scatter plot node render all marker symbols at the same size? This will be the case in the display modes
     * {@link DisplayMode#SCATTER}, {@link DisplayMode#TRENDLINE}, and {@link DisplayMode#COLORBUBBLE}, and if the 
     * underlying data source is 2D.
-    * @return True only if all marker symbols are drawn at the same size when this scatter plot is rendered.
+    * @return True only if all marker symbols are drawn at the same size ({@link #getMaxSymbolSize()}) when this scatter
+    * plot is rendered.
     */
    private boolean isSymbolSizeConstant()
    {
@@ -687,6 +751,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          style = ScatterPlotNode.this;
          symbol = getSymbol();
          maxSymSizeMI = getMaxSymbolSize().toMilliInches();
+         minSymSizeMI = getMinSymbolSize().toMilliInches();
          set = getDataSet();
          sizeConstant = ScatterPlotNode.this.isSymbolSizeConstant();
          fillConstant = ScatterPlotNode.this.isFillColorConstant();
@@ -743,6 +808,7 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
          style = src.style;
          symbol = src.symbol;
          maxSymSizeMI = src.maxSymSizeMI;
+         minSymSizeMI = src.minSymSizeMI;
          set = src.set;
          
          sizeConstant = src.sizeConstant;
@@ -797,7 +863,8 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
                   
                   // (note degenerate case: all Z-coordinates are 0)
                   double zAbsMax = Math.max(Math.abs(set.getZMin()), Math.abs(set.getZMax()));
-                  double sz = (zAbsMax == 0) ? maxSymSizeMI : Math.abs(z) * maxSymSizeMI / zAbsMax;
+                  double sz = (zAbsMax == 0) ? maxSymSizeMI :
+                        Math.max(minSymSizeMI, Math.abs(z) * maxSymSizeMI / zAbsMax);
 
                   xfm.scale(sz, sz);
                   currSymSzMI = sz;
@@ -874,6 +941,8 @@ public class ScatterPlotNode extends FGNPlottableData implements Cloneable
       final Marker symbol;
       /** The maximum size for the scatter plot marker symbols, in milli-inches. */
       final double maxSymSizeMI;
+      /** The minimum size for the scatter plot marker symbols, in milli-inches. */
+      final double minSymSizeMI;
       /** The underlying data set source. */
       final DataSet set;
       /** This painter style determines how each shape is stroked; text-related properties unused. */

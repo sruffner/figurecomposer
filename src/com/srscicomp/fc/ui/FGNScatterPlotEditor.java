@@ -28,10 +28,11 @@ import com.srscicomp.fc.uibase.MeasureEditor;
  * check box that indicates whether or not the node should be included in that legend. On the next row is an embedded 
  * {@link FGNPlottableDSCard}, which exposes the ID of the data set referenced by the node, and provides facilities for 
  * viewing and/or editing that raw data set. Below this are widgets for specifying the scatter plot's display mode, 
- * marker symbol type, and maximum symbol size. The last two rows in the editor panel are {@link DrawStyleEditor}s. The
- * first exposes the scatter plot node's draw styles (it has no text styles), which govern the appearance of the 
- * marker symbols. The second exposes the draw styles of a component {@link ScatterLineStyleNode}, which governs the
- * appearance of the LMS regression line in "trendline" mode, and the "connect the dots" polyline otherwise.</p>
+ * marker symbol type, and minimum/maximum symbol sizes. The last two rows in the editor panel are
+ * {@link DrawStyleEditor}s. The first exposes the scatter plot node's draw styles (it has no text styles), which
+ * govern the appearance of the marker symbols. The second exposes the draw styles of a component
+ * {@link ScatterLineStyleNode}, which governs the appearance of the LMS regression line in "trendline" mode, and the
+ * "connect the dots" polyline otherwise.</p>
  * 
  * @author sruffner
  */
@@ -70,13 +71,19 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
       typeCombo.setToolTipText("Select marker symbol shape");
       typeCombo.addActionListener(this);
       add(typeCombo);
-      
-      sizeEditor = new MeasureEditor(0, ScatterPlotNode.MAXSYMSIZECONSTRAINTS);
-      sizeEditor.setToolTipText("<html>Enter marker symbol size. This will be the fixed size of all markers<br/>" +
-      		"when symbol size does not vary with Z; else, it is the maximum symbol size. [0.05..2in]</html>");
-      sizeEditor.addActionListener(this);
-      add(sizeEditor);
-      
+
+      maxSizeEditor = new MeasureEditor(0, ScatterPlotNode.MAXSYMSIZECONSTRAINTS);
+      maxSizeEditor.setToolTipText("<html>Enter maximum symbol size. This will be the fixed size of all markers<br/>" +
+            "when symbol size does not vary with Z; else, it is the maximum symbol size. [0..2in]</html>");
+      maxSizeEditor.addActionListener(this);
+      add(maxSizeEditor);
+
+      minSizeEditor = new MeasureEditor(0, ScatterPlotNode.MAXSYMSIZECONSTRAINTS);
+      minSizeEditor.setToolTipText("<html>Enter minimum symbol size. Relevant only when symbol size varies with Z.<br/>" +
+            "Must be strictly smaller than the maximum symbol size. [0..2in]</html>");
+      minSizeEditor.addActionListener(this);
+      add(minSizeEditor);
+
       symbolStyleEditor = new DrawStyleEditor(false, false);
       add(symbolStyleEditor);
       
@@ -102,8 +109,9 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
 
       layout.putConstraint(SpringLayout.WEST, symbolLabel, 0, SpringLayout.WEST, this);
       layout.putConstraint(SpringLayout.WEST, typeCombo, 0, SpringLayout.EAST, symbolLabel);
-      layout.putConstraint(SpringLayout.WEST, sizeEditor, GAP, SpringLayout.EAST, typeCombo);
-      
+      layout.putConstraint(SpringLayout.WEST, minSizeEditor, GAP, SpringLayout.EAST, typeCombo);
+      layout.putConstraint(SpringLayout.WEST, maxSizeEditor, GAP, SpringLayout.EAST, minSizeEditor);
+
       layout.putConstraint(SpringLayout.WEST, symbolStyleEditor, GAP, SpringLayout.EAST, symbolLabel);
       
       layout.putConstraint(SpringLayout.EAST, lineLabel, 0, SpringLayout.EAST, symbolLabel);
@@ -123,7 +131,8 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
       layout.putConstraint(vc, showInLegendChk, 0, vc, titleEditor);
       layout.putConstraint(vc, dispLabel, 0, vc, modeCombo);
       layout.putConstraint(vc, symbolLabel, 0, vc, typeCombo);
-      layout.putConstraint(vc, sizeEditor, 0, vc, typeCombo);
+      layout.putConstraint(vc, minSizeEditor, 0, vc, typeCombo);
+      layout.putConstraint(vc, maxSizeEditor, 0, vc, typeCombo);
       layout.putConstraint(vc, lineLabel, 0, vc, lineStyleEditor);
    }
 
@@ -141,7 +150,8 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
       
       modeCombo.setSelectedItem(spn.getMode());
       typeCombo.setSelectedItem(spn.getSymbol());
-      sizeEditor.setMeasure(spn.getMaxSymbolSize());
+      minSizeEditor.setMeasure(spn.getMinSymbolSize());
+      maxSizeEditor.setMeasure(spn.getMaxSymbolSize());
       
       symbolStyleEditor.loadGraphicNode(spn);
       lineStyleEditor.loadGraphicNode(spn.getLineStyle());
@@ -187,10 +197,15 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
          ok = spn.setSymbol((Marker)typeCombo.getSelectedItem());
          if(!ok) typeCombo.setSelectedItem(spn.getSymbol());
       }
-      else if(src == sizeEditor)
+      else if(src == maxSizeEditor)
       {
-         ok = spn.setMaxSymbolSize(sizeEditor.getMeasure());
-         if(!ok) sizeEditor.setMeasure(spn.getMaxSymbolSize());
+         ok = spn.setMaxSymbolSize(maxSizeEditor.getMeasure());
+         if(!ok) maxSizeEditor.setMeasure(spn.getMaxSymbolSize());
+      }
+      else if(src == minSizeEditor)
+      {
+         ok = spn.setMinSymbolSize(minSizeEditor.getMeasure());
+         if(!ok) minSizeEditor.setMeasure(spn.getMaxSymbolSize());
       }
 
       if(!ok) Toolkit.getDefaultToolkit().beep();
@@ -214,8 +229,11 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
    /** Combo box for selecting the scatter plot's marker symbol type. */
    private JComboBox<Marker> typeCombo = null;
 
-  /** Customized component for editing the size of the scatter plot's marker symbol. */
-   private MeasureEditor sizeEditor = null;
+   /** Customized component for editing the maximum size of the scatter plot's marker symbol. */
+   private MeasureEditor maxSizeEditor = null;
+
+   /** Customized component for editing the minimum size of the scatter plot's marker symbol. */
+   private MeasureEditor minSizeEditor = null;
 
    /** Self-contained editor handles the draw style properties for the scatter plot marker symbols. */
    private DrawStyleEditor symbolStyleEditor = null;

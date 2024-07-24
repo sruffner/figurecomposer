@@ -112,7 +112,8 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       
       prjDotSizes = new int[] {0, 0, 0};
       prjDotColors = new Color[] {Color.BLACK, Color.BLACK, Color.BLACK};
-      
+
+      minSize = new Measure(0, Measure.Unit.IN);
       SymbolNode symbol = new SymbolNode();
       symbol.setSize(new Measure(0.2, Measure.Unit.IN));
       symbol.setMeasuredStrokeWidth(new Measure(0, Measure.Unit.IN));
@@ -556,7 +557,82 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          for(int i=0; i<3 && i<tokens.length; i++) prjDotColors[i] = BkgFill.colorFromHexString(tokens[i]);
       }
    }
-   
+
+   /** Minimum marker symbol size. */
+   private Measure minSize;
+
+   /**
+    * Get the minimum marker symbol size L for the 3D scatter plot.
+    * <p>In {@link DisplayMode#SIZEBUBBLE} or {@link DisplayMode#COLORSIZEBUBBLE} scatter plots, the symbol size is
+    * proportional to the Z-coordinate of a 3D point (X,Y,Z) (or W-coordinate of a 4D point (X,Y,Z,W). The size of this
+    * node's component {@link SymbolNode} is the maximum symbol size S. For any scatter plot point (X,Y,Z), the
+    * computed symbol size = max(L, S*Z/Zmax), Zmax is the maximum observed Z-coordinate value over the data set. For
+    * the {@link DisplayMode#SCATTER} and {@link DisplayMode#COLORBUBBLE} display modes, all symbols are drawn at the
+    * same size -- the maximum symbol size S.</p>
+    *
+    * @return The minimum marker symbol size, with associated units of measure (only physical units allowed).
+    */
+   public Measure getMinSymbolSize() { return(minSize); }
+
+   /**
+    * Set the minimum marker symbol size for this 3D scatter plot. If a change is made, {@link #onNodeModified} is
+    * invoked.
+    *
+    * @param m The new size. It is constrained to satisfy {@link SymbolNode#SYMBOLSIZECONSTRAINTS}. A null value is
+    * rejected, as is a value greater than or equal to the maximum symbol size -- which is the size of the component
+    * {@link SymbolNode}.
+    * @return True if successful; false if value was rejected.
+    * @see #getMinSymbolSize()
+    */
+   public boolean setMinSymbolSize(Measure m)
+   {
+      if(m == null) return(false);
+      m = SymbolNode.SYMBOLSIZECONSTRAINTS.constrain(m);
+      if(m.toMilliInches() >= getMaxSymbolSize().toMilliInches()) return(false);
+
+      boolean changed = (minSize != m) && !Measure.equal(minSize, m);
+      if(changed)
+      {
+         if(doMultiNodeEdit(FGNProperty.MINSIZE, m)) return(true);
+
+         Measure oldSize = minSize;
+         minSize = m;
+         if(this.areNotificationsEnabled())
+         {
+            if(oldSize.toMilliInches() != minSize.toMilliInches())
+               onNodeModified(FGNProperty.MINSIZE);
+            String desc = "Set 3D scatter plot min symbol size to: " + minSize.toString();
+            FGNRevEdit.post(this, FGNProperty.MINSIZE, minSize, oldSize, desc);
+         }
+      }
+      return(true);
+   }
+
+   /**
+    * Get the maximum symbol size, which is defined in the 3D scatter plot's component @link SymbolNode}. This is the
+    * size for all symbols in the plot if size does not vary in the current display moade.
+    * @return The maximum symbol size, as a measurement in physical units.
+    * @see #getMinSymbolSize()
+    */
+   public Measure getMaxSymbolSize() { return( getSymbolNode().getSize() );}
+
+   /**
+    * Set the maximum symbol size for this 3D scatter plot, which is defined in the 3D scatter plot's component {@link
+    * SymbolNode}. The method first checks that new value is greater than the current minimum symbol size, which is
+    * not an attribute of the symbol element.
+    *
+    * @param m The new maximum symbol size.
+    * @return True if successful, false if value was rejected.
+    * @see #getMinSymbolSize()
+    */
+   public boolean setMaxSymbolSize(Measure m)
+   {
+      if(m == null) return(false);
+      m = SymbolNode.SYMBOLSIZECONSTRAINTS.constrain(m);
+      if(m.toMilliInches() <= minSize.toMilliInches()) return(false);
+      return(getSymbolNode().setSize(m));
+   }
+
 
    @Override boolean setPropertyValue(FGNProperty p, Object propValue)
    {
@@ -606,6 +682,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
                if(ok) ok = setProjectionDotColor(idx==0 ? Side.XY : (idx==1 ? Side.XZ : Side.YZ), (Color) arObj[1]);
             }
             break;
+         case MINSIZE: ok = setMinSymbolSize((Measure)propValue); break;
          default : ok = super.setPropertyValue(p, propValue); break;
       }
       return(ok);
@@ -625,6 +702,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          case PROJC:
             value = null;   // multi-object edit is not supported for these "indexed" properties
             break;
+         case MINSIZE: value = getMinSymbolSize(); break;
          default : value = super.getPropertyValue(p); break;
       }
       return(value);
@@ -640,7 +718,8 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    /**
     * The 3D scatter plot's display mode, bar size, and symbol background fill are included in the style set, as are the
     * boolean styles determining whether or not stems are drawn and whether or not the node is shown in the graph 
-    * legend. The dot sizes and colors for the backplane projections are NOT part of the style set.
+    * legend. The minimum symbols size, and the dot sizes and colors for the backplane projections are NOT part of the
+    * style set.
     */
    @Override protected void putNodeSpecificStyles(FGNStyleSet styleSet)
    {
@@ -911,7 +990,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
    public boolean isBarPlotDisplayMode() { return(mode == DisplayMode.BARPLOT || mode == DisplayMode.COLORBARPLOT); }
    
    /**
-    * Deos this 3D scatter plot also render its projection onto the specified backplane in the parent graph? The
+    * Does this 3D scatter plot also render its projection onto the specified backplane in the parent graph? The
     * projection is rendered as small filled dots on the backplane. It is rendered only if the graph backdrop is such
     * that the backplane is drawn, the projection dot size is nonzero, and the projection dot color is not transparent.
     * However, the dot projections are never rendered in either of the bar plot display modes.
@@ -1333,6 +1412,7 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          sizeConstant = (mode==DisplayMode.SCATTER) || (mode==DisplayMode.COLORBUBBLE);
          fillConstant = (mode==DisplayMode.SCATTER) || (mode==DisplayMode.SIZEBUBBLE);
          maxSymSizeMI = symbol.getSizeInMilliInches();
+         minSymSizeMI = getMinSymbolSize().toMilliInches();
 
          shapePrimitive = new GeneralPath();
          if(sizeConstant)
@@ -1387,7 +1467,8 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
          symbol = src.symbol;
          bkgFill = src.bkgFill;
          maxSymSizeMI = src.maxSymSizeMI;
-         
+         minSymSizeMI = src.minSymSizeMI;
+
          pLoc = new Point2D.Double();
          if(src.pStemEnd != null) pStemEnd = new Point2D.Double();
          stemBase = src.stemBase;
@@ -1447,9 +1528,11 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
             {
                // map absolute value of W-coordinate (or Z for 3D data set) to a symbol size less than or equal to the 
                // maximum symbol size. We really expect all W (or Z) coordinates to be positive in this scenario... 
-               // Scaled by the maximum absolute W (or Z) value.
+               // Scaled by the maximum absolute W (or Z) value. Ensure every symbol size >= specified minimum.
                currSymSzMI = (wDataAbsMax == 0) ? maxSymSizeMI : 
-                     Math.abs(is4D ? p4.getW() : p4.getZ()) * maxSymSizeMI / wDataAbsMax;
+                     Math.max(minSymSizeMI, Math.abs(is4D ? p4.getW() : p4.getZ()) * maxSymSizeMI / wDataAbsMax);
+
+               // Math.max(minSymSizeMI, Math.abs(z) * maxSymSizeMI / zAbsMax);
 
                // prepare the shape primitive at the size specified
                shapePrimitive.reset();
@@ -1505,6 +1588,8 @@ public class Scatter3DNode extends FGNPlottableData implements Cloneable
       final boolean fillConstant;
       /** The maximum size for the scatter plot marker symbols, in milli-inches. */
       final double maxSymSizeMI;
+      /** The minimum size for the scatter plot marker symbols, in milli-inches. */
+      final double minSymSizeMI;
       /** 
        * The axis range for the parent 3D graph's color bar; applicable when background fill varies. When data is 4D,
        * this should be comparable to the range of data along the 4th dimension; when the data is 3D, it should be 

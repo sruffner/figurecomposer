@@ -1112,6 +1112,8 @@ public class FGModelSchemaConverter
             if(!FGModelSchema.DEFAULT_SCATTER_TYPE.equals(s)) e.setAttributeValueByName(FGModelSchema.A_TYPE, s);
             s = spn.getMaxSymbolSize().toString(ScatterPlotNode.MAXSYMSIZECONSTRAINTS);
             if(!FGModelSchema.DEFAULT_SCATTER_SIZE.equals(s)) e.setAttributeValueByName(FGModelSchema.A_SIZE, s);
+            s = spn.getMinSymbolSize().toString(ScatterPlotNode.MAXSYMSIZECONSTRAINTS);
+            if(!FGModelSchema.DEFAULT_MINSIZE.equals(s)) e.setAttributeValueByName(FGModelSchema.A_MINSIZE, s);
 
             e.setAttributeValueByName(FGModelSchema.A_SRC, "#" + spn.getDataSetID());
             break;
@@ -1135,7 +1137,9 @@ public class FGModelSchemaConverter
             if(!FGModelSchema.DEFAULT_DOTSIZE.equals(s)) e.setAttributeValueByName(FGModelSchema.A_DOTSIZE, s);
             s = sp3.getProjectionDotColorsAsTokenList();
             if(!FGModelSchema.DEFAULT_DOTCOLOR.equals(s)) e.setAttributeValueByName(FGModelSchema.A_DOTCOLOR, s);
-            
+            s = sp3.getMinSymbolSize().toString(SymbolNode.SYMBOLSIZECONSTRAINTS);
+            if(!FGModelSchema.DEFAULT_MINSIZE.equals(s)) e.setAttributeValueByName(FGModelSchema.A_MINSIZE, s);
+
             e.setAttributeValueByName(FGModelSchema.A_SRC, "#" + sp3.getDataSetID());
             break;
          case AREA:
@@ -2002,7 +2006,10 @@ public class FGModelSchemaConverter
             s = e.getAttributeValueByName(FGModelSchema.A_SIZE);
             m = Measure.fromString((s != null) ? s : FGModelSchema.DEFAULT_SCATTER_SIZE);
             spn.setMaxSymbolSize(ScatterPlotNode.MAXSYMSIZECONSTRAINTS.constrain(m));
-            
+            s = e.getAttributeValueByName(FGModelSchema.A_MINSIZE);
+            m = Measure.fromString((s != null) ? s : FGModelSchema.DEFAULT_MINSIZE);
+            spn.setMinSymbolSize(ScatterPlotNode.MAXSYMSIZECONSTRAINTS.constrain(m));
+
             // A_SRC="#srcid" is required. Initially dataset is an empty placeholder with this ID. The actual datasets 
             // are injected after the model is constructed.
             s = e.getAttributeValueByName(FGModelSchema.A_SRC);
@@ -2039,7 +2046,10 @@ public class FGModelSchemaConverter
             s = e.getAttributeValueByName(FGModelSchema.A_DOTCOLOR);
             if(s == null) s = FGModelSchema.DEFAULT_DOTCOLOR;
             sp3.setProjectionDotColorsFromTokenList(s);
-            
+            s = e.getAttributeValueByName(FGModelSchema.A_MINSIZE);
+            m = Measure.fromString((s != null) ? s : FGModelSchema.DEFAULT_MINSIZE);
+            sp3.setMinSymbolSize(SymbolNode.SYMBOLSIZECONSTRAINTS.constrain(m));
+
             // A_SRC="#srcid" is required. Initially dataset is an empty placeholder with this ID. The actual datasets 
             // are injected after the model is constructed.
             s = e.getAttributeValueByName(FGModelSchema.A_SRC);
