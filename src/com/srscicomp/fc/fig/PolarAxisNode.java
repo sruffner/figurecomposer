@@ -1056,15 +1056,17 @@ public class PolarAxisNode extends FGraphicNode implements Cloneable
 
          // we don't want to wrap around the theta grid
          if(isTheta && (Utilities.restrictAngle(start) == Utilities.restrictAngle(end))) end -= 0.1;
-         
+
+         // NOTE: Hack to deal with the inexactness of FP values, eg: end = 0.15, div=0.150000000002.
          double div = start;
          while(div < range[0]) div += gridDivs[2];
-         while(div <= range[1] && div <= end && divsList.size() < MAXDIVS)
+         while(div <= range[1] && (div <= end + gridDivs[2]/10000.0) && divsList.size() < MAXDIVS)
          {
             divsList.add(div);
             div += gridDivs[2];
          }
       }
+
       for(int i=3; i<gridDivs.length; i++) if(range[0] <= gridDivs[i] && gridDivs[i] <= range[1] &&
             !divsList.contains(gridDivs[i]))
       {

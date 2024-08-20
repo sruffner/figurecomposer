@@ -123,8 +123,9 @@ function res = matfig2fyp(figHandle, dst, varargin)
 %       the Matlab legend in its FypML counterpart as best as possible, but expect some differences here. 
 %    -- Similarly, when MATFIG2FYP encounters a 'scribe.colorbar' object, it turns on the color axis of the FypML graph
 %       corresponding to the 'axes' attached to the Matlab colorbar.
-%    -- Any single-line text labels in an 'axes' that are not the specially designated x- or y-axis label are added to
-%       the companion FypML graph as label nodes.
+%    -- Any single-line text labels in an 'axes' that are not the specially designated X, Y or Z labels are added to
+%       the companion FypML graph as label nodes. As of 5.5.0, any Matlab 'Text' objects that are multi-line or have a
+%       visible text box and do NOT correspond to the X,Y, or Z axis label are added as FypML 'textbox' nodes.
 %    -- MATFIG2FYP can convert TeX-encoded "special characters" (eg, Greek letters) in a 'text' object, so long as the
 %       character has a counterpart in FypML. If not it is replaced by a '?'. TeX formatting commands are treated as
 %       plain text.
@@ -149,10 +150,6 @@ function res = matfig2fyp(figHandle, dst, varargin)
 %       in any direction, have a theta axis range less than 360 deg, etc) as Matlab's 'PolarAxes' object, and it handles
 %       the rendering of the polar grid and grid labels automatically. As of FC 5.1.2, any Matlab polar plot --
 %       whether 'axes' or 'PolarAxes', and including pie graphs -- is converted to a FypML 'pgraph' element.
-%    -- As of FC 5.5.0, any Matlab bubblechart (introduced in R2020b) is converted to a FypML 'scatter' or 'scatter3d'
-%       element. However, FypML computes individual bubbles sizes from the Z-coordinate data in a fundamentally
-%       different way from Matlab (there's no notion of the bubble size limits defined in Matlab, other than a max
-%       symbol size), so it cannot fully reproduce the bubblechart's appearance.
 % As of FC 5.0, there is limited support for converting 3D Matlab graphs to FypML:
 %    -- Unlike FypML, Matlab does not have a separate entity like 'axes3d' to present a 3D plot; instead,
 %       the 'axes' object is configured for a 3D view whenever it is created by a 3D plotting function like scatter3(),
@@ -521,6 +518,7 @@ end
       if(strcmp(hgs.type, 'text'))
          props = {'Color', 'DisplayName', 'FontAngle', 'FontName', 'FontSize', 'FontUnits', 'FontWeight'};
          props = cat(2, props, {'HorizontalAlignment', 'Position', 'Rotation', 'String', 'Units', 'VerticalAlignment'});
+         props = cat(2, props, {'EdgeColor', 'BackgroundColor', 'LineStyle', 'LineWidth', 'Margin', 'UserData'});
       end
       
       
@@ -581,16 +579,6 @@ end
          mLabel = get(hgs.handle, 'Title');
          if(isobject(mLabel))
             jObj.putProperty('Title_Str', mLabel.String);
-         end
-      end
-      
-      % special case: The 'polaraxes' object (first introduced in Matlab 2016a) uses a Matlab Text object for the 
-      % plot's title. We extract the title string and color from this object and store them as fake properties.
-      if(strcmp(hgs.type, 'matlab.graphics.axis.PolarAxes'))
-         mLabel = get(hgs.handle, 'Title');
-         if(isobject(mLabel))
-            jObj.putProperty('Title_Str', mLabel.String);
-            jObj.putProperty('Title_Color', mLabel.Color);
          end
       end
       
@@ -713,7 +701,7 @@ end
             bubbleinfo = [bubblesize bubblelim];
             jChild.putProperty('UserData', bubbleinfo);
          end
-
+         
          % add child object parent. Also add and its Matlab HG structure counterpart to the list of objects to be
          % added to the stack of objects to be processed (these could, in turn, have child objects)
          jObj.addChild(jChild);
@@ -721,6 +709,22 @@ end
          jKids = cat(1, jKids, jChild);
       end
       
+      % special case: The 'polaraxes' object (first introduced in Matlab 2016a) uses a Matlab Text object for the 
+      % plot's title in its 'Title' property, which is ignored by handle2struct(). Here we convert the 'Text' object to 
+      % an HGObject and append it as a child of the 'polaraxes'. The FIG-to-FypML engine adds a FypML label or textbox 
+      % child to render the title (unless the text is empty).
+      if(strcmp(hgs.type, 'matlab.graphics.axis.PolarAxes'))
+         mLabel = get(hgs.handle, 'Title');
+         if(isobject(mLabel))
+            hgTitle = handle2struct(mLabel);
+            jTitleChild = com.srscicomp.fc.matlab.HGObject(hgTitle.type, hgTitle.handle, [0 0 0 0]);
+            processProperties(hgTitle, jTitleChild);
+            jObj.addChild(jTitleChild);
+            hgKids = cat(1, hgKids, hgTitle);
+            jKids = cat(1, jKids, jChild);
+         end
+      end
+
    end
    %=== end of nested function addRelevantChildren(hgs, jObj) =========================================================
    

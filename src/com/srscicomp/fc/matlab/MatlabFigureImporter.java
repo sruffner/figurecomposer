@@ -629,6 +629,11 @@ public class MatlabFigureImporter
       // As a workaround, if SAVEFIGASIS is used to save the FIG file, the title string and color are stored in a 1x2
       // cell array in the 'UserData' field, which is preserved in the FIG file. Here we check for and process the
       // 'UserData' field and set up the 'Title_Str' and 'Title_Color' properties accordingly.
+      // (19aug2024) Changed how we deal with fact that the 'Title' property of a 'polaraxes' object is not saved to
+      // a FIG file. The 'Title' is a Matlab 'Text' object, which can be converted by handle2struct(). We do so,
+      // putting the resulting struct in the 'UserData' property of the 'polaraxes' object. The FIG-to-FypML engine
+      // checks for this form of "UserData" and adds the 'text' object as a child of the 'polaraxes'. This allows for
+      // multi-line and boxed title (the 'text' object is converted to a FypML 'label' or 'textbox', as needed.
       if(type.equals("matlab.graphics.axis.PolarAxes"))
       {
          MLArray appData = mlProps.getField("ApplicationData");
@@ -654,6 +659,17 @@ public class MatlabFigureImporter
             {
                hgo.putProperty("Title_Str", ((MLChar) cellAr.get(0)).getString(0));
                hgo.putProperty("Title_Color", convertHGProperty(cellAr.get(1)));
+            }
+         }
+
+         if(userData != null && userData.isStruct())
+         {
+            MLStructure structAr = (MLStructure) userData;
+            if(structAr.getSize() == 1 && "text".equals(convertHGProperty(structAr.getField("type", 0))))
+            {
+               HGObject titleObj = constructHGObject(structAr, 0);
+               String titleStr = titleObj.getTextStringProperty();
+               if(titleStr != null && !titleStr.isEmpty()) hgo.addChild(titleObj);
             }
          }
       }
@@ -719,7 +735,7 @@ public class MatlabFigureImporter
       "GridColor", "GridLineStyle", "Position", "RAxisLocation", "RColor", "RDir", "RGrid", "RLim", "RTick", 
       "RTickLabel", "RTickLabelMode", "ThetaAxisUnits", "ThetaColor", "ThetaDir", "ThetaGrid", "ThetaLim", "ThetaTick", 
       "ThetaTickLabel", "ThetaTickLabelMode", "ThetaZeroLocation", "TitleFontWeight", "TitleFontSizeMultiplier", 
-      "Units", "Visible"
+      "Units", "Visible", "UserData"
    };
    /** Imported properties of a Matlab "graph2d.lineseries" or "specgraph.stairseries" object. */
    private static final String[] LINESERIESPROPS = new String[] {
@@ -795,7 +811,8 @@ public class MatlabFigureImporter
    /** Imported properties of a Matlab "text" object. */
    private static final String[] TEXTPROPS = new String[] {
       "Color", "DisplayName", "FontAngle", "FontName", "FontSize", "FontUnits", "FontWeight", "HorizontalAlignment", 
-      "Position", "Rotation", "String", "Units", "VerticalAlignment"
+      "Position", "Rotation", "String", "Units", "VerticalAlignment", "EdgeColor", "BackgroundColor", "LineStyle",
+      "LineWidth", "Margin"
    };
    
    /**

@@ -19,16 +19,12 @@ function savefigasis(figHandle, dst)
 %  'manual'. The 2014b release includes a major overhaul of Matlab graphics; colorbar objects are no longer 'axes' 
 %  objects, and have some different properties.
 % 
-%  -- In order to import the title of a 'matlab.graphics.axis.PolarAxes' object in the FypML figure, we have to store
-%  the title string and color in the object's 'UserData' field. This is because, unlike the 'axes' object, the 
-%  'PolarAxes' object lacks a child 'text' node. Instead, the title is a full-fledged Matlab Text object stored in the 
-%  'Title' property of the 'PolarAxes'. When using matfig2fyp() to do the import, that script has access to the 'Title'
-%  property and stores the title string and color in manufactured properties 'Title_Str" and "Title_Color" in the Java
-%  object representing the 'PolarAxes'. Unfortunately, the FigureComposer cannot process the 'Title' property as a 
-%  Matlab Text object, so the title information cannot be recovered if you import the FIG file directly into FC instead 
-%  of using matfig2fyp(). As a workaround, SAVEFIGASIS stores the title string and color in a cell array {String, Color}
-%  in the 'UserData" field, which will be preserved in the FIG file. However, if 'UserData' is already set to something 
-%  else, no action is taken. 
+%  -- (As of Aug 2024, FC 5.5.0) In order to import the title of a 'matlab.graphics.axis.PolarAxes' object in the FypML 
+% figure, the polar plot's 'Title' property, a full-fledged Matlab Text object, is converted to a structure via 
+% handle2struct() and that structure is saved in the 'UserData' field. When the FIG-to-FypML engine encounters this 
+% field, it adds the title as a 'label' or 'textbox' child of the FypML 'pgraph' element. Prior to this change, 
+% SAVEFIGASIS only stored the title string and color in a cell array {title, color}, which was placed in 'UserData'.
+% (The FIG-to-FypML engine handles either form for the 'UserData' property.)
 %
 %  -- For colorbar objects (R2014b or later), the axis label is in a Matlab Text object "Label". Since FigureComposer
 %  cannot process that object, it would not have access to the label string. As a workaround SAVEFIGASIS stores the
@@ -94,9 +90,8 @@ for i=1:length(fig.children)
       end
    elseif(strcmp(child.type, 'matlab.graphics.axis.PolarAxes'))
       titleObj = get(child.handle, 'Title');
-      userData = get(child.handle, 'UserData');
-      if(isobject(titleObj) && isempty(userData))
-         set(child.handle, 'UserData', {titleObj.String, titleObj.Color});
+      if(isobject(titleObj))
+         set(child.handle, 'UserData', handle2struct(titleObj));
       end
    end
 
@@ -112,6 +107,7 @@ for i=1:length(fig.children)
          end
       end
    end
+
 end
 
 % now save the figure to a FIG file. Make sure we don't use V7.3 (HDF)

@@ -1,14 +1,19 @@
 package com.srscicomp.fc.matlab;
 
-import java.awt.Color;
+import java.awt.*;
+import java.awt.font.LineMetrics;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 
 import com.srscicomp.common.g2dutil.Marker;
+import com.srscicomp.common.g2dutil.SingleStringPainter;
 import com.srscicomp.common.g2dutil.TextAlign;
 import com.srscicomp.common.ui.BkgFill;
 import com.srscicomp.common.ui.FontStyle;
@@ -1186,7 +1191,7 @@ public class MatlabUtilities
          else if(hgChild.getType().equals("line"))
             addLineToGraph(graph, hgChild);
          else if(hgChild.getType().equals("text") && !hgAxes.isAxesLabelHandle(hgChild.getHandle()))
-            addTextLabelToGraph(graph, hgAxes, hgChild, hgAxes.isAxesTitleHandle(hgChild.getHandle()));
+            addTextLabelToGraph(graph, hgAxes, hgChild);
       }
       fixLabelLocationsInGraph(graph);
       
@@ -1607,7 +1612,7 @@ public class MatlabUtilities
          else if(hgChild.getType().equals("line"))
             addLineToGraph(pgraph, hgChild);
          else if(hgChild.getType().equals("text") && !hgAxes.isAxesLabelHandle(hgChild.getHandle()))
-            addTextLabelToGraph(pgraph, hgAxes, hgChild, hgAxes.isAxesTitleHandle(hgChild.getHandle()));
+            addTextLabelToGraph(pgraph, hgAxes, hgChild);
          else if(hgChild.getType().equals("patch") && hgChild.isPieChart())
             addPatchAsPieChart(pgraph, hgChild, matCM, cLim);
       }
@@ -2023,7 +2028,7 @@ public class MatlabUtilities
          else if(hgChild.getType().equals("surface") && hgChild.is3DBarPlot())
             add3DBarPlotToGraph(g3, hgChild);
          else if(hgChild.getType().equals("text") && !hgAxes.isAxesLabelHandle(hgChild.getHandle()))
-            addTextLabelToGraph(g3, hgAxes, hgChild, hgAxes.isAxesTitleHandle(hgChild.getHandle()));
+            addTextLabelToGraph(g3, hgAxes, hgChild);
       }
       // fixLabelLocationsInGraph(g3);  
       
@@ -6035,16 +6040,22 @@ public class MatlabUtilities
    }
 
    /**
-    * Append a text label to the graph as defined by a Matlab Handle Graphics "text" object.
+    * Append a text annotation to the graph as defined by a Matlab Handle Graphics "text" object. A Matlab 'Text' object
+    * with more than one line of text, or with a visible text box, is converted to a FypML <b>textbox</b> element rather
+    * than a <b>label</b>.</p>
+    *
+    * <p><b>NOTE</b>: As of Aug 2024 (FC 5.5.0), this method always uses the 'Position', 'Unit', 'Rotate', and other
+    * position-related properties to determine the location of the <b>label</b> or <b>textbox</b> element. When a
+    * textbox is required, the text line(s) are measured using a hidden graphics context in an effort to replicate the
+    * appearance of the original Matlab 'Text' object as accurately as possible.</p>
+    * <p><b><i>Do not use this method to convert a "text" object corresponding to an axis label.</i></b></p>
+    *
     * @param graph The parent 2D or 3D graph container in the FypML figure being constructed. It will be an instance of
     * {@link GraphNode}, {@link PolarPlotNode}, or {@link Graph3DNode}.
     * @param hgAxes The HG "axes" or "polaraxes" begin converted to a FypML 2D or 3D graph.
     * @param textObj The HG "text" object defining the properties of the text label to be added to the graph.
-    * @param isTitle True if the text object corresponds to the graph's title. The corresponding text label is treated
-    * specially: it is always positioned at (50%, 105%) and centered horizontally. Furthermore, if the text object has
-    * more than one line of text, then a {@link TextBoxNode} is added insteaad.
     */
-   private static void addTextLabelToGraph(FGraphicNode graph, HGObject hgAxes, HGObject textObj, boolean isTitle)
+   private static void addTextLabelToGraph(FGraphicNode graph, HGObject hgAxes, HGObject textObj)
    {
       // HG "String" property: if this is implicit, null, or an empty string, then we don't add a text label at all.
       String labelStr = textObj.getTextStringProperty();
@@ -6052,8 +6063,13 @@ public class MatlabUtilities
       
       // process the string for TeX-encoded special characters
       labelStr = processSpecialCharacters(labelStr);
-      
-      // HG "Position" property: Should be a 2- or 3-element double array. If not present, don't add a text label.
+
+      // number of text lines in the string
+      // int nLines = Math.max(1, (int) labelStr.codePoints().filter(ch -> ch == '\n').count());
+
+      // HG "Position" and "Units" properties define the starting location for the text annotation. Note that some
+      // values for "Units" may not be accurately converted. The typical value for "Units" is "data". Don't add a text
+      // annotation if "Position" is not defined or is not a 2- or 3-element double vector.
       double[] pos = null;
       Object posProp = textObj.getProperty("Position");
       if(posProp != null && posProp.getClass().equals(double[].class))
@@ -6063,51 +6079,6 @@ public class MatlabUtilities
       }
       if(pos == null) return;
 
-      // HG "Color" property specifies the text/fill color for the LabelNode
-      Color textC = MatlabUtilities.processColorSpec(textObj.getProperty("Color"));
-
-      // special case: a multi-line graph title. Use a FypML text box since a text label is a one-liner.
-      if(isTitle && (labelStr.indexOf('\n') > 0))
-      {
-         if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TEXTBOX, -1))
-            throw new NeverOccursException("Failed to insert new text box into FypML 2D or 3D graph container.");
-
-         TextBoxNode tbox = (TextBoxNode) graph.getChildAt(graph.getChildCount()-1);
-         tbox.setTitle(labelStr);
-         setFontProperties(tbox, textObj);
-         if(textC != null) tbox.setFillColor(textC);
-
-         tbox.setXY(new Measure(0, Measure.Unit.PCT), new Measure(105, Measure.Unit.PCT));
-         tbox.setMeasuredStrokeWidth(new Measure(0, Measure.Unit.PT));
-         tbox.setWidth(graph.getWidth());
-         tbox.setHeight(new Measure(0.5, Measure.Unit.IN));
-         tbox.setClip(false);
-         tbox.setHorizontalAlignment(TextAlign.CENTERED);
-         tbox.setVerticalAlignment(TextAlign.TRAILING);
-         return;
-      }
-
-      // append the text label node to the graph container and set its label string and font-related properties
-      if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.LABEL, -1))
-         throw new NeverOccursException("Failed to insert new text label into FypML 2D or 3D graph container.");
-      
-      LabelNode label = (LabelNode) graph.getChildAt(graph.getChildCount()-1);
-      label.setTitle(labelStr);
-      setFontProperties(label, textObj);
-      if(textC != null) label.setFillColor(textC);
-
-      // the 'text' object specially identified as the graph title is treated differently. It is always located at the
-      // top of the graph's data window, centered horizontally.
-      if(isTitle)
-      {
-         label.setXY(new Measure(50, Measure.Unit.PCT), new Measure(105, Measure.Unit.PCT));
-         label.setHorizontalAlignment(TextAlign.CENTERED);
-         label.setVerticalAlignment(TextAlign.TRAILING);
-         return;
-      }
-      
-      // HG "Position" and "Units" properties define the starting location for the text label. Note that some values for
-      // "Units" may not be accurately converted. The typical value for "Units" is "data".
       Measure.Unit unit = Measure.Unit.USER;
       Object unitProp = textObj.getProperty("Units");
       if(unitProp != null && unitProp.getClass().equals(String.class))
@@ -6143,13 +6114,13 @@ public class MatlabUtilities
             break;
          }
       }
-      
-      // if the text label appears in a 2D polar plot and is positioned in native coordinate system units, we have to
+
+      // if the text annotation appears in a 2D polar plot and is positioned in native coordinate system units, we must
       // convert to polar coordinates: Matlab always uses a Cartesian coordinate system, while FypML expects polar
       // coordinates when positioning in "user units" in a polar graph.
       // NOTE: for a Matlab "polaraxes", "data" units will already be in polar coordinates -- but theta will be
       // in radians, not degrees.
-      if(((graph instanceof PolarPlotNode) || ((graph instanceof GraphNode) && ((GraphNode)graph).isPolar())) && 
+      if(((graph instanceof PolarPlotNode) || ((graph instanceof GraphNode) && ((GraphNode)graph).isPolar())) &&
             (unit == Measure.Unit.USER))
       {
          if(hgAxes.getType().equals("axes"))
@@ -6161,47 +6132,170 @@ public class MatlabUtilities
          else
             pos[0] = Math.toDegrees(pos[0]);
       }
-      
-      // when the graph's axes are configured for automatic range adjustment, it is highly likely that the axis range
+
+      // NOTE: When the graph's axes are configured for automatic range adjustment, it is likely that the axis range
       // computed by Matlab will be different from that computed by FC. Thus, when the location is in "user" units,
       // the text label may appear in a different location in the converted FypML graph. Also, we preserve 6 significant
       // digits in case units are in 'user' units, in which case X,Y could be very large or small.
-      label.setXY(new Measure(Utilities.limitSignificantDigits(pos[0], 6), unit), 
-            new Measure(Utilities.limitSignificantDigits(pos[1], 6), unit));
-      
+      Measure xMeasure = new Measure(Utilities.limitSignificantDigits(pos[0], 6), unit);
+      Measure yMeasure = new Measure(Utilities.limitSignificantDigits(pos[1], 6), unit);
+
+      // HG "Color" property specifies the text/fill color for the LabelNode
+      Color textC = MatlabUtilities.processColorSpec(textObj.getProperty("Color"));
+
       // HG "Rotation" property: 0 if implicit; else a java.lang.Double specifying the CCW rotation about the label's
       // starting location, in degrees
+      double rotDeg = 0;
       Object rotProp = textObj.getProperty("Rotation");
       if(rotProp != null && rotProp.getClass().equals(Double.class))
-      {
-         double rotDeg = (Double) rotProp;
-         label.setRotate(rotDeg);
-      }
-      
+         rotDeg = (Double) rotProp;
+
       // HG "HorizontalAlignment" property
-      TextAlign align = TextAlign.LEADING;
+      TextAlign hAlign = TextAlign.LEADING;
       Object alignProp = textObj.getProperty("HorizontalAlignment");
       if(alignProp != null && alignProp.getClass().equals(String.class))
       {
          String s = (String) alignProp;
-         if(s.equals("center")) align = TextAlign.CENTERED;
-         else if(s.equals("right")) align = TextAlign.TRAILING;
+         if(s.equals("center")) hAlign = TextAlign.CENTERED;
+         else if(s.equals("right")) hAlign = TextAlign.TRAILING;
       }
-      label.setHorizontalAlignment(align);
-      
+
       // HG "VerticalAlignment" property: Not all possible alignment choices in Matlab are supported: "baseline" and
       // "bottom" are treated as the same; as are "top" and "cap". Default in Matlab is "middle"
-      align = TextAlign.CENTERED;
+      TextAlign vAlign = TextAlign.CENTERED;
       alignProp = textObj.getProperty("VerticalAlignment");
       if(alignProp != null && alignProp.getClass().equals(String.class))
       {
          String s = (String) alignProp;
-         if(s.equals("top") || s.equals("cap")) align = TextAlign.LEADING;
-         else if(s.equals("bottom") || s.equals("baseline")) align = TextAlign.TRAILING;
+         if(s.equals("top") || s.equals("cap")) vAlign = TextAlign.LEADING;
+         else if(s.equals("bottom") || s.equals("baseline")) vAlign = TextAlign.TRAILING;
       }
-      label.setVerticalAlignment(align);
+
+      // represent text annotation with either a FypML label or textbox element
+      if(!textObj.isTextBox())
+      {
+         if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.LABEL, -1))
+            throw new NeverOccursException("Failed to insert new text label into FypML 2D or 3D graph container.");
+
+         LabelNode label = (LabelNode) graph.getChildAt(graph.getChildCount()-1);
+         label.setTitle(labelStr);
+         setFontProperties(label, textObj);
+         if(textC != null) label.setFillColor(textC);
+
+         label.setXY(xMeasure, yMeasure);
+         if(rotDeg != 0) label.setRotate(rotDeg);
+         label.setHorizontalAlignment(hAlign);
+         label.setVerticalAlignment(vAlign);
+      }
+      else
+      {
+         if(!Objects.requireNonNull(graph.getGraphicModel()).insertNode(graph, FGNodeType.TEXTBOX, -1))
+            throw new NeverOccursException("Failed to insert new text box into FypML 2D or 3D graph container.");
+
+         TextBoxNode tbox = (TextBoxNode) graph.getChildAt(graph.getChildCount()-1);
+         tbox.setTitle(labelStr);
+         setFontProperties(tbox, textObj);
+         if(textC != null) tbox.setFillColor(textC);
+
+         // convert properties that affect text box appearance (defaults in paren): EdgeColor ("none"), LineWidth (0.5),
+         // LineStyle ("-"), BackgroundColor( "none"), Margin ("3")
+         Color edgeC = MatlabUtilities.processColorSpec(textObj.getProperty("EdgeColor"));  // default is "none" > null
+         Measure lineWidth = MatlabUtilities.processLineWidth(textObj);
+         StrokePattern lineStyle = MatlabUtilities.processLineStyle(textObj);
+         Color bkgC = MatlabUtilities.processColorSpec(textObj.getProperty("BackgroundColor"));
+         double marginPts = 3;
+         Object marginProp = textObj.getProperty("Margin");
+         if(marginProp != null && marginProp.getClass().equals(Double.class))
+         {
+            marginPts = (Double) marginProp;
+            if(marginPts <= 0) marginPts = 1;  // Matlab doesn't permit a non-positive margin
+         }
+
+         if(lineStyle != null) tbox.setStrokePattern(lineStyle);
+         if(edgeC != null) tbox.setStrokeColor(edgeC);
+         tbox.setMeasuredStrokeWidth(
+               (edgeC != null && lineStyle != null) ? lineWidth : new Measure(0, Measure.Unit.PT));
+
+         tbox.setBackgroundFill(BkgFill.createSolidFill(bkgC == null ? new Color(0, 0, 0, 0) : bkgC));
+         tbox.setMargin(new Measure(marginPts, Measure.Unit.PT));
+         tbox.setClip(true);  // expect text to fit in box dimensions calculated below!
+
+         // For a FypML textbox, (X,Y) is the bottom-left corner of the text box WRT parent; in Matlab it is the
+         // starting text location. We have to adjust the Matlab position IAW the horiz and vert alignment AND the
+         // rotation. But first we have to measure the text lines to determine the width and height of a rectangle
+         // that bounds the text lines without any additional line breaks!
+         double[] dims = getRectangleBoundingText(tbox, labelStr);
+
+         // push out width and height IAW margin size.
+         for(int i=0; i<dims.length; i++) dims[i] += 2*Measure.realUnitsToMI(marginPts, Measure.Unit.PT);
+
+         // need to possibly rotate and translate Matlab text starting position to find the text box BL corner. The
+         // rotation is about that starting position.
+         Point2D loc = graph.getViewport().toMilliInches(xMeasure, yMeasure);
+
+         AffineTransform txf = new AffineTransform();
+         if(rotDeg != 0) txf.rotate(Math.toRadians(rotDeg));
+         double xOfs = (hAlign==TextAlign.LEADING) ? 0 : -dims[0] / (hAlign==TextAlign.TRAILING ? 1.0 : 2.0);
+         double yOfs = (vAlign==TextAlign.TRAILING) ? 0 : -dims[1] / (vAlign==TextAlign.LEADING ? 1.0 : 2.0);
+         txf.translate(xOfs, yOfs);
+         if(rotDeg != 0) txf.rotate(-Math.toRadians(rotDeg));
+         txf.transform(loc, loc);
+
+         double xInPts = Measure.milliInToRealUnits(loc.getX(), Measure.Unit.PT);
+         double yInPts = Measure.milliInToRealUnits(loc.getY(), Measure.Unit.PT);
+         double wInPts = Measure.milliInToRealUnits(dims[0], Measure.Unit.PT);
+         double hInPts = Measure.milliInToRealUnits(dims[1], Measure.Unit.PT);
+         tbox.setXY(new Measure(xInPts, Measure.Unit.PT), new Measure(yInPts, Measure.Unit.PT));
+         tbox.setWidth(new Measure(wInPts, Measure.Unit.PT));
+         tbox.setHeight(new Measure(hInPts, Measure.Unit.PT));
+         if(rotDeg != 0) tbox.setRotate(rotDeg);
+         tbox.setHorizontalAlignment(hAlign);
+         tbox.setVerticalAlignment(vAlign);
+      }
    }
-   
+
+   /**
+    * Helper method for {@link #addTextLabelToGraph(FGraphicNode, HGObject, HGObject)}. It finds the width and
+    * height of the rectangle bounding the specified text such that the text lines fit without any additional line
+    * breaks.
+    *
+    * @param tbox The FypML text box node that will house the text (for font properties).
+    * @param text The text content. Each linefeed character in this string starts a new line of text.
+    * @return A 2-element array [w, h] containing the width and height of bounding rectangle, in milli-inches.
+    */
+   private static double[] getRectangleBoundingText(TextBoxNode tbox, String text)
+   {
+      SingleStringPainter painter = new SingleStringPainter();
+      painter.setStyle(tbox);
+      painter.setAlignment(TextAlign.CENTERED, TextAlign.CENTERED);
+      painter.setLocation(0, 0);
+
+      BufferedImage bi = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+      Graphics2D g2BI = bi.createGraphics();
+
+      // find width of longest text line
+      String[] lines = text.split("\n");
+      double wMI = 0;
+      Rectangle2D rLine = new Rectangle2D.Double();
+      for(String line : lines)
+      {
+         painter.setText(line);
+         painter.updateFontRenderContext(g2BI);
+         painter.invalidateBounds();
+         painter.getBounds2D(rLine);
+         wMI = Math.max(wMI, rLine.getWidth() + 5);  // added some slop
+      }
+
+      // height computed in the same way as for a FypML textbox element
+      LineMetrics lm = tbox.getFont().getLineMetrics("AHMPWSFgjpqy", g2BI.getFontRenderContext());
+      float ascent = lm.getAscent();
+      float descent = lm.getDescent();
+      double hMI = ((lines.length - 1) * tbox.getLineHeight() + 1) * tbox.getFontSize();
+
+      g2BI.dispose();
+      return new double[] {wMI, hMI};
+   }
+
    /**
     * Matlab R2016a introduced a new Handle Graphics object to represent a true polar plot, with an angular axis (theta)
     * and radial axis (R): "matlab.graphics.axis.PolarAxes". This object is quite different from the standard "axes" 
@@ -6527,6 +6621,7 @@ public class MatlabUtilities
          else divs = ticks;
       }
       rAxis.setGridDivisions(divs);
+      rAxis.setGridLabelFormat(LabelFormat.F2);
 
       // HG "RTickLabelMode", "RTickLabel": Custom grid labels for the radial axis. We use the labels supplied in 
       // "RTickLabel" if property exists and is valid, and if "RTickLabelMode" is not explicitly set to "auto".
@@ -6594,7 +6689,7 @@ public class MatlabUtilities
             label.setVerticalAlignment(TextAlign.TRAILING);
          }
       }
-      
+
       // HG "CLim" property sets the range of the color axis. The default is [0 1].
       double[] cLim = HGObject.getDoubleVectorFromProperty(hgPolar.getProperty("CLim"));
       if(Utilities.isWellDefined(cLim))
@@ -6628,7 +6723,7 @@ public class MatlabUtilities
             addHistogramToGraph(pgraph, hgChild, true);
             break;
          case "text":
-            addTextLabelToGraph(pgraph, hgPolar, hgChild, false);
+            addTextLabelToGraph(pgraph, hgPolar, hgChild);
             break;
          }
       }

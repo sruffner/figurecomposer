@@ -205,7 +205,7 @@ class FGNScatterPlotEditor extends FGNEditor implements ActionListener
       else if(src == minSizeEditor)
       {
          ok = spn.setMinSymbolSize(minSizeEditor.getMeasure());
-         if(!ok) minSizeEditor.setMeasure(spn.getMaxSymbolSize());
+         if(!ok) minSizeEditor.setMeasure(spn.getMinSymbolSize());
       }
 
       if(!ok) Toolkit.getDefaultToolkit().beep();
