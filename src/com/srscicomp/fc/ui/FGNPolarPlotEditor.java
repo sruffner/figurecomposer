@@ -13,17 +13,7 @@ import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.SpringLayout;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
@@ -86,7 +76,11 @@ class FGNPolarPlotEditor extends FGNEditor implements TabStripModel
       tabPanel.add(polarAxisCard, CARD_PAXIS);
       tabPanel.add(colorBarCard, CARD_CBAR);
       tabPanel.add(legendCard, CARD_LEGEND);
- 
+      tabPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 2, 2, 2, tabStrip.getSelectionColor()),
+            BorderFactory.createEmptyBorder(GAP, GAP, GAP, GAP)
+      ));
+
       setLayout(new BorderLayout());
       add(tabStrip, BorderLayout.NORTH);
       add(tabPanel, BorderLayout.CENTER);

@@ -85,7 +85,11 @@ class FGNGraph3DEditor extends FGNEditor implements TabStripModel
       tabPanel.add(axis3dCard, CARD_AXIS);
       tabPanel.add(colorBarCard, CARD_CBAR);
       tabPanel.add(legendCard, CARD_LEGEND);
-      
+      tabPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 2, 2, 2, tabStrip.getSelectionColor()),
+            BorderFactory.createEmptyBorder(GAP, GAP, GAP, GAP)
+      ));
+
       setLayout(new BorderLayout());
       add(tabStrip, BorderLayout.NORTH);
       add(tabPanel, BorderLayout.CENTER);

@@ -37,7 +37,6 @@ import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.border.Border;
 
 import com.srscicomp.common.g2dutil.BasicPainterStyle;
 import com.srscicomp.common.g2dutil.SingleStringPainter;
@@ -1503,8 +1502,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          editorsByType.put(FGNodeType.PIE, new FGNPieChartEditor());
          editorsByType.put(FGNodeType.PGRAPH, polarPlotEditor);
          editorsByType.put(FGNodeType.PAXIS, polarPlotEditor);
-         
-         
+
          // NOTE: The legend node type is omitted from the above map because all 3 graph container types have a legend
          // component. Similarly, the CBAR node type is omitted because both the 2D graph and polar plot containers
          // have a color bar/axis. And the TICKS node type is omitted because the color bar can have tick sets, so that
@@ -1516,21 +1514,28 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
                FGraphicModel.getSupportedUnicodeSubsets(), 2, 15);
          mapper.setFocusable(false);
          mapper.setBorder(BorderFactory.createCompoundBorder(
-               BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(6, 6, 10, 6),
-                     BorderFactory.createRaisedSoftBevelBorder()),
-               BorderFactory.createTitledBorder("Special characters")
-               ));
+               BorderFactory.createEmptyBorder(0, 0, 10, 0),
+               BorderFactory.createCompoundBorder(
+                     BorderFactory.createTitledBorder(
+                        BorderFactory.createMatteBorder(1, 0, 3, 0, Color.GRAY),
+                     "Special Characters"),
+                     BorderFactory.createEmptyBorder(2, 0, 10, 0)
+               )
+         ));
          mapper.setVisible(false);
          mapper.addPropertyChangeListener(JUnicodeCharacterMap.SELCHAR_PROPERTY, this);
-         
-         setLayout(new BorderLayout());
-         // add(currentEditor, BorderLayout.CENTER);
-         add(Box.createHorizontalStrut(5), BorderLayout.WEST);
-         add(Box.createHorizontalStrut(5), BorderLayout.EAST);
-         add(mapper, BorderLayout.NORTH);
-         add(Box.createVerticalStrut(42), BorderLayout.SOUTH);
 
-         setBorder(normalBorder);
+         centerPanel = new JPanel();
+         centerPanel.setLayout(new BorderLayout());
+         centerPanel.add(mapper, BorderLayout.NORTH);
+         // centerPanel.add(currentEditor, BorderLayout.CENTER);
+
+         setLayout(new BorderLayout());
+         add(centerPanel, BorderLayout.CENTER);
+         add(Box.createVerticalStrut(10), BorderLayout.NORTH);
+         add(Box.createHorizontalStrut(10), BorderLayout.WEST);
+         add(Box.createHorizontalStrut(10), BorderLayout.EAST);
+         add(Box.createVerticalStrut(50), BorderLayout.SOUTH);
          
          titlePainter = new StringPainter();
          titlePainter.setAlignment(TextAlign.LEADING, TextAlign.CENTERED);
@@ -1547,8 +1552,8 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
             if(fixedWidth < dEditor.width) fixedWidth = dEditor.width;
             if(maxHeight < dEditor.height) maxHeight = dEditor.height;  
          }
-         fixedWidth += 12;
-         maxHeight += 51;
+         fixedWidth += 22;  // to account for the struts all around the content (see above)
+         maxHeight += 62;
       }
 
       /** Overridden to set fixed width accommodating largest preferred width among the node-specific editors. */
@@ -1614,12 +1619,12 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
                if(currentEditor != null)
                {
                   currentEditor.onLowered();
-                  remove(currentEditor);
+                  centerPanel.remove(currentEditor);
                }
                currentEditor = nextEditor;
                currentEditor.load(currentNode);
                currentEditor.onRaised();
-               add(currentEditor, BorderLayout.CENTER);
+               centerPanel.add(currentEditor, BorderLayout.CENTER);
                revalidate();
                repaint();
             }
@@ -1634,8 +1639,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          }
 
          mapper.setMappedFont(currentNode.getFont());
-         
-         setBorder(fig.isMultiNodeSelection() ? multiSelBorder : normalBorder);
+
          setVisible(true);
          currentEditor.onRaised();
       }
@@ -1714,8 +1718,9 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       @Override protected void paintComponent(Graphics g)
       {
          Graphics2D g2 = (Graphics2D) g;
+         int w = getWidth();
          int h = getHeight();
-         
+
          // we always want nice-looking renderings
          g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
          g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -1725,15 +1730,21 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          // when the current selection contains multiple nodes of the same type, the editor remains visible so that the
          // user can make simultaneous changes to all of the nodes selected. To cue the user to this special situation,
          // the node editor's background is different.
-         Color bkg = getBackground();
-         if(fig != null && fig.isHomogeneousSelection() && fig.isMultiNodeSelection()) bkg = multiSelBkg;
-         
-         // paint the background with a gradient highlighting panel "title bar" along bottom edge
-         g2.setPaint(new GradientPaint(0, h, bkg, 0, h-20, bkg.brighter().brighter(), true));
-         g2.fillRect(0, h-40, getWidth(), 40);
+         boolean isMultiSel = (fig != null) && fig.isHomogeneousSelection() && fig.isMultiNodeSelection();
+         Color bkg = isMultiSel ? multiSelBkg : getBackground();
+
+         // fill entire background with normal background color
          g2.setPaint(getBackground());
-         g2.fillRect(0, 0, getWidth(), h-40);
-         
+         g2.fillRect(0, 0, w, h);
+
+         // the panel "title bar" is a rounded rectangle filled with a gradient
+         g2.setPaint(new GradientPaint(0, h, bkg, 0, h-20, bkg.brighter().brighter(), true));
+         g2.fillRoundRect(0, h-40, w, 40, 16, 16);
+
+         g2.setColor(isMultiSel ? multiSelBkg : Color.GRAY);
+         borderPath.setRoundRect(1, 1, w-2, h-2, 16, 16);
+         g2.draw(borderPath);
+
          // paint "title bar" along bottom edge: icon plus label
          ImageIcon icon = (currentEditor != null) ? currentEditor.getRepresentativeIcon() : FCIcons.V4_BROKEN;
          String title = ((currentEditor != null) ? currentEditor.getRepresentativeTitle() : "Node Properties");
@@ -1761,6 +1772,9 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
        */
       final JUnicodeCharacterMap mapper;
 
+      /** This panel contains both the current editor and the character mapper tool, which may be hidden. */
+      private JPanel centerPanel = null;
+
       /** Fixed width of node properties editor accounts for width of widest node-specific editor. */
       private int fixedWidth = -1;
       /** Maximum height of node properties editor for height of tallest node-specific editor. */
@@ -1772,12 +1786,8 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       /** Node editor title's background color when multiple nodes selected of the same type. */
       private final Color multiSelBkg = new Color(240,128,128);
       
-      /** Normal border for the node editor container. */
-      private final Border normalBorder = BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(5,0,0,0), BorderFactory.createMatteBorder(2, 1, 2, 1, Color.GRAY));
-      /** Border for node editor container when editing a homogeneous multiple-object selection. */
-      private final Border multiSelBorder = BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(5,0,0,0), BorderFactory.createMatteBorder(2, 1, 2, 1, multiSelBkg));
+      /** A rounded rectangle border for the (custom-painted) node editor container. */
+      private final RoundRectangle2D borderPath = new RoundRectangle2D.Double();
    }
    
    
