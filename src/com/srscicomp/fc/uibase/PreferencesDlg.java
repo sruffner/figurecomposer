@@ -1,12 +1,6 @@
 package com.srscicomp.fc.uibase;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Insets;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -14,24 +8,10 @@ import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.SpringLayout;
+import javax.swing.*;
 import javax.swing.border.BevelBorder;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
@@ -39,15 +19,7 @@ import javax.swing.table.TableColumn;
 import com.srscicomp.common.g2dutil.Marker;
 import com.srscicomp.common.g2dutil.StrokeCap;
 import com.srscicomp.common.g2dutil.StrokeJoin;
-import com.srscicomp.common.ui.ColorCellEditor;
-import com.srscicomp.common.ui.ColorCellRenderer;
-import com.srscicomp.common.ui.FontFamilyButton;
-import com.srscicomp.common.ui.FontStyle;
-import com.srscicomp.common.ui.GenericFont;
-import com.srscicomp.common.ui.JPreferredSizePanel;
-import com.srscicomp.common.ui.MultiButton;
-import com.srscicomp.common.ui.NumericTextField;
-import com.srscicomp.common.ui.RGBColorPicker;
+import com.srscicomp.common.ui.*;
 import com.srscicomp.fc.fig.AxisNode;
 import com.srscicomp.fc.fig.CalibrationBarNode;
 import com.srscicomp.fc.fig.ColorLUT;
@@ -76,7 +48,7 @@ import com.srscicomp.fc.fig.TickSetNode;
  * 
  * @author  sruffner
  */
-public class PreferencesDlg extends JDialog implements ActionListener, PropertyChangeListener, ItemListener
+public class PreferencesDlg extends JDialog implements ActionListener, PropertyChangeListener, ItemListener, TabStripModel
 {
    /** The one and only <i>Preferences</i> dialog in the application. Lazily created. */
    private static PreferencesDlg prefDlg = null;
@@ -194,12 +166,40 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
 
    /** Check box sets preferred default value for the contour node property that enables/disabled image smoothing. */
    private JCheckBox enaHMSmoothCB = null;
-   
+
+   /**
+    * Container for each of the "cards" in which graphic node property default widgets are housed, with only one card
+    * visible at a time. The user selects a particular card via the tab strip that sits above this panel.
+    */
+   private JPanel propTabPanel = null;
+
+   /** Index of the currently selected tab, determining which property defaults "card" is displayed. */
+   private int iSelectedTab = 0;
+
+   /** List of all change listeners registered with the tab strip model. */
+   private final EventListenerList tabListeners = new EventListenerList();
+
+   /** Card ID and tab label for tab pane displaying text/draw style defaults. */
+   private final static String CARD_TEXT = "Text/Draw Styles";
+   /** Card ID and tab label for tab pane displaying tick mark set property defaults. */
+   private final static String CARD_TICKS = "Tick Marks";
+   /** Card ID and tab label for tab pane displaying all other property defaults. */
+   private final static String CARD_OTHER = "Other";
+
+   /** The tab labels for the tab strip (they never change). */
+   private final static String[] TABLABELS = new String[] {
+         CARD_TEXT, CARD_TICKS, CARD_OTHER
+   };
+
+   /** The "Color Maps" dialog section. */
+   private ColorMapPanel cmapPanel = null;
+
+
    /** Helper method creates all the widgets managed by <code>PreferencesDlg</code>. */
    private void createComponents()
    {
       // screen resolution
-      screenDPIField = new NumericTextField(FCWorkspace.MIN_DPI, FCWorkspace.MAX_DPI, 1);
+      screenDPIField = new NumericTextField(FCWorkspace.MIN_DPI, FCWorkspace.MAX_DPI, 4);
       
       // most style properties...
       fontFamilyBtn = new FontFamilyButton(180);
@@ -327,14 +327,16 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
 
       enaHMSmoothCB = new JCheckBox("Enable heatmap image smoothing");
       enaHMSmoothCB.addActionListener(this);
-      
-      cmapPanel =new ColorMapPanel();
+
+      propTabPanel = new JPanel(new CardLayout());
+
+      cmapPanel = new ColorMapPanel();
    }
 
    /** Helper method that lays out the widgets within the <code>PreferencesDlg</code>. */
    private void layoutComponents()
    {
-      int gap = FCIcons.UIGAPSZ;
+      int gap = 5;
       
       JPanel p = new JPanel();
       p.setLayout(new BoxLayout(p, BoxLayout.LINE_AXIS));
@@ -345,29 +347,33 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       JPanel row0 = new JPanel(new BorderLayout());
       row0.add(p, BorderLayout.WEST);
       
-      JPanel fontGroup = new JPreferredSizePanel();
-      fontGroup.setLayout(new BoxLayout(fontGroup, BoxLayout.LINE_AXIS));
-      fontGroup.add(fontFamilyBtn);
-      fontGroup.add(Box.createHorizontalStrut(gap));
-      fontGroup.add(fontStyleMB);
-      fontGroup.add(Box.createHorizontalStrut(gap));
-      fontGroup.add(fontSizeField);
-      fontGroup.add(Box.createHorizontalStrut(gap*2));
-      fontGroup.add(new JSeparator(JSeparator.VERTICAL));
-      fontGroup.add(Box.createHorizontalStrut(gap*2));
-      fontGroup.add(altFontCombo);
-      fontGroup.add(Box.createHorizontalStrut(gap));
-      fontGroup.add(psFontCombo);
+      JPanel textGroup1 = new JPreferredSizePanel();
+      textGroup1.setLayout(new BoxLayout(textGroup1, BoxLayout.LINE_AXIS));
+      textGroup1.add(fillColorPicker);
+      textGroup1.add(Box.createHorizontalStrut(gap));
+      textGroup1.add(fontFamilyBtn);
+      textGroup1.add(Box.createHorizontalStrut(gap));
+      textGroup1.add(fontStyleMB);
+      textGroup1.add(Box.createHorizontalStrut(gap));
+      textGroup1.add(fontSizeField);
+      fillColorPicker.setAlignmentY(JPanel.CENTER_ALIGNMENT);
       fontFamilyBtn.setAlignmentY(JPanel.CENTER_ALIGNMENT);
       fontStyleMB.setAlignmentY(JPanel.CENTER_ALIGNMENT);
       fontSizeField.setAlignmentY(JPanel.CENTER_ALIGNMENT);
+
+      JPanel textGroup2 = new JPreferredSizePanel();
+      textGroup2.setLayout(new BoxLayout(textGroup2, BoxLayout.LINE_AXIS));
+      textGroup2.add(Box.createHorizontalStrut(gap*2));
+      textGroup2.add(altFontCombo);
+      textGroup2.add(Box.createHorizontalStrut(gap));
+      textGroup2.add(psFontCombo);
       altFontCombo.setAlignmentY(JPanel.CENTER_ALIGNMENT);
       psFontCombo.setAlignmentY(JPanel.CENTER_ALIGNMENT);
 
       JPanel drawGroup = new JPreferredSizePanel();
       drawGroup.setLayout(new BoxLayout(drawGroup, BoxLayout.LINE_AXIS));
-      drawGroup.add(fillColorPicker);
-      drawGroup.add(Box.createHorizontalStrut(gap*2));
+      drawGroup.add(new JLabel("Stroke:"));
+      drawGroup.add(Box.createHorizontalStrut(gap));
       drawGroup.add(strokeColorPicker);
       drawGroup.add(Box.createHorizontalStrut(gap));
       drawGroup.add(strokeWidthEditor);
@@ -375,7 +381,6 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       drawGroup.add(strokeCapMB);
       drawGroup.add(Box.createHorizontalStrut(gap));
       drawGroup.add(strokeJoinMB);
-      fillColorPicker.setAlignmentY(JPanel.CENTER_ALIGNMENT);
       strokeColorPicker.setAlignmentY(JPanel.CENTER_ALIGNMENT);
       strokeWidthEditor.setAlignmentY(JPanel.CENTER_ALIGNMENT);
       strokeCapMB.setAlignmentY(JPanel.CENTER_ALIGNMENT);
@@ -383,17 +388,19 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
 
       JPanel styleGroup = new JPreferredSizePanel();
       styleGroup.setLayout(new BoxLayout(styleGroup, BoxLayout.PAGE_AXIS));
-      styleGroup.add(fontGroup);
       styleGroup.add(Box.createVerticalStrut(gap*2));
-      styleGroup.add(drawGroup); 
-      fontGroup.setAlignmentX(JPanel.LEFT_ALIGNMENT);
+      styleGroup.add(textGroup1);
+      styleGroup.add(Box.createVerticalStrut(gap*2));
+      styleGroup.add(textGroup2);
+      styleGroup.add(Box.createVerticalStrut(gap*2));
+      styleGroup.add(drawGroup);
+      textGroup1.setAlignmentX(JPanel.LEFT_ALIGNMENT);
+      textGroup2.setAlignmentX(JPanel.LEFT_ALIGNMENT);
       drawGroup.setAlignmentX(JPanel.LEFT_ALIGNMENT);
       styleGroup.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
 
-      JPanel row1 = new JPanel(new BorderLayout());
-      row1.add(styleGroup, BorderLayout.WEST);
-      row1.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, getBackground().darker()), "Default Graphic Styling"));
+      JPanel textDrawCard = new JPanel(new BorderLayout());
+      textDrawCard.add(styleGroup, BorderLayout.WEST);
 
       JPanel tickLenGrp = new JPreferredSizePanel();
       tickLenGrp.setLayout(new BoxLayout(tickLenGrp, BoxLayout.LINE_AXIS));
@@ -428,6 +435,7 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       
       JPanel tickGroup = new JPreferredSizePanel();
       tickGroup.setLayout(new BoxLayout(tickGroup, BoxLayout.PAGE_AXIS));
+      tickGroup.add(Box.createVerticalStrut(gap*2));
       tickGroup.add(tickLenGrp);
       tickGroup.add(Box.createVerticalStrut(gap*2));
       tickGroup.add(tickLblGrp); 
@@ -438,10 +446,8 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       perLogGrp.setAlignmentX(JPanel.LEFT_ALIGNMENT);
       tickGroup.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
 
-      JPanel row2 = new JPanel(new BorderLayout());
-      row2.add(tickGroup, BorderLayout.WEST);
-      row2.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, getBackground().darker()), "Tick Mark Set Defaults"));
+      JPanel tickMarksCard = new JPanel(new BorderLayout());
+      tickMarksCard.add(tickGroup, BorderLayout.WEST);
 
       JPanel axisGroup = new JPreferredSizePanel();
       axisGroup.setLayout(new BoxLayout(axisGroup, BoxLayout.LINE_AXIS));
@@ -505,15 +511,31 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       ebarGroup.setAlignmentX(JPanel.LEFT_ALIGNMENT);
       miscGroup.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
 
-      JPanel row3 = new JPanel(new BorderLayout());
-      row3.add(miscGroup, BorderLayout.WEST);
-      row3.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, getBackground().darker()), "Miscellaneous Property Defaults"));
+      JPanel otherCard = new JPanel(new BorderLayout());
+      otherCard.add(miscGroup, BorderLayout.WEST);
 
-      JPanel row4 = new JPanel(new BorderLayout());
-      row4.add(cmapPanel, BorderLayout.WEST);
-      row4.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, getBackground().darker()), "Color Maps"));
+      propTabPanel.add(textDrawCard, CARD_TEXT);
+      propTabPanel.add(tickMarksCard, CARD_TICKS);
+      propTabPanel.add(otherCard, CARD_OTHER);
+
+      TabStrip tabStrip = new TabStrip(this);
+      propTabPanel.setOpaque(false);
+      propTabPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 2, 2, 2, tabStrip.getSelectionColor()),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+      ));
+
+      JPanel row1 = new JPanel(new BorderLayout());
+      row1.add(tabStrip, BorderLayout.NORTH);
+      row1.add(propTabPanel, BorderLayout.CENTER);
+      row1.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder("Graphic Property Defaults"),
+            BorderFactory.createEmptyBorder(3, 3, 3, 3))
+      );
+
+      JPanel row2 = new JPanel(new BorderLayout());
+      row2.add(cmapPanel, BorderLayout.WEST);
+      row2.setBorder(BorderFactory.createTitledBorder("Color Maps"));
       
       JPanel content = new JPanel();
       content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
@@ -522,10 +544,6 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       content.add(row1);
       content.add(Box.createVerticalStrut(gap*2));
       content.add(row2);
-      content.add(Box.createVerticalStrut(gap*2));
-      content.add(row3);
-      content.add(Box.createVerticalStrut(gap*2));
-      content.add(row4);
       content.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
       
       getContentPane().setLayout(new BorderLayout());
@@ -673,12 +691,37 @@ public class PreferencesDlg extends JDialog implements ActionListener, PropertyC
       else if(src == tickOriMB)
          fgnPrefs.setPreferredTickOrientation(tickOriMB.getCurrentChoice());
    }
-   
-   
-   
-   /** The "Color Maps" dialog section. */
-   private ColorMapPanel cmapPanel = null;
-   
+
+   @Override public int getNumTabs() { return TABLABELS.length; }
+   @Override public int getSelectedTab() { return iSelectedTab; }
+   @Override public void setSelectedTab(int tabPos)
+   {
+      if(tabPos < 0 || tabPos >= getNumTabs() || tabPos == iSelectedTab) return;
+
+      iSelectedTab = tabPos;
+      CardLayout cl = (CardLayout) propTabPanel.getLayout();
+      cl.show(propTabPanel, TABLABELS[iSelectedTab]);
+   }
+   @Override public void addChangeListener(ChangeListener l)
+   {
+      if(l != null) tabListeners.add(ChangeListener.class, l);
+   }
+   @Override public void removeChangeListener(ChangeListener l)
+   {
+      if(l != null) tabListeners.remove(ChangeListener.class, l);
+   }
+   @Override public String getTabLabel(int tabPos)
+   {
+      return(tabPos >= 0 && tabPos<getNumTabs() ? TABLABELS[tabPos] : null);
+   }
+   @Override public String getTabToolTip(int tabPos) { return(null); }
+   @Override public Icon getTabIcon(int tabPos) { return(null); }
+   @Override public boolean isTabClosable(int tabPos) { return(false); }
+   @Override public String getCloseTabToolTip(int tabPos) { return(null); }
+   @Override public void closeTab(int tabPos) {}
+   @Override public boolean supportsTabRepositioning() { return(false); }
+   @Override public boolean moveTab(int fromPos, int toPos) { return(false); }
+
    /**
     * Helper class implements the dialog section which lets user browse all available color maps -- both built-in and
     * custom --, and provides widgets by which the user can generate and add new custom maps, or remove any existing

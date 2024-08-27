@@ -52,4 +52,8 @@ that were created by R2024a:
 - Added `minSize` attribute to the `scatter` and `scatter3d` elements, specifying a minimum symbol size for the scatter
 plot. Defaults to '0in' so that existing figures are unaffected. Specifying a nonzero minimum size ensures that a symbol
 is rendered at each point n the scatter plot. **_Schema version = 27_**.
+- Cosmetic changes to the **Preferences** dialog. The various graphic property defaults are not organized within a 
+tabbed pane with 3 tabs: **Text/Draw Styles**, **Tick Marks**, and **Other**.
+- _Bug fix_: Changing the screen DPI in the **Preferences** dialog had no effect. (Note: To see an effect on the figure
+canvas, the canvas must not be in "scale-to-fit" mode.)
 
