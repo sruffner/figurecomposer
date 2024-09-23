@@ -56,4 +56,9 @@ is rendered at each point n the scatter plot. **_Schema version = 27_**.
 tabbed pane with 3 tabs: **Text/Draw Styles**, **Tick Marks**, and **Other**.
 - _Bug fix_: Changing the screen DPI in the **Preferences** dialog had no effect. (Note: To see an effect on the figure
 canvas, the canvas must not be in "scale-to-fit" mode.)
+- _Bug fix_: On Mac OS, the keyboard shortcuts for menu commands associated with check box menu items did not work 
+because the accelerator triggers a duplicate event immediately after the first. Fixed by ignoring any event that occurs
+less than a few milliseconds after the previous action event. Also fixed updating of selection state of the check box 
+menu items (sometimes an item was checked when it should not have been).
+- Cosmetic changes in the **Property Editor**.
 

@@ -1,20 +1,6 @@
 package com.srscicomp.fc.ui;
 
-import java.awt.BasicStroke;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.KeyEventDispatcher;
-import java.awt.KeyboardFocusManager;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.Shape;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
@@ -495,11 +481,8 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
     * node in the figure canvas, keyboard focus is automatically transferred to the node tree (since the canvas itself
     * does not hold the focus).
     * 
-    * <p>The "hot keys" associated with the figure composer's various action commands are not normally processed here,
-    * but through the menu bar hierarchy. However, when the figure composer is configured to edit a hub navigation view
-    * template, then it will be installed in a modal dialog and its associated menu bar is not available. In this
-    * special case, the "hot keys" associated with any edit- or view-related actions are dispatched here (but not the
-    * file-related actions, as these are not available in this special configuration).</p>
+    * <p>The "hot keys" associated with the figure composer's various action commands are not processed here,
+    * but through the menu bar hierarchy.
     * 
     * @param e The key event.
     * @return True if the specified key stroke was processed as a "hot key" for a figure composer action.
@@ -2039,7 +2022,16 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
          FGraphicNode sel = (currFig == null || currFig.isMultiNodeSelection()) ? null : currFig.getSelectedNode();
          File currFile = getSelectedFigureFile();
          FGraphicModel[] figs;
-         
+
+         // BUG FIX: On MacOS at least, for the actions associated with JCheckboxMenuItems, keyboard accelerator
+         // triggers two events in rapid succession. Here we ignore the second.
+         if((e.getSource() instanceof JCheckBoxMenuItem) && (e.getWhen() - lastInvokedTS < 10))
+            return;
+         lastInvokedTS = e.getWhen();
+
+         // NOTE: For the actions corresponding to checkbox menu items, we need to queue the refreshState() call on
+         // the event dispatch thread so that the relevant UI element's visibility has been updated by the time that
+         // method is called!
          switch(type)
          {
          case FILE_NEW :
@@ -2217,23 +2209,19 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             break;
          case VIEW_TOGGLETREE :
             figureTreeView.setVisible(!figureTreeView.isVisible());
-            FigComposer.this.revalidate();
-            refreshState();
+            SwingUtilities.invokeLater(this::refreshState);
             break;
          case VIEW_TOGGLERULERS :
             showRulers(!areRulersShown());
-            FigComposer.this.revalidate();
-            refreshState();
+            SwingUtilities.invokeLater(this::refreshState);
             break;
          case VIEW_SPECIALCHARS :
-            // toggle the visibility of the special characters map within the node tree's property editor
             figureTreeView.setCharacterMapperVisible(!figureTreeView.isCharacterMapperVisible());
-            refreshState();
+            SwingUtilities.invokeLater(this::refreshState);
             break;
          case VIEW_TOGGLEWSFIG :
             figBrowser.setVisible(!figBrowser.isVisible());
-            FigComposer.this.revalidate();
-            refreshState();
+            SwingUtilities.invokeLater(this::refreshState);
             break;
          case VIEW_TOGGLEMODE :
             figCanvas.setScaleToFitOn(!figCanvas.isScaleToFitOn());
@@ -2242,7 +2230,7 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
             break;
          case VIEW_TOGGLEPRINTPREVIEW :
             figCanvas.setPrintPreviewEnabled(!figCanvas.isPrintPreviewEnabled());
-            refreshState();
+            SwingUtilities.invokeLater(this::refreshState);
             break;
          case VIEW_RESETZOOM :
             figCanvas.resetZoomAndPan();
@@ -2442,6 +2430,14 @@ public class FigComposer extends JPanel implements TabStripModel, FGModelListene
       private final FCActionType type;
       /** If a keyboard accelerator is associated with the action, this is the hot key's mnemonic (for tool tips). */
       private final String hotKeyMnemonic;
+      /**
+       * Timestamp of last invocation of the action.
+       * <p>Introduced to fix a bug with the <code>JCheckboxMenuItem</code>s in the "View" menu on Mac OS. When the
+       * associated action is triggered by the keyboard accelerator, two action events are delivered in rapid
+       * succession -- effectively nullifying each other so that it appears that nothing happened. See
+       * {@link FCAction#actionPerformed(ActionEvent)}.</p>
+       */
+      private long lastInvokedTS = 0L;
    }
 
    /**

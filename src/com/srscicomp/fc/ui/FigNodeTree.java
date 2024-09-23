@@ -126,10 +126,17 @@ import com.srscicomp.fc.uibase.FCIcons;
  * <p>If multiple nodes are currently selected in the figure, the node properties editor panel is hidden altogether --
  * since it is not possible to edit the properties of multiple nodes at once. Operations on multi-node selections are
  * limited to delete, copy, move-by-drag, paste style set, and aligning the nodes in the selection.</p>
- * 
- * <p>The node tree canvas, node properties editor, and the node-specific editors have been designed and laid out to
- * occupy a <b>fixed</b> width less than 400 pixels. <code>FigNodeTree</code> should be docked to the left or right edge
- * of its container using a layout manager that restricts it to the fixed width but lets it expand vertically.</p>
+ *
+ * <p>The special character mapper tool {@link JUnicodeCharacterMap} is embedded in <code>FigNodeTree</code>>,
+ * sandwiched between the node tree canvas and the properties editor. Since it's infrequently used, it is is hidden
+ * initially but can be toggled on/off via the View menu (and an associated toolbar button). When the user double-clicks
+ * on a character in the mapper panel, the chosen character is forwarded to the current properties editor for possible
+ * insertion into a text field in that editor. See {@link FGNEditor#onInsertSpecialCharacter(String)}.</p>
+ *
+ * <p>The node tree canvas, character mapper, node properties editor, and the node-specific editors have been designed
+ * and laid out to occupy a <b>fixed</b> width less than 400 pixels. <code>FigNodeTree</code> should be docked to the
+ * left or right edge of its container using a layout manager that restricts it to the fixed width but lets it expand
+ * vertically.</p>
  * 
  * <p><i>A note about keyboard focus and "hot keys"</i>. The graphic node operations Cut/Copy/Paste/Del are tied to 
  * keyboard accelerators, or "hot keys", through the application's "Edit" menu. However, these are standard edit 
@@ -143,7 +150,8 @@ import com.srscicomp.fc.uibase.FCIcons;
  * 
  * @author sruffner
  */
-public class FigNodeTree extends JPanel implements MouseListener, MouseMotionListener, FGModelListener, FocusListener
+public class FigNodeTree extends JPanel implements MouseListener, MouseMotionListener, FGModelListener, FocusListener,
+      PropertyChangeListener
 {
    /** Construct the view of a <i>DataNav</i> figure's graphic node tree. */
    public FigNodeTree()
@@ -167,11 +175,55 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       // so we catch mouse-click events that are in the scrolling viewport but outside the canvas, which may not fill it
       scroller.getViewport().addMouseListener(this);
 
+      // the character mapper tool is embedded in a panel that draws a nicely rounded border same as the node
+      // properties editor. The mapper panel is initially hidden.
+      mapper = new JUnicodeCharacterMap(
+            new Font("Arial", Font.PLAIN, 12),
+            FGraphicModel.getSupportedUnicodeSubsets(), 2, 15);
+      mapper.setFocusable(false);
+      mapper.setBorder(BorderFactory.createTitledBorder("Special Characters"));
+      mapper.addPropertyChangeListener(JUnicodeCharacterMap.SELCHAR_PROPERTY, this);
+
+      mapperPanel = new JPanel(new BorderLayout())
+      {
+         @Override protected void paintComponent(Graphics g)
+         {
+            Graphics2D g2 = (Graphics2D) g;
+            int w = getWidth();
+            int h = getHeight();
+
+            // we always want nice-looking renderings
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            // fill entire background with normal background color
+            g2.setPaint(getBackground());
+            g2.fillRect(0, 0, w, h);
+
+            g2.setColor(Color.GRAY);
+            borderPath.setRoundRect(1, 1, w-2, h-2, 16, 16);
+            g2.draw(borderPath);
+         }
+
+         private final RoundRectangle2D borderPath = new RoundRectangle2D.Double();
+      };
+      mapperPanel.add(mapper, BorderLayout.CENTER);
+      mapperPanel.add(Box.createVerticalStrut(10), BorderLayout.NORTH);
+      mapperPanel.add(Box.createHorizontalStrut(10), BorderLayout.WEST);
+      mapperPanel.add(Box.createHorizontalStrut(10), BorderLayout.EAST);
+      mapperPanel. add(Box.createVerticalStrut(10), BorderLayout.SOUTH);
+      mapperPanel.setVisible(false);
+
       propEditor = new NodeEditor();
+
+      JPanel south = new JPanel(new BorderLayout());
+      south.add(mapperPanel, BorderLayout.NORTH);
+      south.add(propEditor, BorderLayout.CENTER);
 
       setLayout(new BorderLayout());
       add(scroller, BorderLayout.CENTER);
-      add(propEditor, BorderLayout.SOUTH);
+      add(south, BorderLayout.SOUTH);
       
       // set minimum size to ensure it is large enough to accommodate the node tree canvas's preferred scrollable
       // viewport size, plus room for the scroll bars, plus the fixed width and minimum height of node property editor.
@@ -698,7 +750,19 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
    
    /** The scroll pane container for the rendered node tree. */
    private JScrollPane scroller = null;
-   
+
+   /**
+    * Character mapper tool for inserting special characters into select string-valued properties of the
+    * currently edited node.
+    */
+   final JUnicodeCharacterMap mapper;
+
+   /**
+    * Custom-drawn panel that contains the character mapper tool. Sits between node tree canvas and node property
+    * editor. Usually hidden, but visibility is toggled by user action.
+    */
+   final JPanel mapperPanel;
+
    /** 
     * When a single node is selected, its properties are displayed and edited in this panel. If multiple nodes are
     * selected, this panel is hidden. 
@@ -1455,7 +1519,7 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
     * 
     * @author sruffner
     */
-   private class NodeEditor extends JPanel implements PropertyChangeListener
+   private class NodeEditor extends JPanel
    {
       /** Construct the node properties editor panel. The embedded character mapper tool is hidden initially. */
       NodeEditor()
@@ -1508,30 +1572,8 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          // have a color bar/axis. And the TICKS node type is omitted because the color bar can have tick sets, so that
          // node appears under both the 2D graph and 2D polar plot containers.
          
-         // the character mapper tool is initially hidden
-         mapper = new JUnicodeCharacterMap(
-               new Font("Arial", Font.PLAIN, 12), 
-               FGraphicModel.getSupportedUnicodeSubsets(), 2, 15);
-         mapper.setFocusable(false);
-         mapper.setBorder(BorderFactory.createCompoundBorder(
-               BorderFactory.createEmptyBorder(0, 0, 10, 0),
-               BorderFactory.createCompoundBorder(
-                     BorderFactory.createTitledBorder(
-                        BorderFactory.createMatteBorder(1, 0, 3, 0, Color.GRAY),
-                     "Special Characters"),
-                     BorderFactory.createEmptyBorder(2, 0, 10, 0)
-               )
-         ));
-         mapper.setVisible(false);
-         mapper.addPropertyChangeListener(JUnicodeCharacterMap.SELCHAR_PROPERTY, this);
-
-         centerPanel = new JPanel();
-         centerPanel.setLayout(new BorderLayout());
-         centerPanel.add(mapper, BorderLayout.NORTH);
-         // centerPanel.add(currentEditor, BorderLayout.CENTER);
-
          setLayout(new BorderLayout());
-         add(centerPanel, BorderLayout.CENTER);
+         // add(currentEditor, BorderLayout.CENTER);
          add(Box.createVerticalStrut(10), BorderLayout.NORTH);
          add(Box.createHorizontalStrut(10), BorderLayout.WEST);
          add(Box.createHorizontalStrut(10), BorderLayout.EAST);
@@ -1619,12 +1661,12 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
                if(currentEditor != null)
                {
                   currentEditor.onLowered();
-                  centerPanel.remove(currentEditor);
+                  remove(currentEditor);
                }
                currentEditor = nextEditor;
                currentEditor.load(currentNode);
                currentEditor.onRaised();
-               centerPanel.add(currentEditor, BorderLayout.CENTER);
+               add(currentEditor, BorderLayout.CENTER);
                revalidate();
                repaint();
             }
@@ -1699,22 +1741,6 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
          }
       }
 
-      /**
-       * Whenever user selects a character in the character mapper tool, forward that character selection to the 
-       * currently installed node editor.
-       */
-      @Override public void propertyChange(PropertyChangeEvent e)
-      {
-         if(e.getSource() == mapper)
-         {
-            char c = mapper.getSelectedCharacter();
-            if((c != 0) && isVisible()  && (currentEditor != null))
-            {
-               currentEditor.onInsertSpecialCharacter("" + c);
-            }
-         }
-      }
-      
       @Override protected void paintComponent(Graphics g)
       {
          Graphics2D g2 = (Graphics2D) g;
@@ -1766,22 +1792,13 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
       /** The node-specific editors, mapped by node type. */
       private final HashMap<FGNodeType, FGNEditor> editorsByType;
       
-      /** 
-       * Character mapper tool for inserting special characters into select string-valued properties of the
-       * currently edited node. Usually hidden, but visibility is toggled by user action.
-       */
-      final JUnicodeCharacterMap mapper;
-
-      /** This panel contains both the current editor and the character mapper tool, which may be hidden. */
-      private JPanel centerPanel = null;
-
       /** Fixed width of node properties editor accounts for width of widest node-specific editor. */
-      private int fixedWidth = -1;
+      private int fixedWidth;
       /** Maximum height of node properties editor for height of tallest node-specific editor. */
-      private int maxHeight = -1;
+      private int maxHeight;
       
       /** Used to paint the node editor's current title. */
-      private StringPainter titlePainter = null;
+      private final StringPainter titlePainter;
       
       /** Node editor title's background color when multiple nodes selected of the same type. */
       private final Color multiSelBkg = new Color(240,128,128);
@@ -1799,9 +1816,26 @@ public class FigNodeTree extends JPanel implements MouseListener, MouseMotionLis
     */
    void setCharacterMapperVisible(boolean b)
    {
-      propEditor.mapper.setVisible(b);
+      mapperPanel.setVisible(b);
    }
    
    /** Is the special character mapper currently visible in the node properties editor?  */
-   boolean isCharacterMapperVisible() { return(propEditor.mapper.isVisible()); }
+   boolean isCharacterMapperVisible() { return(mapperPanel.isVisible()); }
+
+   /**
+    * Whenever user selects a character in the character mapper tool, forward that character selection to the
+    * currently installed node editor.
+    */
+   @Override public void propertyChange(PropertyChangeEvent e)
+   {
+      if(e.getSource() == mapper)
+      {
+         char c = mapper.getSelectedCharacter();
+         if((c != 0) && isVisible()  && (propEditor.currentEditor != null))
+         {
+            propEditor.currentEditor.onInsertSpecialCharacter("" + c);
+         }
+      }
+   }
+
 }
