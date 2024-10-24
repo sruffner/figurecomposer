@@ -11,7 +11,7 @@ This file documents changes in the **Figure Composer** code base since it was mo
 2024, after version 5.4.5 was released. A complete version history is 
 [available](https://sites.google.com/a/srscicomp.com/figure-composer/version-history) on the **FigureComposer** website.
 
-## v5.5.0 (TBD)
+## v5.5.0 (24 Oct 2024)
 - Created `figurecomposer` IntelliJ IDEA project with `figurecomposer` and `common` modules, copying all code, resource 
 and supporting files from original Eclipse projects.
 - Extensive minor changes throughout codebase to make it JDK11-compliant and fix all issues identified by IntelliJ IDEA.

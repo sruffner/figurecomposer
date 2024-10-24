@@ -21,8 +21,8 @@
 [Setup]
 AppId={{B409BEF3-AD01-48E8-AB2C-EE902831B85B}
 AppName=FigureComposer
-AppVersion=5.1.4
-AppVerName=FigureComposer 5.1.4
+AppVersion=5.5.0
+AppVerName=FigureComposer 5.5.0
 DefaultDirName={userpf}\FigureComposer
 DefaultGroupName=FigureComposer
 UninstallDisplayIcon={app}\FCSetup.ico
@@ -34,7 +34,7 @@ OutputBaseFilename=FigureComposerSetup
 ; done in "64-bit mode" on x64, meaning it should use the native
 ; 64-bit Program Files directory and the 64-bit view of the registry.
 ; On all other architectures it will install in "32-bit mode".
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64os
 ; Note: We don't set ProcessorsAllowed because we want this
 ; installation to run on all architectures (including Itanium,
 ; since it's capable of running 32-bit code too).
@@ -52,15 +52,15 @@ AllowNetworkDrive=no
 AllowUNCPath=no
 CloseApplications=yes
 RestartApplications=no
-MinVersion=5.1
+MinVersion=6.1sp1
 PrivilegesRequired=lowest
 SetupIconFile=FCSetup.ico
 SetupLogging=yes
 Uninstallable=yes
 
-AppCopyright=Copyright (C) 2003-2020 Duke University (Lisberger Lab)
-AppPublisher=Duke University(Lisberger Lab)
-AppPublisherURL=https://www.neuro.duke.edu/research/faculty-labs/lisberger-lab
+AppCopyright=Copyright (C) 2003-2025 Duke University (Lisberger Lab)/Scott Ruffner Scientific Computing
+AppPublisher=Scott Ruffner Scientific Computing
+AppPublisherURL=https://sites.google.com/a/srscicomp.com/figure-composer
 AppSupportURL=https://sites.google.com/a/srscicomp.com/figure-composer
 AppUpdatesURL=https://sites.google.com/a/srscicomp.com/figure-composer/download-files
 VersionInfoVersion=1.0

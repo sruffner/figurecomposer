@@ -14,19 +14,18 @@ program. It will also install a folder containing the files that are part of the
 The uninstaller is accessible from the FigureComposer program folder, or via the Add/Remove Programs feature in Control 
 Panel (called "Programs and Features" in Windows 7).
 
-System Requirements:
-  -- Windows 7 or greater. Only tested on Windows 7 32-bit and Windows 10 64-bit. The installer will install a 32-bit 
-  launcher on a 32-bit system and a 64-bit launcher on a 64-bit system. It is assumed that the user installs a 64-bit 
-  JVM under 64-bit Windows!
-  -- Java runtime environment with major version 8. It is recommended that users install the latest public
-  release of Java 8. If no suitable JRE is found, the application will not launch. Users are also welcome to try the
-  next long-term support release of the Java runtime, Java 11.
+System Requirements for Release 5.5.0:
+  -- Windows 7 or greater. Tested on Windows 7 (32-bit), 10 (64-bit), and 11 (64-bit). The installer will install a
+  32-bit launcher on a 32-bit system and a 64-bit launcher on a 64-bit system. It is assumed that the user installs a
+  64-bit JVM under 64-bit Windows!
+  -- Java runtime environment with major version 11. It is recommended that users install the latest public
+  release of Java 11. If no suitable JRE is found, the application will not launch.
   -- A 2GHz or better computer with 2-4GB RAM.
 
-** In an upcoming release we plan to migrate FC to compile against Java 11, which, like Java 8, is a long-term support 
-version. This release will also come with its own custom-tailored JRE, so that it will no longer be necessary to install
-a JRE separately.
-
+IMPORTANT: If you use any Matlab script in the FigureComposer Matlab support package that requires a supporting JAR
+file, that JAR also requires JDK11-compliance. You must update your Matlab installation to use a Java 11 runtime
+environment rather than the default Java 8 runtime that comes with Matlab. Matlab is unlikely to include a Java 11
+runtime as the default any time soon, but it has supported OpenJDK 11 (Eclipse Adoptium, Amazon Corretto) since R2023a.
 
 Support Website: https://sites.google.com/a/srscicomp.com/figure-composer
 Support email: sruffner@srscicomp.com
@@ -36,8 +35,10 @@ CREDITS:
 Besides the libraries that come with the Java runtime environment, FigureComposer relies on two third-party libraries:
 1) The Java Matlab IO (JMatIO) package makes it possible to read in and parse Matlab FIG files, which are really MAT 
 files in disguise. See also jmatio-LICENSE.txt
-2) The iText PDF library is required to export FypML figures as PDF documents. It is being used under the GNU Affero 
+2) The iTextPDF 5.5 library is required to export FypML figures as PDF documents. It is being used under the GNU Affero
 General Public License. See also itextpdf-agpl.txt.
+3) FC relies on the JFreeSVG library (https://www.jfree.org/jfreesvg/index.html) to export FypML figures as Scalable
+Vector Graphics (SVG).
 
 We rely on two freeware Windows tools to repackage the FigureComposer application as a Win32 executable and distribute 
 it in a convenient self-extracting installer:
@@ -46,7 +47,7 @@ it in a convenient self-extracting installer:
 
 
 saruffner
-(last updated 03/03/2020)
+(last updated 23oct2024)
 
 
 
